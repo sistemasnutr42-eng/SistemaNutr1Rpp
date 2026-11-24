@@ -1,0 +1,2258 @@
+﻿@using System
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@model SistemaNutri.Models.CoordinacionTabuladorPrecioCerdoPaginaVm
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    ViewData["Title"] = "Tabulador de precio de cerdo";
+
+    var configuracion = Model?.Configuracion
+        ?? new SistemaNutri.Models.CoordinacionTabuladorPrecioCerdoConfiguracionVm();
+
+    var captura = Model?.Captura
+        ?? new SistemaNutri.Models.CoordinacionTabuladorPrecioCerdoCapturaVm
+        {
+            FechaCotizacion = DateTime.Today,
+            PesoOfrecidoKg = configuracion.PesoBaseKg > 0
+                ? configuracion.PesoBaseKg
+                : 115m
+        };
+
+    var precioMercado = Model?.PrecioMercadoActual;
+
+    var filas = Model?.Filas
+        ?? new List<SistemaNutri.Models.CoordinacionTabuladorPrecioCerdoFilaVm>();
+
+    var tienePedido =
+        captura.PedidoID.HasValue &&
+        captura.PedidoID.Value > 0;
+
+    string FormatoMoneda(decimal valor) =>
+        valor.ToString(
+            "C2",
+            CultureInfo.GetCultureInfo("es-MX"));
+
+    string FormatoNumero(
+        decimal valor,
+        int decimales = 2) =>
+        valor.ToString(
+            $"N{decimales}",
+            CultureInfo.GetCultureInfo("es-MX"));
+}
+
+@section Styles {
+    <style>
+        :root {
+            --tab-blue: #07598f;
+            --tab-blue-dark: #043e67;
+            --tab-blue-soft: #edf7fc;
+            --tab-green: #2f8c45;
+            --tab-green-soft: #edf8f0;
+            --tab-orange: #c97807;
+            --tab-orange-soft: #fff7e8;
+            --tab-red: #ba3030;
+            --tab-red-soft: #fff0f0;
+            --tab-purple: #6654a7;
+            --tab-purple-soft: #f3f0fb;
+            --tab-border: #dfe7ef;
+            --tab-text: #273b50;
+            --tab-muted: #7e8c9e;
+            --tab-bg: #f4f7fa;
+        }
+
+        .tab-page {
+            min-height: calc(100vh - 60px);
+            padding: 28px 38px 46px;
+            background: var(--tab-bg);
+            color: var(--tab-text);
+        }
+
+        .tab-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 22px;
+            margin-bottom: 22px;
+        }
+
+        .tab-eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 7px;
+            color: var(--tab-green);
+            text-transform: uppercase;
+            letter-spacing: .055em;
+            font-size: .86rem;
+            font-weight: 800;
+        }
+
+        .tab-title {
+            margin: 0;
+            color: #092f52;
+            font-size: 2rem;
+            font-weight: 850;
+            line-height: 1.1;
+        }
+
+        .tab-subtitle {
+            margin: 9px 0 0;
+            max-width: 860px;
+            color: #6c7c8f;
+            font-size: .96rem;
+            line-height: 1.5;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .btn-secondary {
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid #d8e1ea;
+            background: #fff;
+            color: #53657a;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+            .btn-secondary:hover {
+                background: #f8fafc;
+                color: #294862;
+            }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4,minmax(0,1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .info-card {
+            padding: 17px 18px;
+            border: 1px solid var(--tab-border);
+            border-radius: 15px;
+            background: #fff;
+        }
+
+        .info-label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 7px;
+            color: #748399;
+            font-size: .79rem;
+            font-weight: 750;
+        }
+
+        .info-value {
+            color: #103b5e;
+            font-size: 1.4rem;
+            font-weight: 850;
+            line-height: 1.1;
+        }
+
+        .info-note {
+            margin-top: 5px;
+            color: #96a1af;
+            font-size: .73rem;
+            line-height: 1.35;
+        }
+
+        .panel {
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 1px solid var(--tab-border);
+            border-radius: 16px;
+            background: #fff;
+        }
+
+        .panel-header {
+            min-height: 70px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            border-bottom: 1px solid var(--tab-border);
+        }
+
+        .panel-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .panel-icon {
+            width: 41px;
+            height: 41px;
+            min-width: 41px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--tab-blue-soft);
+            color: var(--tab-blue);
+        }
+
+        .panel-title {
+            margin: 0;
+            color: #1d405e;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .panel-subtitle {
+            margin: 3px 0 0;
+            color: #8d9aaa;
+            font-size: .79rem;
+        }
+
+        .panel-body {
+            padding: 20px;
+        }
+
+        .config-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .config-chip {
+            padding: 7px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            background: #f4f7fa;
+            color: #536578;
+            font-size: .74rem;
+            font-weight: 700;
+        }
+
+        .rule-box {
+            margin-top: 15px;
+            padding: 12px 14px;
+            border: 1px solid #d7e8f2;
+            border-radius: 10px;
+            background: #f3f9fc;
+            color: #47647a;
+            font-size: .78rem;
+            line-height: 1.55;
+        }
+
+            .rule-box strong {
+                color: #174969;
+            }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: minmax(390px,.9fr) minmax(600px,1.5fr);
+            gap: 20px;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 14px;
+        }
+
+        .form-field.full {
+            grid-column: 1/-1;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #394e63;
+            font-size: .81rem;
+            font-weight: 750;
+        }
+
+        .form-control-tab {
+            width: 100%;
+            height: 45px;
+            padding: 0 12px;
+            border: 1px solid #d6e0e9;
+            border-radius: 10px;
+            background: #fff;
+            color: #33485c;
+            outline: none;
+        }
+
+        textarea.form-control-tab {
+            min-height: 88px;
+            height: auto;
+            padding-top: 10px;
+            resize: vertical;
+        }
+
+        .form-control-tab:focus {
+            border-color: #74afd3;
+            box-shadow: 0 0 0 3px rgba(7,89,143,.07);
+        }
+
+        .money-wrap {
+            position: relative;
+        }
+
+        .money-prefix {
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+            color: #68798b;
+            font-weight: 750;
+            pointer-events: none;
+        }
+
+        .money-wrap input {
+            padding-left: 28px;
+        }
+
+        .field-help {
+            margin-top: 5px;
+            color: #93a0af;
+            font-size: .71rem;
+            line-height: 1.35;
+        }
+
+        .form-actions {
+            margin-top: 18px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            min-height: 44px;
+            padding: 0 16px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-calculate {
+            background: var(--tab-blue);
+            color: #fff;
+        }
+
+        .btn-save-quote {
+            background: var(--tab-green);
+            color: #fff;
+        }
+
+        .btn-config {
+            background: #fff;
+            border-color: #d7e0e9;
+            color: #526479;
+        }
+
+        .btn-action:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(3,minmax(0,1fr));
+            gap: 12px;
+        }
+
+        .result-card {
+            min-width: 0;
+            padding: 14px;
+            border: 1px solid #e2e9ef;
+            border-radius: 13px;
+            background: #fbfcfd;
+        }
+
+            .result-card.offer {
+                background: var(--tab-blue-soft);
+                border-color: #cce4f1;
+            }
+
+            .result-card.adjusted {
+                background: var(--tab-green-soft);
+                border-color: #cfe8d5;
+            }
+
+            .result-card.market {
+                background: var(--tab-purple-soft);
+                border-color: #ddd5f3;
+            }
+
+            .result-card.warning {
+                background: var(--tab-orange-soft);
+                border-color: #f2dfb9;
+            }
+
+            .result-card.negative {
+                background: var(--tab-red-soft);
+                border-color: #efcdcd;
+            }
+
+        .result-label {
+            margin-bottom: 5px;
+            color: #758497;
+            font-size: .72rem;
+            font-weight: 750;
+        }
+
+        .result-value {
+            color: #173c59;
+            font-size: 1.1rem;
+            font-weight: 850;
+            overflow-wrap: anywhere;
+        }
+
+        .result-sub {
+            margin-top: 4px;
+            color: #93a0af;
+            font-size: .69rem;
+            line-height: 1.3;
+        }
+
+        .calculator-section-title {
+            grid-column: 1/-1;
+            margin-top: 7px;
+            padding-bottom: 7px;
+            border-bottom: 1px solid #e7edf2;
+            color: #31516b;
+            font-size: .75rem;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: .035em;
+        }
+
+        .market-status {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-radius: 11px;
+            display: none;
+            font-size: .8rem;
+        }
+
+            .market-status.positive {
+                display: block;
+                background: var(--tab-green-soft);
+                color: #26753b;
+            }
+
+            .market-status.negative {
+                display: block;
+                background: var(--tab-red-soft);
+                color: #a72d2d;
+            }
+
+            .market-status.neutral {
+                display: block;
+                background: #f1f4f7;
+                color: #5f7083;
+            }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .tab-table {
+            width: 100%;
+            min-width: 1080px;
+            border-collapse: collapse;
+        }
+
+            .tab-table th {
+                padding: 12px 13px;
+                text-align: left;
+                background: #f7f9fb;
+                color: #69798c;
+                border-bottom: 1px solid #dde6ee;
+                font-size: .69rem;
+                text-transform: uppercase;
+                letter-spacing: .035em;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+
+            .tab-table td {
+                padding: 12px 13px;
+                border-bottom: 1px solid #edf1f5;
+                color: #42556a;
+                font-size: .8rem;
+            }
+
+            .tab-table tbody tr:hover {
+                background: #fbfcfd;
+            }
+
+            .tab-table tbody tr.base-row {
+                background: #eef7fc;
+            }
+
+                .tab-table tbody tr.base-row td {
+                    font-weight: 800;
+                    color: #16486c;
+                }
+
+        .price-cell {
+            font-weight: 850;
+            color: #163f61 !important;
+        }
+
+        .diff-positive {
+            color: #23813c !important;
+            font-weight: 800;
+        }
+
+        .diff-negative {
+            color: #b92f2f !important;
+            font-weight: 800;
+        }
+
+        .diff-neutral {
+            color: #69798b !important;
+            font-weight: 750;
+        }
+
+        .badge-base {
+            margin-left: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            display: inline-flex;
+            background: #d9edf8;
+            color: #236586;
+            font-size: .68rem;
+            font-weight: 800;
+        }
+
+        .message-box {
+            position: fixed;
+            right: 28px;
+            bottom: 28px;
+            z-index: 3000;
+            width: min(390px,calc(100vw - 40px));
+            padding: 15px 17px;
+            display: none;
+            border-radius: 13px;
+            box-shadow: 0 13px 32px rgba(25,50,75,.18);
+            font-size: .85rem;
+            font-weight: 650;
+        }
+
+            .message-box.show {
+                display: block;
+            }
+
+            .message-box.success {
+                background: #eaf7ee;
+                color: #236f36;
+                border: 1px solid #b9e2c3;
+            }
+
+            .message-box.error {
+                background: #fff0f0;
+                color: #a72a2a;
+                border: 1px solid #f0c1c1;
+            }
+
+        .modal-content {
+            border: 0;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #e5ebf1;
+            background: #f8fafc;
+        }
+
+        .modal-title {
+            color: #173c59;
+            font-size: 1rem;
+            font-weight: 850;
+        }
+
+        @@media(max-width:1250px) {
+            .info-grid {
+                grid-template-columns: repeat(2,minmax(0,1fr));
+            }
+
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media(max-width:760px) {
+            .tab-page {
+                padding: 20px 15px 40px;
+            }
+
+            .tab-header {
+                flex-direction: column;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+                .header-actions a {
+                    width: 100%;
+                }
+
+            .tab-title {
+                font-size: 1.5rem;
+            }
+
+            .info-grid,
+            .form-grid,
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-field.full,
+            .calculator-section-title {
+                grid-column: auto;
+            }
+        }
+    </style>
+}
+
+<div class="tab-page">
+
+    <div class="tab-header">
+        <div>
+            <div class="tab-eyebrow">
+                <i class="fa-solid fa-calculator"></i>
+                Coordinación · Rastro · Cotizador
+            </div>
+
+            <h1 class="tab-title">
+                Tabulador de precio de cerdo
+            </h1>
+
+            <p class="tab-subtitle">
+                Calcula el precio ofrecido y el precio ajustado por diferencia de peso,
+                utilizando la misma lógica del tabulador operativo de Rastro.
+            </p>
+        </div>
+
+        <div class="header-actions">
+            <a asp-controller="Coordinacion"
+               asp-action="PrecioMercadoCerdo"
+               class="btn-secondary">
+                <i class="fa-solid fa-chart-line"></i>
+                Precio de mercado
+            </a>
+
+            <a asp-controller="Coordinacion"
+               asp-action="PedidosRastro"
+               class="btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i>
+                Rastro
+            </a>
+        </div>
+    </div>
+
+    <section class="info-grid">
+
+        <div class="info-card">
+            <div class="info-label">
+                <i class="fa-solid fa-weight-scale"></i>
+                Peso base ofrecido
+            </div>
+            <div class="info-value">
+                @FormatoNumero(configuracion.PesoBaseKg) kg
+            </div>
+            <div class="info-note">
+                Base utilizada para calcular los kilos estimados.
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-label">
+                <i class="fa-solid fa-dollar-sign"></i>
+                Precio base destino
+            </div>
+            <div class="info-value">
+                @FormatoMoneda(configuracion.PrecioBaseDestinoKg)
+            </div>
+            <div class="info-note">
+                Precio máximo por kg.
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-label">
+                <i class="fa-solid fa-arrow-down-wide-short"></i>
+                Ajuste por kg
+            </div>
+            <div class="info-value">
+                @FormatoMoneda(configuracion.AjustePorKg)
+            </div>
+            <div class="info-note">
+                Ajuste aplicado por cada kg debajo del peso base.
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-label">
+                <i class="fa-solid fa-phone"></i>
+                Precio mercado
+            </div>
+            <div class="info-value">
+                @(precioMercado != null
+                    ? FormatoMoneda(precioMercado.PrecioKg)
+                    : "—")
+            </div>
+            <div class="info-note">
+                @(precioMercado != null
+                    ? $"Referencia del {precioMercado.Fecha:dd/MM/yyyy}"
+                    : "Sin precio de mercado disponible")
+            </div>
+        </div>
+
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div class="panel-title-wrap">
+                <div class="panel-icon">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div>
+                    <h2 class="panel-title">
+                        Configuración vigente
+                    </h2>
+                    <p class="panel-subtitle">
+                        Parámetros utilizados en el cálculo.
+                    </p>
+                </div>
+            </div>
+
+            <button type="button"
+                    class="btn-action btn-config"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalConfiguracion">
+                <i class="fa-solid fa-gear"></i>
+                Nueva versión
+            </button>
+        </div>
+
+        <div class="panel-body">
+            <div class="config-summary">
+                <span class="config-chip">
+                    <i class="fa-solid fa-tag"></i>
+                    @configuracion.Codigo
+                </span>
+
+                <span class="config-chip">
+                    <i class="fa-solid fa-calendar"></i>
+                    @configuracion.VigenciaTexto
+                </span>
+
+                <span class="config-chip">
+                    <i class="fa-solid fa-weight-scale"></i>
+                    Peso base:
+                    @FormatoNumero(configuracion.PesoBaseKg) kg
+                </span>
+
+                <span class="config-chip">
+                    <i class="fa-solid fa-dollar-sign"></i>
+                    Precio base:
+                    @FormatoMoneda(configuracion.PrecioBaseDestinoKg)
+                </span>
+
+                <span class="config-chip">
+                    <i class="fa-solid fa-arrow-down"></i>
+                    Ajuste:
+                    @FormatoMoneda(configuracion.AjustePorKg)/kg
+                </span>
+
+                <span class="config-chip">
+                    <i class="fa-solid fa-ruler"></i>
+                    Rango:
+                    @FormatoNumero(configuracion.PesoMinimoKg) -
+                    @FormatoNumero(configuracion.PesoMaximoKg) kg
+                </span>
+            </div>
+
+            <div class="rule-box">
+                <strong>Regla de cálculo:</strong>
+                por cada kilogramo debajo del peso base se descuenta
+                @FormatoMoneda(configuracion.AjustePorKg) del precio destino.
+                Si el peso alcanza o supera el peso base, el precio se mantiene topado en
+                @FormatoMoneda(configuracion.PrecioBaseDestinoKg).
+            </div>
+        </div>
+    </section>
+
+    <div class="workspace-grid">
+
+        <section class="panel">
+
+            <div class="panel-header">
+                <div class="panel-title-wrap">
+                    <div class="panel-icon">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div>
+                        <h2 class="panel-title">
+                            Datos para cotizar
+                        </h2>
+                        <p class="panel-subtitle">
+                            Peso ofrecido y peso real entregado.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-body">
+
+                <form id="formCalculo">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           id="PedidoID"
+                           value="@captura.PedidoID" />
+
+                    <input type="hidden"
+                           id="PedidoDetalleID"
+                           value="@captura.PedidoDetalleID" />
+
+                    <input type="hidden"
+                           id="CotizacionRastroID"
+                           value="@captura.CotizacionRastroID" />
+
+                    <div class="form-grid">
+
+                        <div class="form-field">
+                            <label for="FechaCotizacion">
+                                Fecha de cotización
+                            </label>
+                            <input id="FechaCotizacion"
+                                   type="date"
+                                   class="form-control-tab"
+                                   value="@captura.FechaCotizacion.ToString("yyyy-MM-dd")"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="NumeroCerdos">
+                                Número de cerdos
+                            </label>
+                            <input id="NumeroCerdos"
+                                   type="number"
+                                   min="1"
+                                   step="1"
+                                   class="form-control-tab"
+                                   value="@(captura.NumeroCerdos > 0 ? captura.NumeroCerdos.ToString() : "")"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="PesoOfrecidoKg">
+                                Peso ofrecido (kg)
+                            </label>
+                            <input id="PesoOfrecidoKg"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   class="form-control-tab"
+                                   value="@captura.PesoOfrecidoKg.ToString("0.00", CultureInfo.InvariantCulture)"
+                                   required />
+                            <div class="field-help">
+                                Peso utilizado para determinar el precio inicialmente ofrecido.
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="PesoRealKg">
+                                Peso real entregado (kg)
+                            </label>
+                            <input id="PesoRealKg"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   class="form-control-tab"
+                                   value="@(captura.PesoRealKg?.ToString("0.00", CultureInfo.InvariantCulture))"
+                                   placeholder="Opcional" />
+                            <div class="field-help">
+                                Si se captura, se recalcula el precio ajustado.
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="FleteTotal">
+                                Flete total
+                            </label>
+                            <div class="money-wrap">
+                                <span class="money-prefix">$</span>
+                                <input id="FleteTotal"
+                                       type="number"
+                                       min="0"
+                                       step="0.01"
+                                       class="form-control-tab"
+                                       value="@(captura.FleteTotal > 0 ? captura.FleteTotal.ToString("0.00", CultureInfo.InvariantCulture) : "")"
+                                       placeholder="0.00" />
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="NumeroCerdosReales">
+                                Cerdos realmente entregados
+                            </label>
+                            <input id="NumeroCerdosReales"
+                                   type="number"
+                                   min="0"
+                                   step="1"
+                                   class="form-control-tab"
+                                   value="@captura.NumeroCerdosReales"
+                                   placeholder="Opcional" />
+                            <div class="field-help">
+                                Se conserva como dato operativo. Los importes del tabulador utilizan los kilos base estimados.
+                            </div>
+                        </div>
+
+                        <div class="form-field full">
+                            <label for="Observaciones">
+                                Observaciones
+                            </label>
+                            <textarea id="Observaciones"
+                                      maxlength="500"
+                                      class="form-control-tab"
+                                      placeholder="Notas adicionales de la cotización">@captura.Observaciones</textarea>
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="btnCalcular"
+                                type="submit"
+                                class="btn-action btn-calculate">
+                            <i class="fa-solid fa-calculator"></i>
+                            Calcular
+                        </button>
+
+                        @if (tienePedido)
+                        {
+                            <button id="btnGuardarCotizacion"
+                                    type="button"
+                                    class="btn-action btn-save-quote"
+                                    disabled>
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Guardar cotización
+                            </button>
+                        }
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+
+        <section class="panel">
+
+            <div class="panel-header">
+                <div class="panel-title-wrap">
+                    <div class="panel-icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div>
+                        <h2 class="panel-title">
+                            Calculadora de operación
+                        </h2>
+                        <p class="panel-subtitle">
+                            Resultado calculado con la misma lógica del tabulador de Excel.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-body">
+
+                <div class="calculator-grid">
+
+                    <div class="calculator-section-title">
+                        Peso y precio ofrecido
+                    </div>
+
+                    <div class="result-card offer">
+                        <div class="result-label">
+                            Peso ofrecido
+                        </div>
+                        <div id="rPesoOfrecido"
+                             class="result-value">
+                            —
+                        </div>
+                    </div>
+
+                    <div class="result-card adjusted">
+                        <div class="result-label">
+                            Peso real entregado
+                        </div>
+                        <div id="rPesoReal"
+                             class="result-value">
+                            —
+                        </div>
+                    </div>
+
+                    <div class="result-card warning">
+                        <div class="result-label">
+                            Diferencia de peso
+                        </div>
+                        <div id="rDiferenciaPeso"
+                             class="result-value">
+                            —
+                        </div>
+                    </div>
+
+                    <div class="result-card offer">
+                        <div class="result-label">
+                            Precio ofrecido destino
+                        </div>
+                        <div id="rPrecioOfrecidoDestino"
+                             class="result-value">
+                            —
+                        </div>
+                        <div class="result-sub">
+                            $/kg
+                        </div>
+                    </div>
+
+                    <div class="result-card adjusted">
+                        <div class="result-label">
+                            Precio ajustado destino
+                        </div>
+                        <div id="rPrecioAjustadoDestino"
+                             class="result-value">
+                            —
+                        </div>
+                        <div class="result-sub">
+                            Según peso real entregado
+                        </div>
+                    </div>
+
+                    <div class="result-card adjusted">
+                        <div class="result-label">
+                            Precio ajustado origen
+                        </div>
+                        <div id="rPrecioAjustadoOrigen"
+                             class="result-value">
+                            —
+                        </div>
+                        <div class="result-sub">
+                            Precio ajustado destino menos flete/kg
+                        </div>
+                    </div>
+
+                    <div class="calculator-section-title">
+                        Flete y kilos base
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-label">
+                            Kilos totales estimados
+                        </div>
+                        <div id="rKilosEstimados"
+                             class="result-value">
+                            —
+                        </div>
+                        <div class="result-sub">
+                            Peso base × número de cerdos
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-label">
+                            Flete por cerdo
+                        </div>
+                        <div id="rFleteCerdo"
+                             class="result-value">
+                            —
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-label">
+                            Flete por kg
+                        </div>
+                        <div id="rFleteKg"
+                             class="result-value">
+                            —
+                        </div>
+                    </div>
+
+                    <div class="calculator-section-title">
+                        Resultado económico
+                    </div>
+
+                    <div class="result-card adjusted">
+                        <div class="result-label">
+                            Importe destino
+                        </div>
+                        <div id="rImporteDestino"
+                             class="result-value">
+                            —
+                        </div>
+                    </div>
+
+                    <div class="result-card adjusted">
+                        <div class="result-label">
+                            Importe origen
+                        </div>
+                        <div id="rImporteOrigen"
+                             class="result-value">
+                            —
+                        </div>
+                    </div>
+
+                    <div id="cardAjusteTotal"
+                         class="result-card warning">
+                        <div class="result-label">
+                            Ajuste total por diferencia
+                        </div>
+                        <div id="rAjusteTotal"
+                             class="result-value">
+                            —
+                        </div>
+                        <div class="result-sub">
+                            Diferencia de precio × kilos estimados
+                        </div>
+                    </div>
+
+                    <div class="calculator-section-title">
+                        Referencia de mercado
+                    </div>
+
+                    <div class="result-card market">
+                        <div class="result-label">
+                            Precio mercado
+                        </div>
+                        <div id="rPrecioMercado"
+                             class="result-value">
+                            @(precioMercado != null
+                                ? FormatoMoneda(precioMercado.PrecioKg)
+                                : "—")
+                        </div>
+                    </div>
+
+                    <div class="result-card market">
+                        <div class="result-label">
+                            Diferencia vs mercado
+                        </div>
+                        <div id="rDiferenciaMercado"
+                             class="result-value">
+                            —
+                        </div>
+                        <div id="rDiferenciaMercadoPct"
+                             class="result-sub">
+                            —
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="marketStatus"
+                     class="market-status">
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    <section class="panel">
+
+        <div class="panel-header">
+            <div class="panel-title-wrap">
+                <div class="panel-icon">
+                    <i class="fa-solid fa-table-list"></i>
+                </div>
+                <div>
+                    <h2 class="panel-title">
+                        Tabulador por peso
+                    </h2>
+                    <p class="panel-subtitle">
+                        Precio destino por peso. El precio origen se calcula después de capturar el flete.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+
+            <table class="tab-table">
+
+                <thead>
+                    <tr>
+                        <th>Peso</th>
+                        <th>Diferencia vs base</th>
+                        <th>Ajuste destino</th>
+                        <th>Precio destino</th>
+                        <th>Precio origen</th>
+                        <th>Precio mercado</th>
+                        <th>Diferencia destino vs mercado</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tbodyTabulador">
+
+                    @foreach (var fila in filas)
+                    {
+                        var claseDiferencia =
+                            !fila.DiferenciaDestinoMercadoKg.HasValue
+                                ? "diff-neutral"
+                                : fila.DiferenciaDestinoMercadoKg.Value > 0
+                                    ? "diff-positive"
+                                    : fila.DiferenciaDestinoMercadoKg.Value < 0
+                                        ? "diff-negative"
+                                        : "diff-neutral";
+
+                        <tr class="@(fila.EsPesoBase ? "base-row" : "")">
+
+                            <td>
+                                <strong>
+                                    @FormatoNumero(fila.PesoKg) kg
+                                </strong>
+
+                                @if (fila.EsPesoBase)
+                                {
+                                    <span class="badge-base">
+                                        BASE
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                @(fila.DiferenciaPesoKg > 0 ? "+" : "")
+                                @FormatoNumero(fila.DiferenciaPesoKg)
+                            </td>
+
+                            <td class="@(fila.AjusteTotal < 0 ? "diff-negative" : fila.AjusteTotal > 0 ? "diff-positive" : "diff-neutral")">
+                                @(fila.AjusteTotal > 0 ? "+" : "")
+                                @FormatoMoneda(fila.AjusteTotal)
+                            </td>
+
+                            <td class="price-cell">
+                                @FormatoMoneda(fila.PrecioDestinoKg)
+                            </td>
+
+                            <td class="price-cell">
+                                —
+                            </td>
+
+                            <td>
+                                @(fila.PrecioMercadoKg.HasValue
+                                    ? FormatoMoneda(fila.PrecioMercadoKg.Value)
+                                    : "—")
+                            </td>
+
+                            <td class="@claseDiferencia">
+                                @if (fila.DiferenciaDestinoMercadoKg.HasValue)
+                                {
+                                    <text>
+                                        @(fila.DiferenciaDestinoMercadoKg.Value > 0 ? "+" : "")
+                                        @FormatoMoneda(fila.DiferenciaDestinoMercadoKg.Value)
+                                    </text>
+                                }
+                                else
+                                {
+                                    <text>—</text>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</div>
+
+<div id="messageBox"
+     class="message-box">
+</div>
+
+<div class="modal fade"
+     id="modalConfiguracion"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Nueva versión del tabulador
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="formConfiguracion">
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-grid">
+
+                        <div class="form-field">
+                            <label for="CfgCodigo">
+                                Código
+                            </label>
+                            <input id="CfgCodigo"
+                                   type="text"
+                                   maxlength="50"
+                                   class="form-control-tab"
+                                   value="@configuracion.Codigo"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgNombre">
+                                Nombre
+                            </label>
+                            <input id="CfgNombre"
+                                   type="text"
+                                   maxlength="150"
+                                   class="form-control-tab"
+                                   value="@configuracion.Nombre"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgVigenciaDesde">
+                                Vigencia desde
+                            </label>
+                            <input id="CfgVigenciaDesde"
+                                   type="date"
+                                   class="form-control-tab"
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgVigenciaHasta">
+                                Vigencia hasta
+                            </label>
+                            <input id="CfgVigenciaHasta"
+                                   type="date"
+                                   class="form-control-tab" />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgPesoBase">
+                                Peso base ofrecido
+                            </label>
+                            <input id="CfgPesoBase"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   class="form-control-tab"
+                                   value="@configuracion.PesoBaseKg.ToString("0.00", CultureInfo.InvariantCulture)"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgPrecioBase">
+                                Precio base destino
+                            </label>
+                            <input id="CfgPrecioBase"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   class="form-control-tab"
+                                   value="@configuracion.PrecioBaseDestinoKg.ToString("0.00", CultureInfo.InvariantCulture)"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgAjuste">
+                                Ajuste por kg de diferencia
+                            </label>
+                            <input id="CfgAjuste"
+                                   type="number"
+                                   min="0"
+                                   step="0.01"
+                                   class="form-control-tab"
+                                   value="@configuracion.AjustePorKg.ToString("0.00", CultureInfo.InvariantCulture)"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgPesoMinimo">
+                                Peso mínimo
+                            </label>
+                            <input id="CfgPesoMinimo"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   class="form-control-tab"
+                                   value="@configuracion.PesoMinimoKg.ToString("0.00", CultureInfo.InvariantCulture)"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="CfgPesoMaximo">
+                                Peso máximo del tabulador
+                            </label>
+                            <input id="CfgPesoMaximo"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   class="form-control-tab"
+                                   value="@configuracion.PesoMaximoKg.ToString("0.00", CultureInfo.InvariantCulture)"
+                                   required />
+                        </div>
+
+                        <div class="form-field">
+                            <label>
+                                Regla arriba del peso base
+                            </label>
+
+                            <div class="rule-box"
+                                 style="margin-top:0;">
+                                El precio queda topado en el precio base destino.
+                                No se incrementa por arriba del peso base.
+                            </div>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button id="btnGuardarConfiguracion"
+                        type="button"
+                        class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk me-1"></i>
+                    Guardar nueva versión
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            "use strict";
+
+            const formCalculo =
+                document.getElementById("formCalculo");
+
+            const btnCalcular =
+                document.getElementById("btnCalcular");
+
+            const btnGuardarCotizacion =
+                document.getElementById("btnGuardarCotizacion");
+
+            const btnGuardarConfiguracion =
+                document.getElementById("btnGuardarConfiguracion");
+
+            const messageBox =
+                document.getElementById("messageBox");
+
+            const tbodyTabulador =
+                document.getElementById("tbodyTabulador");
+
+            let ultimoResultado = null;
+
+            function numero(valor) {
+                if (valor === null ||
+                    valor === undefined ||
+                    valor === "")
+                    return null;
+
+                const n = Number(valor);
+
+                return Number.isFinite(n)
+                    ? n
+                    : null;
+            }
+
+            function dinero(valor) {
+                if (valor === null ||
+                    valor === undefined ||
+                    !Number.isFinite(Number(valor)))
+                    return "—";
+
+                return new Intl.NumberFormat(
+                    "es-MX",
+                    {
+                        style: "currency",
+                        currency: "MXN",
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }
+                ).format(Number(valor));
+            }
+
+            function numeroFormato(
+                valor,
+                decimales = 2) {
+
+                if (valor === null ||
+                    valor === undefined ||
+                    !Number.isFinite(Number(valor)))
+                    return "—";
+
+                return new Intl.NumberFormat(
+                    "es-MX",
+                    {
+                        minimumFractionDigits: decimales,
+                        maximumFractionDigits: decimales
+                    }
+                ).format(Number(valor));
+            }
+
+            function mostrarMensaje(
+                mensaje,
+                tipo) {
+
+                if (!messageBox)
+                    return;
+
+                messageBox.textContent =
+                    mensaje;
+
+                messageBox.className =
+                    `message-box ${tipo === "success"
+                        ? "success"
+                        : "error"} show`;
+
+                window.setTimeout(() => {
+                    messageBox.classList.remove("show");
+                }, 5000);
+            }
+
+            function tokenDe(form) {
+                return form
+                    ?.querySelector(
+                        'input[name="__RequestVerificationToken"]')
+                    ?.value ?? "";
+            }
+
+            function construirPayloadCalculo() {
+                return {
+                    pedidoID:
+                        numero(
+                            document.getElementById("PedidoID")?.value),
+
+                    pedidoDetalleID:
+                        numero(
+                            document.getElementById("PedidoDetalleID")?.value),
+
+                    fechaCotizacion:
+                        document.getElementById("FechaCotizacion")
+                            ?.value || null,
+
+                    numeroCerdos:
+                        numero(
+                            document.getElementById("NumeroCerdos")?.value)
+                        || 0,
+
+                    pesoOfrecidoKg:
+                        numero(
+                            document.getElementById("PesoOfrecidoKg")?.value)
+                        || 0,
+
+                    pesoRealKg:
+                        numero(
+                            document.getElementById("PesoRealKg")?.value),
+
+                    numeroCerdosReales:
+                        numero(
+                            document.getElementById("NumeroCerdosReales")?.value),
+
+                    fleteTotal:
+                        numero(
+                            document.getElementById("FleteTotal")?.value)
+                        || 0
+                };
+            }
+
+            function mostrarResultado(resultado) {
+                ultimoResultado =
+                    resultado;
+
+                const pesoOfrecido =
+                    Number(resultado.pesoOfrecidoKg ?? 0);
+
+                const pesoReal =
+                    resultado.pesoRealKg !== null &&
+                        resultado.pesoRealKg !== undefined
+                        ? Number(resultado.pesoRealKg)
+                        : null;
+
+                const diferenciaPeso =
+                    pesoReal !== null
+                        ? pesoReal - pesoOfrecido
+                        : null;
+
+                const precioOfrecido =
+                    Number(
+                        resultado.precioDestinoCalculadoKg ?? 0);
+
+                const precioAjustadoDestino =
+                    resultado.precioDestinoRealKg !== null &&
+                        resultado.precioDestinoRealKg !== undefined
+                        ? Number(resultado.precioDestinoRealKg)
+                        : precioOfrecido;
+
+                const precioAjustadoOrigen =
+                    resultado.precioOrigenRealKg !== null &&
+                        resultado.precioOrigenRealKg !== undefined
+                        ? Number(resultado.precioOrigenRealKg)
+                        : Number(
+                            resultado.precioOrigenCalculadoKg ?? 0);
+
+                const kilosEstimados =
+                    Number(resultado.kilosEstimados ?? 0);
+
+                const ajusteTotal =
+                    (precioAjustadoDestino -
+                        precioOfrecido) *
+                    kilosEstimados;
+
+                document.getElementById(
+                    "rPesoOfrecido").textContent =
+                    `${numeroFormato(
+                        pesoOfrecido,
+                        2)} kg`;
+
+                document.getElementById(
+                    "rPesoReal").textContent =
+                    pesoReal !== null
+                        ? `${numeroFormato(
+                            pesoReal,
+                            2)} kg`
+                        : "—";
+
+                document.getElementById(
+                    "rDiferenciaPeso").textContent =
+                    diferenciaPeso !== null
+                        ? `${diferenciaPeso > 0 ? "+" : ""}${numeroFormato(
+                            diferenciaPeso,
+                            2)} kg`
+                        : "—";
+
+                document.getElementById(
+                    "rPrecioOfrecidoDestino").textContent =
+                    dinero(precioOfrecido);
+
+                document.getElementById(
+                    "rPrecioAjustadoDestino").textContent =
+                    dinero(precioAjustadoDestino);
+
+                document.getElementById(
+                    "rPrecioAjustadoOrigen").textContent =
+                    dinero(precioAjustadoOrigen);
+
+                document.getElementById(
+                    "rKilosEstimados").textContent =
+                    `${numeroFormato(
+                        resultado.kilosEstimados,
+                        3)} kg`;
+
+                document.getElementById(
+                    "rFleteCerdo").textContent =
+                    dinero(
+                        resultado.fletePorCerdo);
+
+                document.getElementById(
+                    "rFleteKg").textContent =
+                    dinero(
+                        resultado.fletePorKgEstimado);
+
+                document.getElementById(
+                    "rImporteDestino").textContent =
+                    dinero(
+                        resultado.importeDestinoEstimado);
+
+                document.getElementById(
+                    "rImporteOrigen").textContent =
+                    dinero(
+                        resultado.importeOrigenEstimado);
+
+                document.getElementById(
+                    "rAjusteTotal").textContent =
+                    `${ajusteTotal > 0 ? "+" : ""}${dinero(
+                        ajusteTotal)}`;
+
+                const cardAjuste =
+                    document.getElementById(
+                        "cardAjusteTotal");
+
+                if (cardAjuste) {
+                    cardAjuste.classList.remove(
+                        "negative",
+                        "warning",
+                        "adjusted");
+
+                    cardAjuste.classList.add(
+                        ajusteTotal < 0
+                            ? "negative"
+                            : ajusteTotal > 0
+                                ? "adjusted"
+                                : "warning");
+                }
+
+                document.getElementById(
+                    "rPrecioMercado").textContent =
+                    dinero(
+                        resultado.precioMercadoKg);
+
+                document.getElementById(
+                    "rDiferenciaMercado").textContent =
+                    resultado.diferenciaVsMercadoKg !== null &&
+                        resultado.diferenciaVsMercadoKg !== undefined
+                        ? `${resultado.diferenciaVsMercadoKg > 0
+                            ? "+"
+                            : ""}${dinero(
+                                resultado.diferenciaVsMercadoKg)}`
+                        : "—";
+
+                document.getElementById(
+                    "rDiferenciaMercadoPct").textContent =
+                    resultado.diferenciaVsMercadoPorcentaje !== null &&
+                        resultado.diferenciaVsMercadoPorcentaje !== undefined
+                        ? `${resultado.diferenciaVsMercadoPorcentaje > 0
+                            ? "+"
+                            : ""}${numeroFormato(
+                                resultado.diferenciaVsMercadoPorcentaje,
+                                2)}%`
+                        : "—";
+
+                const marketStatus =
+                    document.getElementById(
+                        "marketStatus");
+
+                if (resultado.precioMercadoKg === null ||
+                    resultado.precioMercadoKg === undefined) {
+
+                    marketStatus.className =
+                        "market-status neutral";
+
+                    marketStatus.textContent =
+                        "No existe precio de mercado disponible para comparar.";
+                }
+                else if (
+                    resultado.diferenciaVsMercadoKg < 0) {
+
+                    marketStatus.className =
+                        "market-status negative";
+
+                    marketStatus.textContent =
+                        `El precio ajustado está ${dinero(
+                            Math.abs(
+                                resultado.diferenciaVsMercadoKg)
+                        )}/kg por debajo del mercado.`;
+                }
+                else if (
+                    resultado.diferenciaVsMercadoKg > 0) {
+
+                    marketStatus.className =
+                        "market-status positive";
+
+                    marketStatus.textContent =
+                        `El precio ajustado está ${dinero(
+                            resultado.diferenciaVsMercadoKg
+                        )}/kg por arriba del mercado.`;
+                }
+                else {
+                    marketStatus.className =
+                        "market-status neutral";
+
+                    marketStatus.textContent =
+                        "El precio ajustado coincide con el precio de mercado.";
+                }
+
+                if (btnGuardarCotizacion)
+                    btnGuardarCotizacion.disabled =
+                        false;
+            }
+
+            function renderFilas(filas) {
+                if (!tbodyTabulador)
+                    return;
+
+                tbodyTabulador.innerHTML =
+                    "";
+
+                (filas || []).forEach(fila => {
+                    const tr =
+                        document.createElement("tr");
+
+                    if (fila.esPesoBase)
+                        tr.classList.add(
+                            "base-row");
+
+                    const diferenciaMercado =
+                        fila.diferenciaDestinoMercadoKg;
+
+                    const claseMercado =
+                        diferenciaMercado === null ||
+                            diferenciaMercado === undefined
+                            ? "diff-neutral"
+                            : diferenciaMercado > 0
+                                ? "diff-positive"
+                                : diferenciaMercado < 0
+                                    ? "diff-negative"
+                                    : "diff-neutral";
+
+                    const claseAjuste =
+                        fila.ajusteTotal > 0
+                            ? "diff-positive"
+                            : fila.ajusteTotal < 0
+                                ? "diff-negative"
+                                : "diff-neutral";
+
+                    tr.innerHTML = `
+                                <td>
+                                    <strong>
+                                        ${numeroFormato(fila.pesoKg, 2)} kg
+                                    </strong>
+                                    ${fila.esPesoBase
+                            ? '<span class="badge-base">BASE</span>'
+                            : ''}
+                                </td>
+
+                                <td>
+                                    ${fila.diferenciaPesoKg > 0 ? "+" : ""}
+                                    ${numeroFormato(fila.diferenciaPesoKg, 2)}
+                                </td>
+
+                                <td class="${claseAjuste}">
+                                    ${fila.ajusteTotal > 0 ? "+" : ""}
+                                    ${dinero(fila.ajusteTotal)}
+                                </td>
+
+                                <td class="price-cell">
+                                    ${dinero(fila.precioDestinoKg)}
+                                </td>
+
+                                <td class="price-cell">
+                                    ${dinero(fila.precioOrigenKg)}
+                                </td>
+
+                                <td>
+                                    ${dinero(fila.precioMercadoKg)}
+                                </td>
+
+                                <td class="${claseMercado}">
+                                    ${diferenciaMercado === null ||
+                            diferenciaMercado === undefined
+                            ? "—"
+                            : `${diferenciaMercado > 0
+                                ? "+"
+                                : ""}${dinero(
+                                    diferenciaMercado)}`}
+                                </td>
+                            `;
+
+                    tbodyTabulador.appendChild(
+                        tr);
+                });
+            }
+
+            formCalculo?.addEventListener(
+                "submit",
+                async event => {
+
+                    event.preventDefault();
+
+                    const payload =
+                        construirPayloadCalculo();
+
+                    if (payload.numeroCerdos <= 0) {
+                        mostrarMensaje(
+                            "El número de cerdos debe ser mayor a cero.",
+                            "error");
+                        return;
+                    }
+
+                    if (payload.pesoOfrecidoKg <= 0) {
+                        mostrarMensaje(
+                            "El peso ofrecido debe ser mayor a cero.",
+                            "error");
+                        return;
+                    }
+
+                    const original =
+                        btnCalcular.innerHTML;
+
+                    btnCalcular.disabled =
+                        true;
+
+                    btnCalcular.innerHTML =
+                        '<i class="fa-solid fa-spinner fa-spin"></i> Calculando...';
+
+                    try {
+                        const response =
+                            await fetch(
+                                '@Url.Action("CalcularTabuladorPrecioCerdo", "Coordinacion")',
+                                {
+                                    method: "POST",
+                                    credentials: "same-origin",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "RequestVerificationToken":
+                                            tokenDe(formCalculo)
+                                    },
+                                    body: JSON.stringify(
+                                        payload)
+                                });
+
+                        let data = null;
+
+                        try {
+                            data =
+                                await response.json();
+                        }
+                        catch {
+                        }
+
+                        if (!response.ok ||
+                            !data?.ok) {
+
+                            throw new Error(
+                                data?.mensaje ??
+                                "No fue posible realizar el cálculo.");
+                        }
+
+                        mostrarResultado(
+                            data.resultado);
+
+                        renderFilas(
+                            data.filas);
+                    }
+                    catch (error) {
+                        mostrarMensaje(
+                            error?.message ??
+                            "Ocurrió un error al calcular.",
+                            "error");
+                    }
+                    finally {
+                        btnCalcular.disabled =
+                            false;
+
+                        btnCalcular.innerHTML =
+                            original;
+                    }
+                });
+
+            btnGuardarCotizacion?.addEventListener(
+                "click",
+                async () => {
+
+                    if (!ultimoResultado) {
+                        mostrarMensaje(
+                            "Primero realiza el cálculo de la cotización.",
+                            "error");
+                        return;
+                    }
+
+                    const payloadBase =
+                        construirPayloadCalculo();
+
+                    const payload = {
+                        pedidoID:
+                            payloadBase.pedidoID,
+
+                        pedidoDetalleID:
+                            payloadBase.pedidoDetalleID,
+
+                        cotizacionRastroID:
+                            numero(
+                                document.getElementById(
+                                    "CotizacionRastroID")?.value),
+
+                        tabuladorPrecioCerdoID:
+                            ultimoResultado
+                                .tabuladorPrecioCerdoID,
+
+                        fechaCotizacion:
+                            payloadBase.fechaCotizacion,
+
+                        numeroCerdos:
+                            payloadBase.numeroCerdos,
+
+                        pesoOfrecidoKg:
+                            payloadBase.pesoOfrecidoKg,
+
+                        pesoRealKg:
+                            payloadBase.pesoRealKg,
+
+                        fleteTotal:
+                            payloadBase.fleteTotal,
+
+                        numeroCerdosReales:
+                            payloadBase.numeroCerdosReales,
+
+                        observaciones:
+                            document.getElementById(
+                                "Observaciones")
+                                ?.value
+                                ?.trim() || null,
+
+                        guardarCotizacion: true
+                    };
+
+                    const original =
+                        btnGuardarCotizacion.innerHTML;
+
+                    btnGuardarCotizacion.disabled =
+                        true;
+
+                    btnGuardarCotizacion.innerHTML =
+                        '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+                    try {
+                        const response =
+                            await fetch(
+                                '@Url.Action("GuardarCotizacionRastro", "Coordinacion")',
+                                {
+                                    method: "POST",
+                                    credentials: "same-origin",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "RequestVerificationToken":
+                                            tokenDe(formCalculo)
+                                    },
+                                    body: JSON.stringify(
+                                        payload)
+                                });
+
+                        let data = null;
+
+                        try {
+                            data =
+                                await response.json();
+                        }
+                        catch {
+                        }
+
+                        if (!response.ok ||
+                            !data?.ok) {
+
+                            throw new Error(
+                                data?.mensaje ??
+                                "No fue posible guardar la cotización.");
+                        }
+
+                        mostrarMensaje(
+                            data.mensaje ??
+                            "Cotización guardada correctamente.",
+                            "success");
+
+                        if (data.cotizacionRastroID) {
+                            document.getElementById(
+                                "CotizacionRastroID").value =
+                                data.cotizacionRastroID;
+                        }
+                    }
+                    catch (error) {
+                        mostrarMensaje(
+                            error?.message ??
+                            "Ocurrió un error al guardar.",
+                            "error");
+                    }
+                    finally {
+                        btnGuardarCotizacion.disabled =
+                            false;
+
+                        btnGuardarCotizacion.innerHTML =
+                            original;
+                    }
+                });
+
+            btnGuardarConfiguracion?.addEventListener(
+                "click",
+                async () => {
+
+                    const form =
+                        document.getElementById(
+                            "formConfiguracion");
+
+                    const payload = {
+                        tabuladorPrecioCerdoID: null,
+
+                        codigo:
+                            document.getElementById(
+                                "CfgCodigo")
+                                ?.value
+                                ?.trim() || "",
+
+                        nombre:
+                            document.getElementById(
+                                "CfgNombre")
+                                ?.value
+                                ?.trim() || "",
+
+                        vigenciaDesde:
+                            document.getElementById(
+                                "CfgVigenciaDesde")
+                                ?.value || null,
+
+                        vigenciaHasta:
+                            document.getElementById(
+                                "CfgVigenciaHasta")
+                                ?.value || null,
+
+                        pesoBaseKg:
+                            numero(
+                                document.getElementById(
+                                    "CfgPesoBase")?.value)
+                            || 0,
+
+                        precioBaseDestinoKg:
+                            numero(
+                                document.getElementById(
+                                    "CfgPrecioBase")?.value)
+                            || 0,
+
+                        ajustePorKg:
+                            numero(
+                                document.getElementById(
+                                    "CfgAjuste")?.value)
+                            || 0,
+
+                        pesoMinimoKg:
+                            numero(
+                                document.getElementById(
+                                    "CfgPesoMinimo")?.value)
+                            || 0,
+
+                        pesoMaximoKg:
+                            numero(
+                                document.getElementById(
+                                    "CfgPesoMaximo")?.value)
+                            || 0,
+
+                        ajustarSobrePesoBase: false,
+
+                        monedaCodigo: "MXN",
+
+                        activo: true
+                    };
+
+                    const original =
+                        btnGuardarConfiguracion.innerHTML;
+
+                    btnGuardarConfiguracion.disabled =
+                        true;
+
+                    btnGuardarConfiguracion.innerHTML =
+                        '<i class="fa-solid fa-spinner fa-spin me-1"></i> Guardando...';
+
+                    try {
+                        const response =
+                            await fetch(
+                                '@Url.Action("GuardarConfiguracionTabuladorPrecioCerdo", "Coordinacion")',
+                                {
+                                    method: "POST",
+                                    credentials: "same-origin",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "RequestVerificationToken":
+                                            tokenDe(form)
+                                    },
+                                    body: JSON.stringify(
+                                        payload)
+                                });
+
+                        let data = null;
+
+                        try {
+                            data =
+                                await response.json();
+                        }
+                        catch {
+                        }
+
+                        if (!response.ok ||
+                            !data?.ok) {
+
+                            throw new Error(
+                                data?.mensaje ??
+                                "No fue posible guardar la configuración.");
+                        }
+
+                        mostrarMensaje(
+                            data.mensaje ??
+                            "Configuración guardada correctamente.",
+                            "success");
+
+                        const modal =
+                            bootstrap.Modal.getInstance(
+                                document.getElementById(
+                                    "modalConfiguracion"));
+
+                        modal?.hide();
+
+                        window.setTimeout(() => {
+                            window.location.reload();
+                        }, 700);
+                    }
+                    catch (error) {
+                        mostrarMensaje(
+                            error?.message ??
+                            "Ocurrió un error al guardar la configuración.",
+                            "error");
+                    }
+                    finally {
+                        btnGuardarConfiguracion.disabled =
+                            false;
+
+                        btnGuardarConfiguracion.innerHTML =
+                            original;
+                    }
+                });
+
+        })();
+    </script>
+}

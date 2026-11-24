@@ -1,0 +1,677 @@
+﻿@model SistemaNutri.Areas.AdminUsuarios.DTOs.UsuarioRegistroDTO
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    ViewData["Title"] = "Crear nuevo usuario";
+}
+
+@section Estilos {
+    <style>
+        .usuario-create-page {
+            width: 100%;
+        }
+
+        .usuario-create-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .usuario-create-title-area {
+            min-width: 0;
+        }
+
+        .usuario-create-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: #58A83F;
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 5px;
+        }
+
+        .usuario-create-title {
+            margin: 0;
+            color: #062F55;
+            font-size: 1.55rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+        }
+
+        .usuario-create-description {
+            margin: 5px 0 0;
+            color: #667085;
+            font-size: .82rem;
+            line-height: 1.5;
+        }
+
+        .usuario-create-card {
+            background: #fff;
+            border: 1px solid #E4E9EF;
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+            overflow: hidden;
+        }
+
+        .usuario-create-card-header {
+            padding: 16px 20px;
+            background: linear-gradient( 90deg, #F7FAFC 0%, #FFFFFF 100% );
+            border-bottom: 1px solid #EEF1F4;
+        }
+
+        .usuario-create-card-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            color: #17324A;
+            font-size: .95rem;
+            font-weight: 800;
+        }
+
+            .usuario-create-card-title i {
+                color: #58A83F;
+            }
+
+        .usuario-create-card-body {
+            padding: 22px;
+        }
+
+        .form-section {
+            padding: 18px;
+            border: 1px solid #E7EBF0;
+            border-radius: 14px;
+            background: #FBFCFD;
+        }
+
+            .form-section + .form-section {
+                margin-top: 18px;
+            }
+
+        .form-section-header {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 16px;
+        }
+
+        .form-section-icon {
+            width: 35px;
+            height: 35px;
+            min-width: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: #EFF6FB;
+            color: #084F83;
+        }
+
+            .form-section-icon.green {
+                background: #F0F8EC;
+                color: #58A83F;
+            }
+
+        .form-section-title {
+            margin: 0;
+            color: #17324A;
+            font-size: .88rem;
+            font-weight: 800;
+        }
+
+        .form-section-subtitle {
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .66rem;
+        }
+
+        .form-label {
+            color: #475467;
+            font-size: .72rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .form-control,
+        .form-select {
+            min-height: 42px;
+            border: 1px solid #DCE2E8;
+            border-radius: 10px;
+            color: #344054;
+            font-size: .78rem;
+            background: #fff;
+            box-shadow: none !important;
+        }
+
+            .form-control:focus,
+            .form-select:focus {
+                border-color: #0B6FAF;
+                box-shadow: 0 0 0 3px rgba(11, 111, 175, .08) !important;
+            }
+
+        .input-group .form-control {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .password-toggle {
+            border: 1px solid #DCE2E8;
+            border-left: 0;
+            background: #F8FAFC;
+            color: #667085;
+            border-radius: 0 10px 10px 0;
+            min-width: 44px;
+        }
+
+            .password-toggle:hover {
+                color: #084F83;
+                background: #EFF6FB;
+            }
+
+        .text-danger {
+            font-size: .68rem;
+        }
+
+        .validation-summary-errors {
+            border: 1px solid #F1B7B7;
+            border-radius: 10px;
+            background: #FFF4F4;
+            padding: 10px 12px;
+            color: #B42318;
+            font-size: .72rem;
+            margin-bottom: 16px;
+        }
+
+        .usuario-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-cancelar {
+            border: 1px solid #D8DEE5;
+            background: #fff;
+            color: #667085;
+            border-radius: 10px;
+            padding: 9px 15px;
+            font-size: .76rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+            .btn-cancelar:hover {
+                background: #F8FAFC;
+                color: #344054;
+            }
+
+        .btn-crear {
+            border: 0;
+            border-radius: 10px;
+            padding: 9px 16px;
+            background: linear-gradient( 135deg, #58A83F 0%, #3F8E30 100% );
+            color: #fff;
+            font-size: .76rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            box-shadow: 0 8px 18px rgba(88, 168, 63, .20);
+        }
+
+            .btn-crear:hover {
+                color: #fff;
+                filter: brightness(1.04);
+                transform: translateY(-1px);
+            }
+
+        .form-help {
+            margin-top: 4px;
+            color: #98A2B3;
+            font-size: .64rem;
+        }
+
+        @@media (max-width: 767px) {
+            .usuario-create-card-body {
+                padding: 16px;
+            }
+
+            .form-section {
+                padding: 14px;
+            }
+
+            .usuario-actions {
+                flex-direction: column-reverse;
+                align-items: stretch;
+            }
+
+            .btn-cancelar,
+            .btn-crear {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+}
+
+<div class="usuario-create-page">
+
+    <div class="usuario-create-header">
+        <div class="usuario-create-title-area">
+
+            <div class="usuario-create-eyebrow">
+                <i class="fa-solid fa-user-plus"></i>
+                Gestión de usuarios
+            </div>
+
+            <h1 class="usuario-create-title">
+                Crear nuevo usuario
+            </h1>
+
+            <p class="usuario-create-description">
+                Registra los datos personales, información de acceso,
+                rol y empresas asociadas al usuario.
+            </p>
+
+        </div>
+    </div>
+
+    <section class="usuario-create-card">
+
+        <div class="usuario-create-card-header">
+            <h2 class="usuario-create-card-title">
+                <i class="fa-solid fa-id-card"></i>
+                Información del usuario
+            </h2>
+        </div>
+
+        <div class="usuario-create-card-body">
+
+            <form asp-action="Crear"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger">
+                </div>
+
+                <!-- =====================================================
+                     DATOS PERSONALES
+                     ===================================================== -->
+
+                <section class="form-section">
+
+                    <div class="form-section-header">
+
+                        <div class="form-section-icon">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+
+                        <div>
+                            <h3 class="form-section-title">
+                                Datos personales
+                            </h3>
+                            <div class="form-section-subtitle">
+                                Información general del colaborador.
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Nombre"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Nombre"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Nombre"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="ApellidoPaterno"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="ApellidoPaterno"
+                                   class="form-control" />
+
+                            <span asp-validation-for="ApellidoPaterno"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="ApellidoMaterno"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="ApellidoMaterno"
+                                   class="form-control" />
+
+                            <span asp-validation-for="ApellidoMaterno"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Correo"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Correo"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Correo"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Telefono"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Telefono"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Telefono"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="FechaNacimiento"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="FechaNacimiento"
+                                   type="date"
+                                   class="form-control" />
+
+                            <span asp-validation-for="FechaNacimiento"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div>
+
+                        <label asp-for="Direccion"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="Direccion"
+                               class="form-control" />
+
+                        <span asp-validation-for="Direccion"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </section>
+
+                <!-- =====================================================
+                     DATOS DE CUENTA
+                     ===================================================== -->
+
+                <section class="form-section">
+
+                    <div class="form-section-header">
+
+                        <div class="form-section-icon green">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+
+                        <div>
+                            <h3 class="form-section-title">
+                                Datos de la cuenta
+                            </h3>
+                            <div class="form-section-subtitle">
+                                Configura el acceso y permisos base del usuario.
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Username"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Username"
+                                   class="form-control"
+                                   autocomplete="username" />
+
+                            <span asp-validation-for="Username"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Password"
+                                   class="form-label">
+                            </label>
+
+                            <div class="input-group">
+
+                                <input asp-for="Password"
+                                       type="password"
+                                       id="txtPasswordCrear"
+                                       class="form-control"
+                                       autocomplete="new-password" />
+
+                                <button class="btn password-toggle js-toggle-password-crear"
+                                        type="button"
+                                        data-password-target="#txtPasswordCrear"
+                                        aria-label="Mostrar contraseña"
+                                        title="Mostrar contraseña">
+
+                                    <i class="fa-solid fa-eye"></i>
+
+                                </button>
+
+                            </div>
+
+                            <span asp-validation-for="Password"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="RolID"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="RolID"
+                                   type="number"
+                                   class="form-control" />
+
+                            <span asp-validation-for="RolID"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="EmpresasIDs"
+                                   class="form-label">
+                                Empresa(s)
+                            </label>
+
+                            <select asp-for="EmpresasIDs"
+                                    asp-items="@ViewBag.Empresas"
+                                    class="form-select"
+                                    multiple>
+                            </select>
+
+                            <div class="form-help">
+                                Puedes seleccionar una o varias empresas.
+                            </div>
+
+                            <span asp-validation-for="EmpresasIDs"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <!-- =====================================================
+                     ACCIONES
+                     ===================================================== -->
+
+                <div class="usuario-actions">
+
+                    <a asp-action="Index"
+                       asp-controller="Usuarios"
+                       class="btn-cancelar">
+
+                        <i class="fa-solid fa-xmark"></i>
+                        Cancelar
+
+                    </a>
+
+                    <button type="submit"
+                            class="btn-crear">
+
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Crear usuario
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener(
+            'click',
+            function (event) {
+
+                const btn =
+                    event.target.closest(
+                        '.js-toggle-password-crear'
+                    );
+
+                if (!btn)
+                    return;
+
+                event.preventDefault();
+
+                const selector =
+                    btn.getAttribute(
+                        'data-password-target'
+                    );
+
+                const input =
+                    document.querySelector(
+                        selector
+                    );
+
+                const icon =
+                    btn.querySelector('i');
+
+                if (!input)
+                    return;
+
+                const show =
+                    input.type === 'password';
+
+                input.type =
+                    show
+                        ? 'text'
+                        : 'password';
+
+                icon?.classList.toggle(
+                    'fa-eye',
+                    !show
+                );
+
+                icon?.classList.toggle(
+                    'fa-eye-slash',
+                    show
+                );
+
+                btn.setAttribute(
+                    'aria-label',
+                    show
+                        ? 'Ocultar contraseña'
+                        : 'Mostrar contraseña'
+                );
+
+                btn.setAttribute(
+                    'title',
+                    show
+                        ? 'Ocultar contraseña'
+                        : 'Mostrar contraseña'
+                );
+            }
+        );
+    </script>
+
+}

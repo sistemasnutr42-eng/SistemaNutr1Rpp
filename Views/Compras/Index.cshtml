@@ -1,0 +1,775 @@
+﻿@model SistemaNutri.Models.IndexComprasVm
+
+@{
+    ViewData["Title"] = "Gestión de Compras";
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+
+    string puesto = (ViewBag.Puesto ?? "").ToString().ToUpper().Trim();
+    string departamentos = (ViewBag.DepartamentosUsuario ?? "").ToString().ToUpper().Trim();
+
+    bool esDireccion =
+        puesto.Contains("DIRECCION") ||
+        puesto.Contains("DIRECCIÓN") ||
+        puesto.Contains("DIRECTOR") ||
+        puesto.Contains("DIRECTORA") ||
+        puesto.StartsWith("DIR.");
+
+    // La bandeja operativa valida la membresia del departamento, no solo el puesto.
+    bool esCompras = departamentos.Contains("COMPRAS");
+
+    bool esPresupuestos =
+        departamentos.Contains("PRESUPUEST") ||
+        departamentos.Contains("CONTROL PRESUPUESTAL") ||
+        departamentos.Contains("CIS");
+
+    bool esAlmacen =
+        departamentos.Contains("ALMACEN") ||
+        departamentos.Contains("ALMACÉN");
+
+  
+}
+
+@section Estilos {
+    <link rel="stylesheet" href="~/css/compras-presentacion.css" asp-append-version="true" />
+}
+
+<div class="compras-page compras-modern">
+    <section class="cn-hero" aria-label="Bienvenida al modulo de Compras">
+        <div class="cn-hero-copy">
+            <div class="cn-eyebrow"><i class="fas fa-layer-group"></i> NS GROUP <span></span> OPERACIÓN DE COMPRAS</div>
+            <h1>Compras, de principio a fin.</h1>
+            <p>Solicitudes, cotizaciones, autorización presupuestal y entregas en un solo flujo de trabajo.</p>
+            <div class="cn-hero-tags">
+                <span><i class="fas fa-check-circle"></i> Trazabilidad por solicitud</span>
+                <span><i class="fas fa-users"></i> Gestión por responsables</span>
+            </div>
+        </div>
+        <div class="cn-hero-actions">
+            <a asp-controller="Compras" asp-action="NuevaSolicitud" class="cn-main-btn"><i class="fas fa-plus"></i> Nueva solicitud</a>
+            <a asp-controller="Menu" asp-action="Index" class="cn-secondary-btn"><i class="fas fa-th-large"></i> Menú principal</a>
+        </div>
+    </section>
+
+    <section class="cn-stat-grid" aria-label="Estado de mis solicitudes">
+        <div class="cn-stat"><div class="cn-stat-icon cn-icon-blue"><i class="fas fa-clipboard-list"></i></div><div><span>Mis solicitudes</span><strong>@(Model.MisCompras?.Count() ?? 0)</strong></div></div>
+        <div class="cn-stat"><div class="cn-stat-icon cn-icon-amber"><i class="fas fa-spinner"></i></div><div><span>En proceso</span><strong>@(Model.MisCompras?.Count(x => x.Porcentaje < 100) ?? 0)</strong></div></div>
+        <div class="cn-stat"><div class="cn-stat-icon cn-icon-green"><i class="fas fa-check-double"></i></div><div><span>Finalizadas</span><strong>@(Model.MisCompras?.Count(x => x.EstatusID == 10) ?? 0)</strong></div></div>
+    </section>
+
+    <section class="cn-section" aria-label="Etapas del proceso">
+        <div class="cn-section-header"><div><p>ESPACIO DE TRABAJO</p><h2>Accede a cada etapa del proceso</h2></div><span class="cn-meta">Los accesos dependen de tu perfil</span></div>
+        <div class="cn-module-grid">
+            <a asp-controller="Compras" asp-action="NuevaSolicitud" class="cn-module"><span class="cn-module-icon cn-icon-blue"><i class="fas fa-file-circle-plus"></i></span><strong>Solicitudes</strong><small>Alta de materiales, servicios y documentos</small><span class="cn-module-state cn-available">Disponible <i class="fas fa-arrow-right"></i></span></a>
+            @if (esCompras)
+            {
+                <a href="/BandejaCompras" class="cn-module"><span class="cn-module-icon cn-icon-purple"><i class="fas fa-file-invoice-dollar"></i></span><strong>Cotizaciones y compras</strong><small>Asignación, proveedores y órdenes de compra</small><span class="cn-module-state cn-available">Abrir bandeja <i class="fas fa-arrow-right"></i></span></a>
+            }
+            else
+            {
+                <div class="cn-module cn-locked"><span class="cn-module-icon cn-icon-purple"><i class="fas fa-file-invoice-dollar"></i></span><strong>Cotizaciones y compras</strong><small>Requiere pertenecer al departamento de Compras</small><span class="cn-module-state"><i class="fas fa-lock"></i> Acceso por perfil</span></div>
+            }
+            @if (esPresupuestos)
+            {
+                <a href="/BandejaPresupuestos" class="cn-module"><span class="cn-module-icon cn-icon-green"><i class="fas fa-scale-balanced"></i></span><strong>Control presupuestal</strong><small>Dictámenes y evidencia de autorizaciones</small><span class="cn-module-state cn-available">Abrir bandeja <i class="fas fa-arrow-right"></i></span></a>
+            }
+            else
+            {
+                <div class="cn-module cn-locked"><span class="cn-module-icon cn-icon-green"><i class="fas fa-scale-balanced"></i></span><strong>Control presupuestal</strong><small>Requiere el departamento de Presupuestos o CIS</small><span class="cn-module-state"><i class="fas fa-lock"></i> Acceso por perfil</span></div>
+            }
+            @if (esAlmacen)
+            {
+                <a href="/BandejaAlmacen" class="cn-module"><span class="cn-module-icon cn-icon-orange"><i class="fas fa-boxes-stacked"></i></span><strong>Almacén y recepción</strong><small>Recepciones, entregas y evidencias</small><span class="cn-module-state cn-available">Abrir bandeja <i class="fas fa-arrow-right"></i></span></a>
+            }
+            else
+            {
+                <div class="cn-module cn-locked"><span class="cn-module-icon cn-icon-orange"><i class="fas fa-boxes-stacked"></i></span><strong>Almacén y recepción</strong><small>Requiere pertenecer al departamento de Almacén</small><span class="cn-module-state"><i class="fas fa-lock"></i> Acceso por perfil</span></div>
+            }
+            @if (esDireccion)
+            {
+                <a href="/Seguimiento" class="cn-module"><span class="cn-module-icon cn-icon-cyan"><i class="fas fa-route"></i></span><strong>Seguimiento</strong><small>Trazabilidad global de operaciones</small><span class="cn-module-state cn-available">Abrir seguimiento <i class="fas fa-arrow-right"></i></span></a>
+                <a asp-controller="Compras" asp-action="DashboardDireccion" class="cn-module"><span class="cn-module-icon cn-icon-pink"><i class="fas fa-chart-line"></i></span><strong>Indicadores de Dirección</strong><small>Volumen por estado y tiempos del proceso</small><span class="cn-module-state cn-available">Abrir indicadores <i class="fas fa-arrow-right"></i></span></a>
+            }
+            else
+            {
+                <div class="cn-module cn-locked"><span class="cn-module-icon cn-icon-cyan"><i class="fas fa-route"></i></span><strong>Seguimiento</strong><small>Consulta global disponible para Dirección</small><span class="cn-module-state"><i class="fas fa-lock"></i> Acceso por perfil</span></div>
+                <div class="cn-module cn-locked"><span class="cn-module-icon cn-icon-pink"><i class="fas fa-chart-line"></i></span><strong>Indicadores de Dirección</strong><small>Reportes y métricas ejecutivas</small><span class="cn-module-state"><i class="fas fa-lock"></i> Acceso por perfil</span></div>
+            }
+        </div>
+    </section>
+
+    @if (esDireccion)
+    {
+        <div class="row mb-4">
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="ns-kpi-card ns-kpi-danger">
+                    <div class="ns-kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="ns-kpi-label">Urgentes fuera de SLA</div>
+                    <div class="ns-kpi-value">@Model.Estadisticas.CriticosVencidos</div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="ns-kpi-card ns-kpi-blue">
+                    <div class="ns-kpi-icon"><i class="fas fa-route"></i></div>
+                    <div class="ns-kpi-label">Solicitudes activas</div>
+                    <div class="ns-kpi-value">@Model.Estadisticas.SolicitudesActivas</div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="ns-kpi-card ns-kpi-purple">
+                    <div class="ns-kpi-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="ns-kpi-label">Pendientes de autorización</div>
+                    <div class="ns-kpi-value">@Model.Estadisticas.PendientesAutorizacionUsuario</div>
+                    <small class="ns-kpi-help">Estatus 14</small>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="ns-kpi-card ns-kpi-orange">
+                    <div class="ns-kpi-icon"><i class="fas fa-box-open"></i></div>
+                    <div class="ns-kpi-label">Pedidos parciales</div>
+                    <div class="ns-kpi-value">@Model.Estadisticas.EntregasParciales</div>
+                    <small class="ns-kpi-help">Estatus 13</small>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row mb-4">
+
+            <div class="col-lg-4 mb-4">
+                <div class="ns-card h-100">
+                    <div class="ns-card-header">
+                        <h6>
+                            <i class="fas fa-hourglass-half me-2"></i>
+                            Cuellos de Botella
+                        </h6>
+                    </div>
+
+                    <div class="ns-card-body">
+                        <div id="chartCuellosBotella" style="min-height: 350px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8 mb-4">
+                <div class="ns-card h-100">
+                    <div class="ns-card-header">
+                        <h6>
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Estatus actuales
+                        </h6>
+                    </div>
+
+                    <div class="ns-card-body">
+                        <div id="chartDonaEstatus" style="min-height: 350px;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    }
+
+    <section class="cn-section cn-history-head"><div class="cn-section-header"><div><p>TRAZABILIDAD</p><h2>Mi historial de solicitudes</h2></div></div></section>
+    <div class="ns-card mb-5 cn-history-card">
+
+        <div class="ns-card-header">
+            <h6>
+                <i class="fas fa-list me-2"></i>
+                Mi Historial de Solicitudes
+            </h6>
+        </div>
+
+        <div class="ns-card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover datatable-compras">
+
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Empresa</th>
+                            <th style="width: 25%;">Estatus / Progreso</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @if (Model.MisCompras != null && Model.MisCompras.Any())
+                        {
+                            foreach (var item in Model.MisCompras)
+                            {
+                                <tr>
+
+                                    <td>
+                                        <strong>@item.Folio</strong>
+                                    </td>
+
+                                    <td>
+                                        @item.Fecha.ToString("dd/MM/yyyy")
+                                    </td>
+
+                                    <td>
+                                        @item.Tipo
+                                    </td>
+
+                                    <td>
+                                        @item.Empresa
+                                    </td>
+
+                                    <td>
+                                        <div class="progress ns-progress mb-1">
+                                            <div class="progress-bar @item.ColorProgreso"
+                                                 style="width: @item.Porcentaje%">
+                                            </div>
+                                        </div>
+
+                                        <small class="text-muted">
+                                            @item.Estatus (@item.Porcentaje%)
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        <a asp-action="Detalle"
+                                           asp-route-id="@item.SolicitudID"
+                                           asp-route-returnUrl="@Context.Request.Path"
+                                           class="btn btn-sm btn-outline-ns">
+                                            <i class="fas fa-search me-1"></i>
+                                            Seguimiento
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-folder-open d-block mb-2 fs-4"></i>
+                                    Aún no tienes solicitudes registradas.
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+
+    @if (esDireccion)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+
+                const cuellosElement = document.querySelector("#chartCuellosBotella");
+                const donaElement = document.querySelector("#chartDonaEstatus");
+                const tiemposRaw = @Html.Raw(Json.Serialize(Model.Estadisticas.TiemposPromedio));
+
+                const tiemposCuellos = tiemposRaw.map(x => {
+                    const horas = Number(x || 0);
+                    return Number((horas / 24).toFixed(1));
+                });
+
+                if (cuellosElement) {
+
+                    const optionsBar = {
+                        series: [{
+                            name: 'Días promedio',
+                            data: tiemposCuellos
+                        }],
+                        chart: {
+                            type: 'bar',
+                            height: 350,
+                            toolbar: {
+                                show: false
+                            },
+                            fontFamily: 'Segoe UI, Arial, sans-serif'
+                        },
+                        plotOptions: {
+                            bar: {
+                                distributed: true,
+                                horizontal: true,
+                                borderRadius: 8,
+                                barHeight: '45%'
+                            }
+                        },
+                        colors: [
+                            '#2563EB',
+                            '#9333EA',
+                            '#F59E0B',
+                            '#16A34A',
+                            '#7C3AED',
+                            '#0891B2'
+                        ],
+                        xaxis: {
+                            categories: @Html.Raw(Json.Serialize(Model.Estadisticas.EtiquetasDepartamentos)),
+                            labels: {
+                                style: {
+                                    colors: [
+                                        '#2563EB',
+                                        '#9333EA',
+                                        '#F59E0B',
+                                        '#16A34A',
+                                        '#7C3AED',
+                                        '#0891B2'
+                                    ],
+                                    fontSize: '12px'
+                                }
+                            }
+                        },
+                        yaxis: {
+                            labels: {
+                                style: {
+                                    colors: '#0F172A',
+                                    fontSize: '12px'
+                                }
+                            }
+                        },
+                        dataLabels: {
+                            enabled: true,
+                            formatter: function(val) {
+                                return Number(val).toFixed(1) + " días promedio";
+                            },
+                            style: {
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                colors: ['#ffffff']
+                            }
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(val) {
+                                    return val + " días promedio";
+                                }
+                            }
+                        },
+                        legend: {
+                            show: false
+                        },
+                        grid: {
+                            borderColor: '#E2E8F0'
+                        }
+                    };
+
+                    new ApexCharts(cuellosElement, optionsBar).render();
+                }
+
+                if (donaElement) {
+
+                    const donaValores = @Html.Raw(Json.Serialize(Model.Estadisticas.DonaValores));
+                    const donaEtiquetas = @Html.Raw(Json.Serialize(Model.Estadisticas.DonaEtiquetas));
+                    const donaColores = @Html.Raw(Json.Serialize(Model.Estadisticas.DonaColores));
+
+                    const optionsDona = {
+                        series: donaValores.length > 0 ? donaValores : [1],
+                        chart: {
+                            type: 'donut',
+                            height: 360,
+                            fontFamily: 'Segoe UI, Arial, sans-serif'
+                        },
+                        labels: donaEtiquetas.length > 0 ? donaEtiquetas : ['Sin solicitudes'],
+                        colors: donaColores.length > 0 ? donaColores : ['#CBD5E1'],
+                        legend: {
+                            position: 'right',
+                            fontSize: '13px',
+                            markers: {
+                                width: 11,
+                                height: 11,
+                                radius: 12
+                            },
+                            labels: {
+                                colors: '#0F172A'
+                            }
+                        },
+                        stroke: {
+                            width: 3,
+                            colors: ['#ffffff']
+                        },
+                        plotOptions: {
+                            pie: {
+                                donut: {
+                                    size: '65%',
+                                    labels: {
+                                        show: true,
+                                        name: {
+                                            show: true,
+                                            color: '#334155'
+                                        },
+                                        value: {
+                                            show: true,
+                                            color: '#0F172A',
+                                            fontSize: '22px',
+                                            fontWeight: 700
+                                        },
+                                        total: {
+                                            show: true,
+                                            label: 'Total',
+                                            color: '#334155'
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        dataLabels: {
+                            enabled: true,
+                            formatter: function(val) {
+                                return val.toFixed(1) + "%";
+                            },
+                            style: {
+                                fontSize: '11px',
+                                fontWeight: '700'
+                            },
+                            dropShadow: {
+                                enabled: false
+                            }
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(val) {
+                                    return val + " solicitudes";
+                                }
+                            }
+                        },
+                        responsive: [{
+                            breakpoint: 768,
+                            options: {
+                                chart: {
+                                    height: 320
+                                },
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }]
+                    };
+
+                    new ApexCharts(donaElement, optionsDona).render();
+                }
+
+            });
+        </script>
+    }
+
+}
+
+<style>
+    .compras-page {
+        padding: 1rem 0;
+    }
+
+    .compras-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+        .compras-header h2 {
+            color: #0F172A;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+    .compras-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+        .compras-actions .btn,
+        .btn-outline-ns {
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+            transition: all 0.2s ease;
+            border: 0;
+        }
+
+            .compras-actions .btn:hover,
+            .btn-outline-ns:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+            }
+
+    .btn-ns-orange {
+        background: #F97316;
+        color: #ffffff;
+    }
+
+    .btn-ns-blue {
+        background: #2563EB;
+        color: #ffffff;
+    }
+
+    .btn-ns-cyan {
+        background: #0891B2;
+        color: #ffffff;
+    }
+
+    .btn-ns-green {
+        background: #16A34A;
+        color: #ffffff;
+    }
+
+    .btn-ns-purple {
+        background: #7C3AED;
+        color: #ffffff;
+    }
+
+    .btn-ns-dark {
+        background: #334155;
+        color: #ffffff;
+    }
+
+        .btn-ns-orange:hover,
+        .btn-ns-blue:hover,
+        .btn-ns-cyan:hover,
+        .btn-ns-green:hover,
+        .btn-ns-purple:hover,
+        .btn-ns-dark:hover {
+            color: #ffffff;
+        }
+
+    .btn-outline-ns {
+        background: #ffffff;
+        color: #2563EB;
+        border: 1px solid #BFDBFE;
+        box-shadow: none;
+    }
+
+        .btn-outline-ns:hover {
+            background: #2563EB;
+            color: #ffffff;
+            border-color: #2563EB;
+        }
+
+    .ns-alert-info {
+        border: 1px solid #BFDBFE;
+        background: #EFF6FF;
+        color: #1E3A8A;
+        border-radius: 14px;
+    }
+
+    .ns-kpi-card {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 1.4rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+        min-height: 110px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .ns-kpi-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+        }
+
+    .ns-kpi-danger::before {
+        background: #DC2626;
+    }
+
+    .ns-kpi-warning::before {
+        background: #F59E0B;
+    }
+
+
+    .ns-kpi-blue::before {
+        background: #2563EB;
+    }
+
+    .ns-kpi-purple::before {
+        background: #9333EA;
+    }
+
+    .ns-kpi-orange::before {
+        background: #F97316;
+    }
+
+    .ns-kpi-icon {
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #F8FAFC;
+        color: #64748B;
+    }
+
+    .ns-kpi-blue .ns-kpi-icon {
+        background: #EFF6FF;
+        color: #2563EB;
+    }
+
+    .ns-kpi-purple .ns-kpi-icon {
+        background: #FAF5FF;
+        color: #9333EA;
+    }
+
+    .ns-kpi-orange .ns-kpi-icon {
+        background: #FFF7ED;
+        color: #F97316;
+    }
+
+    .ns-kpi-danger .ns-kpi-icon {
+        background: #FEF2F2;
+        color: #DC2626;
+    }
+
+    .ns-kpi-help {
+        display: block;
+        margin-top: .45rem;
+        color: #94A3B8;
+        font-weight: 700;
+    }
+
+    .ns-kpi-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #64748B;
+        margin-bottom: 0.5rem;
+    }
+
+    .ns-kpi-danger .ns-kpi-label {
+        color: #DC2626;
+    }
+
+    .ns-kpi-warning .ns-kpi-label {
+        color: #D97706;
+    }
+
+    .ns-kpi-value {
+        color: #0F172A;
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+
+    .ns-card {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 18px;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10);
+        overflow: hidden;
+    }
+
+    .ns-card-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #E2E8F0;
+        background: #ffffff;
+    }
+
+        .ns-card-header h6 {
+            margin: 0;
+            color: #2563EB;
+            font-weight: 800;
+        }
+
+    .ns-card-body {
+        padding: 1.25rem;
+    }
+
+    .datatable-compras {
+        border-collapse: separate;
+        border-spacing: 0 0.6rem;
+        margin-bottom: 0;
+    }
+
+        .datatable-compras thead th {
+            background: #F8FAFC;
+            color: #334155;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.4px;
+            border: 0;
+            padding: 0.9rem 1rem;
+        }
+
+        .datatable-compras tbody tr {
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+            .datatable-compras tbody tr:hover {
+                background: #FFF7ED;
+                transform: translateY(-1px);
+            }
+
+        .datatable-compras td {
+            vertical-align: middle;
+            padding: 1rem;
+            border-top: 1px solid #E2E8F0;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+            .datatable-compras td:first-child {
+                border-left: 1px solid #E2E8F0;
+                border-radius: 12px 0 0 12px;
+            }
+
+            .datatable-compras td:last-child {
+                border-right: 1px solid #E2E8F0;
+                border-radius: 0 12px 12px 0;
+            }
+
+    .ns-progress {
+        height: 9px;
+        background: #E2E8F0;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+        .ns-progress .progress-bar {
+            border-radius: 999px;
+        }
+
+    .text-muted {
+        color: #64748B !important;
+    }
+
+    @@media (max-width: 768px) {
+        .compras-header {
+            align-items: stretch;
+        }
+
+        .compras-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+            .compras-actions .btn {
+                width: 100%;
+            }
+    }
+</style>

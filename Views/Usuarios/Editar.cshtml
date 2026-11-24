@@ -1,0 +1,503 @@
+﻿@model SistemaNutri.Areas.AdminUsuarios.DTOs.UsuarioEdicionDTO
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    ViewData["Title"] = "Editar usuario";
+}
+
+@section Estilos {
+    <style>
+        .usuario-edit-page {
+            width: 100%;
+        }
+
+        .usuario-edit-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .usuario-edit-title-area {
+            min-width: 0;
+        }
+
+        .usuario-edit-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: #58A83F;
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 5px;
+        }
+
+        .usuario-edit-title {
+            margin: 0;
+            color: #062F55;
+            font-size: 1.55rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+        }
+
+        .usuario-edit-description {
+            margin: 5px 0 0;
+            color: #667085;
+            font-size: .82rem;
+            line-height: 1.5;
+        }
+
+        .usuario-edit-card,
+        .usuario-history-card {
+            background: #fff;
+            border: 1px solid #E4E9EF;
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+            overflow: hidden;
+        }
+
+        .usuario-edit-card-header,
+        .usuario-history-card-header {
+            padding: 16px 20px;
+            background: linear-gradient(90deg, #F7FAFC 0%, #FFFFFF 100%);
+            border-bottom: 1px solid #EEF1F4;
+        }
+
+        .usuario-edit-card-title,
+        .usuario-history-card-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            color: #17324A;
+            font-size: .95rem;
+            font-weight: 800;
+        }
+
+            .usuario-edit-card-title i,
+            .usuario-history-card-title i {
+                color: #58A83F;
+            }
+
+        .usuario-edit-card-body {
+            padding: 22px;
+        }
+
+        .form-section {
+            padding: 18px;
+            border: 1px solid #E7EBF0;
+            border-radius: 14px;
+            background: #FBFCFD;
+        }
+
+            .form-section + .form-section {
+                margin-top: 18px;
+            }
+
+        .form-section-header {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 16px;
+        }
+
+        .form-section-icon {
+            width: 35px;
+            height: 35px;
+            min-width: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: #EFF6FB;
+            color: #084F83;
+        }
+
+            .form-section-icon.green {
+                background: #F0F8EC;
+                color: #58A83F;
+            }
+
+        .form-section-title {
+            margin: 0;
+            color: #17324A;
+            font-size: .88rem;
+            font-weight: 800;
+        }
+
+        .form-section-subtitle {
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .66rem;
+        }
+
+        .form-label {
+            color: #475467;
+            font-size: .72rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            min-height: 42px;
+            border: 1px solid #DCE2E8;
+            border-radius: 10px;
+            color: #344054;
+            font-size: .78rem;
+            background: #fff;
+            box-shadow: none !important;
+        }
+
+            .form-control:focus {
+                border-color: #0B6FAF;
+                box-shadow: 0 0 0 3px rgba(11, 111, 175, .08) !important;
+            }
+
+        .form-switch .form-check-input {
+            width: 2.7rem;
+            height: 1.35rem;
+            cursor: pointer;
+            border-color: #C9D2DC;
+            box-shadow: none !important;
+        }
+
+            .form-switch .form-check-input:checked {
+                background-color: #58A83F;
+                border-color: #58A83F;
+            }
+
+        .estado-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 16px;
+            border: 1px solid #E7EBF0;
+            border-radius: 12px;
+            background: #FFFFFF;
+        }
+
+        .estado-box-title {
+            color: #344054;
+            font-size: .76rem;
+            font-weight: 800;
+            margin: 0 0 2px;
+        }
+
+        .estado-box-text {
+            color: #98A2B3;
+            font-size: .66rem;
+            margin: 0;
+        }
+
+        .validation-summary-errors {
+            border: 1px solid #F1B7B7;
+            border-radius: 10px;
+            background: #FFF4F4;
+            padding: 10px 12px;
+            color: #B42318;
+            font-size: .72rem;
+            margin-bottom: 16px;
+        }
+
+        .text-danger {
+            font-size: .68rem;
+        }
+
+        .usuario-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-cancelar {
+            border: 1px solid #D8DEE5;
+            background: #fff;
+            color: #667085;
+            border-radius: 10px;
+            padding: 9px 15px;
+            font-size: .76rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+            .btn-cancelar:hover {
+                background: #F8FAFC;
+                color: #344054;
+            }
+
+        .btn-guardar {
+            border: 0;
+            border-radius: 10px;
+            padding: 9px 16px;
+            background: linear-gradient(135deg, #58A83F 0%, #3F8E30 100%);
+            color: #fff;
+            font-size: .76rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            box-shadow: 0 8px 18px rgba(88, 168, 63, .20);
+        }
+
+            .btn-guardar:hover {
+                color: #fff;
+                filter: brightness(1.04);
+                transform: translateY(-1px);
+            }
+
+        .usuario-history-card {
+            margin-top: 20px;
+        }
+
+        .usuario-history-card-body {
+            padding: 0;
+        }
+
+        .usuario-history-table {
+            margin: 0;
+            vertical-align: middle;
+        }
+
+            .usuario-history-table thead th {
+                background: linear-gradient(135deg, #084F83 0%, #062F55 100%);
+                color: #fff;
+                border: 0;
+                padding: .8rem 1rem;
+                font-size: .7rem;
+                text-transform: uppercase;
+                letter-spacing: .04em;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+
+            .usuario-history-table tbody td {
+                padding: .82rem 1rem;
+                border-top: 1px solid #EEF1F4;
+                color: #475467;
+                font-size: .76rem;
+                background: #fff;
+            }
+
+            .usuario-history-table tbody tr:hover td {
+                background: #F9FBFD;
+            }
+
+        .history-empty {
+            padding: 28px 20px;
+            text-align: center;
+            color: #98A2B3;
+            font-size: .76rem;
+        }
+
+        @@media (max-width: 767px) {
+            .usuario-edit-card-body {
+                padding: 16px;
+            }
+
+            .form-section {
+                padding: 14px;
+            }
+
+            .usuario-actions {
+                flex-direction: column-reverse;
+                align-items: stretch;
+            }
+
+            .btn-cancelar,
+            .btn-guardar {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .estado-box {
+                align-items: flex-start;
+            }
+        }
+    </style>
+}
+
+<div class="usuario-edit-page">
+    <div class="usuario-edit-header">
+        <div class="usuario-edit-title-area">
+            <div class="usuario-edit-eyebrow">
+                <i class="fa-solid fa-user-pen"></i>
+                Gestión de usuarios
+            </div>
+
+            <h1 class="usuario-edit-title">
+                Editar usuario
+            </h1>
+
+            <p class="usuario-edit-description">
+                Actualiza la información personal, el rol y el estado del usuario sin alterar su historial de cambios.
+            </p>
+        </div>
+    </div>
+
+    <section class="usuario-edit-card">
+        <div class="usuario-edit-card-header">
+            <h2 class="usuario-edit-card-title">
+                <i class="fa-solid fa-id-card"></i>
+                Información del usuario
+            </h2>
+        </div>
+
+        <div class="usuario-edit-card-body">
+            <form asp-action="Editar" method="post">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="All" class="text-danger"></div>
+
+                <input type="hidden" asp-for="UsuarioID" />
+
+                @if (Model.EmpresasIDs != null)
+                {
+                    @for (var i = 0; i < Model.EmpresasIDs.Count; i++)
+                    {
+                        <input type="hidden" asp-for="EmpresasIDs[i]" />
+                    }
+                }
+
+                <section class="form-section">
+                    <div class="form-section-header">
+                        <div class="form-section-icon">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+
+                        <div>
+                            <h3 class="form-section-title">Datos personales</h3>
+                            <div class="form-section-subtitle">
+                                Información general del colaborador.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Nombre" class="form-label"></label>
+                            <input asp-for="Nombre" class="form-control" />
+                            <span asp-validation-for="Nombre" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ApellidoPaterno" class="form-label"></label>
+                            <input asp-for="ApellidoPaterno" class="form-control" />
+                            <span asp-validation-for="ApellidoPaterno" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label asp-for="Correo" class="form-label"></label>
+                        <input asp-for="Correo" class="form-control" />
+                        <span asp-validation-for="Correo" class="text-danger"></span>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <div class="form-section-header">
+                        <div class="form-section-icon green">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+
+                        <div>
+                            <h3 class="form-section-title">Datos de la cuenta</h3>
+                            <div class="form-section-subtitle">
+                                Configura el rol y el estado actual del usuario.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="RolID" class="form-label"></label>
+                        <input asp-for="RolID" type="number" class="form-control" />
+                        <span asp-validation-for="RolID" class="text-danger"></span>
+                    </div>
+
+                    <div class="estado-box">
+                        <div>
+                            <p class="estado-box-title">Estado del usuario</p>
+                            <p class="estado-box-text">
+                                Desactívalo solo cuando el usuario ya no deba tener acceso al sistema.
+                            </p>
+                        </div>
+
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   role="switch"
+                                   asp-for="Activo" />
+                            <label class="form-check-label visually-hidden" asp-for="Activo"></label>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="usuario-actions">
+                    <a asp-action="Index"
+                       asp-controller="Usuarios"
+                       class="btn-cancelar">
+                        <i class="fa-solid fa-xmark"></i>
+                        Cancelar
+                    </a>
+
+                    <button type="submit"
+                            class="btn-guardar">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    @if (Model.HistorialDeCambios != null && Model.HistorialDeCambios.Any())
+    {
+        <section class="usuario-history-card">
+            <div class="usuario-history-card-header">
+                <h2 class="usuario-history-card-title">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Historial de cambios
+                </h2>
+            </div>
+
+            <div class="usuario-history-card-body">
+                <div class="table-responsive">
+                    <table class="table usuario-history-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cambio realizado</th>
+                                <th>Modificado por</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in Model.HistorialDeCambios)
+                            {
+                                <tr>
+                                    <td>@item.FechaModificacion.ToString("g")</td>
+                                    <td>@item.DescripcionDelCambio</td>
+                                    <td>@item.ModificadoPor</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    }
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,644 @@
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    ViewData["Title"] = "Calendario de programación";
+}
+
+@section Estilos {
+    <style>
+        :root {
+            --p: #084F83; --pd: #062F55; --ps: #EFF6FB; --a: #58A83F; --b: #E4E9EF; --m: #667085;
+            --ok: #347526; --okb: #ECF8E8; --w: #B54708; --wb: #FFF4E5; --e: #B42318; --eb: #FEECEC;
+            --s-rev: #B54708; --s-revb: #FFF4E5; --s-conf: #084F83; --s-confb: #DCEBF7;
+            --s-proc: #6941C6; --s-procb: #EEE9FB; --s-cont: #0E7C86; --s-contb: #DDF3F4;
+            --s-lleg: #347526; --s-llegb: #DDF1D6
+        }
+        .prog-page { width: 100% }
+        .prog-head { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 18px }
+        .prog-eye { display: flex; gap: 7px; align-items: center; color: var(--a); font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 5px }
+        .prog-title { margin: 0; color: var(--pd); font-size: 1.55rem; font-weight: 850 }
+        .prog-sub { margin: 6px 0 0; max-width: 950px; color: var(--m); font-size: .82rem; line-height: 1.5 }
+        .btn { min-height: 38px; padding: 8px 13px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: .72rem; font-weight: 800; text-decoration: none; cursor: pointer }
+        .btn-main { border: 1px solid var(--p); background: var(--p); color: #fff }
+        .btn-main:hover { background: var(--pd); color: #fff }
+        .btn-sec { border: 1px solid #DCE2E8; background: #fff; color: #475467 }
+        .btn-sec:hover { background: #F8FAFC; color: var(--pd) }
+
+        .panel { border: 1px solid var(--b); border-radius: 11px; background: #fff; overflow: hidden; margin-bottom: 16px }
+        .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding: 10px 12px; border-bottom: 1px solid #EEF1F4; background: #FBFCFD }
+        .bar .sp { flex: 1 }
+        .lbl { font-size: .6rem; font-weight: 800; color: #475467; display: flex; flex-direction: column; gap: 3px }
+        .ctl { min-height: 34px; border: 1px solid #DCE2E8; border-radius: 8px; background: #fff; color: #344054; padding: 5px 9px; font-size: .7rem; outline: none }
+        .ctl:focus { border-color: #0B6FAF; box-shadow: 0 0 0 3px rgba(11,111,175,.07) }
+        .nv { min-height: 34px; padding: 5px 11px; border: 1px solid #DCE2E8; border-radius: 8px; background: #fff; color: #475467; font-size: .7rem; font-weight: 800; cursor: pointer }
+        .nv:hover { border-color: var(--p); color: var(--p); background: var(--ps) }
+
+        .msg { display: none; margin-bottom: 12px; padding: 10px 12px; border-radius: 9px; font-size: .7rem; font-weight: 700; line-height: 1.45 }
+        .msg.error { display: block; border: 1px solid #FECACA; background: #FEF2F2; color: var(--e) }
+        .banner { display: none; padding: 10px 13px; border-bottom: 1px solid #B9DCF2; background: #EFF8FF; color: #175CD3; font-size: .7rem; line-height: 1.5 }
+        .banner.show { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap }
+
+        .tabs { display: flex; gap: 4px; padding: 10px 12px 0; border-bottom: 1px solid #EEF1F4; background: #fff; flex-wrap: wrap }
+        .tab { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border: 1px solid transparent; border-bottom: 0; border-radius: 10px 10px 0 0; background: transparent; color: #667085; font-size: .76rem; font-weight: 850; cursor: pointer; position: relative; top: 1px }
+        .tab:hover { background: #F8FAFC; color: #344054 }
+        .tab i { font-style: normal; min-width: 22px; text-align: center; padding: 2px 7px; border-radius: 999px; background: #F2F4F7; color: #667085; font-size: .6rem }
+        .tab.on { background: #fff; border-color: #EEF1F4; color: var(--tc, var(--p)); box-shadow: inset 0 3px 0 var(--tc, var(--p)) }
+        .tab.on i { background: var(--tc, var(--p)); color: #fff }
+        .tab[data-t="DOSIS"] { --tc: #0B6FAF } .tab[data-t="HEMBRAS"] { --tc: #B4318A } .tab[data-t="SEMENTALES"] { --tc: #B54708 } .tab[data-t="RASTRO"] { --tc: #347526 }
+        .chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 9px 12px; border-bottom: 1px solid #EEF1F4; align-items: center }
+        .chip { display: inline-flex; gap: 6px; align-items: center; padding: 4px 9px; border-radius: 999px; font-size: .64rem; font-weight: 800; cursor: pointer; border: 1px solid transparent; user-select: none }
+        .chip i { font-style: normal; opacity: .8 }
+        .chip.off { opacity: .38; filter: grayscale(.6) }
+        .chip.dis { cursor: default }
+        .st-REV { background: var(--s-revb); color: var(--s-rev) }
+        .st-CONF { background: var(--s-confb); color: var(--s-conf) }
+        .st-PROC { background: var(--s-procb); color: var(--s-proc) }
+        .st-CONT { background: var(--s-contb); color: var(--s-cont) }
+        .st-LLEG { background: var(--s-llegb); color: var(--s-lleg) }
+        .chip.st-REV { border: 1px dashed var(--s-rev) }
+        .hint { color: #98A2B3; font-size: .62rem; margin-left: 6px }
+
+        .sec { border-top: 1px solid #EEF1F4 }
+        .mhead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #EEF1F4 }
+        .mhead h2 { margin: 0; font-size: .85rem; color: #344054 }
+        .mhead small { color: #98A2B3; font-size: .62rem }
+        .tools { display: flex; gap: 12px; align-items: center; font-size: .64rem; color: #475467; flex-wrap: wrap }
+        .tools label { display: flex; gap: 5px; align-items: center; cursor: pointer }
+        .scroll { overflow: auto; max-height: 74vh }
+        .loading { display: none; padding: 8px 13px; color: #667085; font-size: .66rem; border-bottom: 1px solid #EEF1F4 }
+
+        .mg { display: grid; grid-template-columns: 84px repeat(7,minmax(150px,1fr)); min-width: 1180px }
+        .mgh { padding: 8px; text-align: center; font-size: .6rem; font-weight: 800; color: #98A2B3; text-transform: uppercase; border-bottom: 1px solid #EEF1F4; background: #FBFCFD; position: sticky; top: 0; z-index: 2 }
+        .mgw { padding: 8px; border-bottom: 1px solid #EEF1F4; border-right: 1px solid #EEF1F4; background: #FBFCFD; cursor: pointer; font-size: .58rem; color: #667085; display: flex; flex-direction: column; gap: 3px }
+        .mgw b { font-size: .76rem; color: #344054 }
+        .mgw:hover { background: var(--ps) }
+        .mgw.cur { background: var(--p); color: #fff }
+        .mgw.cur b { color: #fff }
+        .mgd { min-height: 128px; padding: 5px; border-bottom: 1px solid #EEF1F4; border-right: 1px solid #EEF1F4; cursor: pointer; display: flex; flex-direction: column; gap: 3px }
+        .mgd:hover { background: var(--ps) }
+        .mgd.out { background: #FBFCFD }
+        .mgd.out .mgn span { color: #98A2B3 }
+        .mgd.hoy .mgn span { background: var(--a); color: #fff; border-radius: 50%; padding: 1px 6px }
+        .mgd.sel { outline: 2px solid var(--p); outline-offset: -2px }
+        .mgn { display: flex; justify-content: space-between; align-items: center; font-size: .66rem; font-weight: 800; margin-bottom: 1px }
+        .mgn em { font-style: normal; font-size: .6rem; color: #475467; font-weight: 800 }
+        .cli { display: flex; justify-content: space-between; gap: 6px; padding: 2px 5px; border-radius: 5px; border-left: 4px solid; font-size: .58rem; line-height: 1.4; font-weight: 700 }
+        .cli span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+        .cli b { flex: none }
+        .cli.st-REV { outline: 1px dashed var(--s-rev); outline-offset: -1px }
+        .mas { font-size: .56rem; color: #98A2B3; font-weight: 800; padding: 0 4px }
+
+        table.mx { border-collapse: separate; border-spacing: 0; font-size: .66rem; min-width: 100% }
+        .mx th, .mx td { border-right: 1px solid #EEF1F4; border-bottom: 1px solid #EEF1F4; padding: 0; text-align: center; white-space: nowrap }
+        .mx thead th { position: sticky; background: #fff; z-index: 2; font-weight: 800 }
+        .mx thead tr:nth-child(1) th { top: 0; background: #BFE3F5; color: #062F55; padding: 5px 6px; font-size: .62rem; letter-spacing: .04em }
+        .mx thead tr:nth-child(2) th { top: 26px; background: #1D5F7F; color: #fff; padding: 4px 6px; font-size: .6rem }
+        .mx thead tr:nth-child(3) th { top: 49px; color: #475467; font-size: .55rem; padding: 3px 2px; min-width: 38px }
+        .mx th.cl { left: 0; z-index: 4; min-width: 230px; max-width: 230px; text-align: left; padding: 6px 8px; background: #fff; color: #475467; font-size: .64rem }
+        .mx td.cl { position: sticky; left: 0; z-index: 1; text-align: left; padding: 5px 8px; font-weight: 700; min-width: 230px; max-width: 230px; overflow: hidden; text-overflow: ellipsis; font-size: .64rem; line-height: 1.25 }
+        .mx td.cl .sub { display: block; font-size: .54rem; font-weight: 650; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+        .mx td.c { min-width: 38px; height: 27px; font-weight: 800; position: relative }
+        .mx td.c.has { cursor: pointer }
+        .mx td.c.has:hover { outline: 2px solid var(--p); outline-offset: -2px }
+        .mx td.c.st-REV { outline: 1px dashed var(--s-rev); outline-offset: -3px }
+        .mx .nt::after { content: ""; position: absolute; right: 0; top: 0; border-top: 7px solid #A855F7; border-left: 7px solid transparent }
+        .mx td.blk, .mx th.blk { border-right: 2px solid #344054 }
+        .mx tfoot td { position: sticky; bottom: 0; background: #FBFCFD; font-weight: 850; z-index: 2; padding: 6px 2px; border-top: 2px solid #344054 }
+        .mx tfoot td.cl { left: 0; z-index: 3 }
+        .mtitle { padding: 8px 12px; font-size: .72rem; font-weight: 850; color: #062F55; background: #EFF6FB; border-bottom: 1px solid #EEF1F4; position: sticky; left: 0 }
+        .empty { padding: 36px 18px; text-align: center; color: #98A2B3; font-size: .72rem; line-height: 1.6 }
+
+        .tbl { width: 100%; border-collapse: separate; border-spacing: 0 }
+        .tbl th { padding: 9px 8px; border-bottom: 1px solid #E7EBF0; background: #fff; color: #667085; font-size: .59rem; font-weight: 850; text-transform: uppercase; white-space: nowrap; text-align: left }
+        .tbl td { padding: 8px; border-bottom: 1px solid #F0F2F4; color: #344054; font-size: .68rem; vertical-align: top }
+        .val { display: inline-flex; gap: 5px; align-items: center; padding: 4px 7px; border-radius: 999px; font-size: .6rem; font-weight: 800; white-space: nowrap }
+        .val.ok { background: var(--okb); color: var(--ok) }
+        .val.warn { background: var(--wb); color: var(--w) }
+        .val.err { background: var(--eb); color: var(--e) }
+        .val.mut { background: #F2F4F7; color: #667085 }
+        .nota { color: #667085; font-size: .6rem; margin-top: 2px }
+        .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.15) }
+        details.hist > summary { cursor: pointer; padding: 11px 13px; font-size: .78rem; font-weight: 850; color: #344054; background: #FBFCFD; list-style: none }
+        details.hist > summary small { color: #98A2B3; font-weight: 700; margin-left: 8px }
+
+        .mask { position: fixed; inset: 0; background: rgba(16,24,40,.48); display: none; align-items: center; justify-content: center; padding: 18px; z-index: 1100 }
+        .mask.open { display: flex }
+        .dlg { background: #fff; border-radius: 12px; width: min(840px,100%); max-height: 88vh; overflow: auto; box-shadow: 0 24px 60px rgba(16,24,40,.3) }
+        .dh { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #EEF1F4 }
+        .dh h3 { margin: 0; font-size: .85rem; text-transform: capitalize; color: #344054 }
+        .x { border: 0; background: #F2F4F7; color: #667085; border-radius: 7px; width: 30px; height: 30px; cursor: pointer }
+        .df { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 11px 15px; border-top: 1px solid #EEF1F4; background: #FBFCFD; font-size: .68rem }
+
+        @@media(max-width:720px) { .prog-head { flex-direction: column } .btn { width: 100% } }
+    </style>
+}
+
+<div class="prog-page">
+    <div class="prog-head">
+        <div>
+            <div class="prog-eye"><i class="fa-solid fa-calendar-days"></i>Coordinación · Programación</div>
+            <h1 class="prog-title">Calendario de programación</h1>
+            <p class="prog-sub">Lo que se importa en Programación semanal aparece aquí como <b>En revisión</b> y avanza hasta la llegada. Las semanas van de domingo a sábado; cada día muestra los clientes que se entregan.</p>
+        </div>
+        <a asp-controller="Menu" asp-action="Index" class="btn btn-sec"><i class="fa-solid fa-arrow-left"></i>Regresar</a>
+    </div>
+
+    <div id="msg" class="msg"></div>
+
+    <section class="panel">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Tipo de programación">
+            <button type="button" class="tab" role="tab" data-t="DOSIS">Dosis <i id="n-DOSIS">0</i></button>
+            <button type="button" class="tab" role="tab" data-t="HEMBRAS">Hembras <i id="n-HEMBRAS">0</i></button>
+            <button type="button" class="tab" role="tab" data-t="SEMENTALES">Sementales <i id="n-SEMENTALES">0</i></button>
+            <button type="button" class="tab" role="tab" data-t="RASTRO">Rastro <i id="n-RASTRO">0</i></button>
+        </div>
+        <div class="bar">
+            <button type="button" class="nv" id="prev" title="Semana anterior"><i class="fa-solid fa-chevron-left"></i></button>
+            <label class="lbl">Año<select id="selAnio" class="ctl"></select></label>
+            <label class="lbl">Mes<select id="selMes" class="ctl"></select></label>
+            <label class="lbl">Semana<select id="selSem" class="ctl"></select></label>
+            <label class="lbl">Día<select id="selDia" class="ctl"></select></label>
+            <button type="button" class="nv" id="next" title="Semana siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+            <button type="button" class="nv" id="hoy">Hoy</button>
+            <span class="sp"></span>
+            <label class="lbl">Buscar<input id="buscar" type="search" class="ctl" placeholder="Cliente o línea…" /></label>
+        </div>
+
+        <div id="banner" class="banner"></div>
+        <div id="loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Cargando…</div>
+        <div id="chips" class="chips"></div>
+
+        <div class="sec" style="border-top:0">
+            <div class="mhead">
+                <div><h2 id="mest">—</h2><small>Cada día muestra los clientes que se entregan del tipo seleccionado, con el color de su ruta y su estatus. Haz clic en un día para ver el detalle o en la semana para verla completa abajo.</small></div>
+            </div>
+            <div class="scroll"><div id="mes"></div></div>
+        </div>
+
+        <div class="sec">
+            <div class="mhead">
+                <div><h2 id="mt">—</h2><small id="ms">—</small></div>
+                <div class="tools">
+                    <label><input type="checkbox" id="cCompact" checked /> Ocultar columnas vacías</label>
+                </div>
+            </div>
+            <div class="scroll" id="scroll"></div>
+        </div>
+
+        <div class="sec">
+            <details class="hist" id="hist">
+                <summary>Historial de cargas del mes <small id="histN"></small></summary>
+                <div style="overflow-x:auto">
+                    <table class="tbl">
+                        <thead>
+                            <tr>
+                                <th>Fecha y hora</th><th>Usuario</th><th>Tipo</th><th>Periodo</th><th>Archivo</th>
+                                <th>Filas</th><th>Piezas</th><th>Estatus</th><th>Versión</th><th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cargasBody"></tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+    </section>
+</div>
+
+<div id="mask" class="mask">
+    <div class="dlg">
+        <div class="dh"><h3 id="dt"></h3><button type="button" id="dx" class="x" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button></div>
+        <div id="db"></div>
+        <div id="df" class="df"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const urls = {
+                datos: '@Url.Action("ObtenerCalendario", "Coordinacion")',
+                cargas: '@Url.Action("ObtenerCargasCalendario", "Coordinacion")'
+            };
+
+            const ST = { REV: 'En revisión', CONF: 'Confirmado', PROC: 'En proceso', CONT: 'Continuidad', LLEG: 'Llegada' };
+            const PRIO = ['REV', 'CONF', 'PROC', 'CONT', 'LLEG'];
+            const TIPOS = { DOSIS: 'Dosis', HEMBRAS: 'Hembras', SEMENTALES: 'Sementales', RASTRO: 'Rastro' };
+            const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+            const DC = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const ORDEN_LINEAS = ['LD DA', 'YK DA', 'YORK DA', 'DUC D', 'DUROC D', 'LD', 'LW', 'MX', 'MG'];
+
+            const $ = id => document.getElementById(id);
+            const get = (o, ...ks) => {
+                if (!o) return null;
+                for (const k of ks) {
+                    if (Object.prototype.hasOwnProperty.call(o, k)) return o[k];
+                    const r = Object.keys(o).find(x => x.toLowerCase() === k.toLowerCase());
+                    if (r) return o[r];
+                }
+                return null;
+            };
+            const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+            const fmt = n => Number(n).toLocaleString('es-MX', { maximumFractionDigits: 3 });
+            const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const pIso = s => new Date(`${s}T00:00:00`);
+            const add = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+            const dm = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const corta = d => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }).replace('.', '');
+
+            // Semanas de domingo a sábado. Semana 1 = la que contiene el 1 de enero;
+            // cada semana pertenece al mes y al año en que termina (sábado).
+            const ini = d => add(d, -d.getDay());
+            const fin = d => add(d, 6);
+            const sem1 = y => ini(new Date(y, 0, 1));
+            const numSem = i => Math.round((i - sem1(fin(i).getFullYear())) / 864e5 / 7) + 1;
+            const semanasMes = (y, m) => {
+                const l = []; let i = sem1(y);
+                while (true) { const f = fin(i); if (f.getFullYear() > y) break; if (f.getMonth() === m) l.push(new Date(i)); i = add(i, 7); }
+                return l;
+            };
+            const prio = l => PRIO.find(s => l.includes(s)) || 'REV';
+            const lum = h => { if (!h) return 1; const v = [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
+            const cmpLinea = (a, b) => {
+                const ia = ORDEN_LINEAS.indexOf(a), ib = ORDEN_LINEAS.indexOf(b);
+                return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib) || a.localeCompare(b);
+            };
+            const hex = v => { const s = String(v || '').trim(); const m = /^#?([0-9a-f]{6})$/i.exec(s); return m ? `#${m[1].toUpperCase()}` : null; };
+
+            const hoy = new Date();
+            const S = { semIni: ini(hoy), dia: 'TODOS', tipo: 'DOSIS', on: new Set(PRIO), q: '', compact: true, cargaId: null };
+            let eventos = [], cargasTodas = [], cargado = '', celdasIdx = [];
+
+            const norm = o => ({
+                origen: String(get(o, 'Origen') || ''),
+                fecha: String(get(o, 'FechaEntrega') || '').substring(0, 10),
+                prod: String(get(o, 'FechaProduccion') || '').substring(0, 10),
+                tipo: String(get(o, 'TipoPedidoCodigo') || '').toUpperCase(),
+                cliente: get(o, 'Cliente') || '(sin cliente)',
+                linea: get(o, 'Linea') || '',
+                detalle: get(o, 'Detalle') || '',
+                q: Number(get(o, 'Cantidad')) || 0,
+                st: PRIO.includes(String(get(o, 'EstatusCalendario'))) ? String(get(o, 'EstatusCalendario')) : 'REV',
+                estatus: get(o, 'Estatus') || '',
+                valido: !(get(o, 'EsValido') === false || get(o, 'EsValido') === 0),
+                mensaje: get(o, 'Mensaje') || '',
+                pedido: get(o, 'Pedido') || '',
+                impId: get(o, 'ImportacionID'),
+                archivo: get(o, 'Archivo') || '',
+                color: hex(get(o, 'ColorHex')),
+                estatusExcel: get(o, 'EstatusExcel') || '',
+                granja: get(o, 'Granja') || '',
+                destino: get(o, 'Destino') || '',
+                nota: get(o, 'Nota') || '',
+                notaCliente: get(o, 'NotaCliente') || '',
+                orden: get(o, 'Orden') == null ? null : Number(get(o, 'Orden'))
+            });
+            const normCarga = o => ({
+                id: get(o, 'ImportacionID'),
+                tipo: String(get(o, 'TipoPedidoCodigo') || '').toUpperCase(),
+                periodo: `${String(get(o, 'FechaInicio') || '').substring(0, 10)}|${String(get(o, 'FechaFin') || '').substring(0, 10)}`,
+                ini: String(get(o, 'FechaInicio') || '').substring(0, 10),
+                archivo: get(o, 'NombreArchivo') || '',
+                fecha: get(o, 'FechaImportacion'),
+                usuario: get(o, 'Usuario') || '—',
+                estatusCodigo: String(get(o, 'EstatusCodigo') || ''),
+                estatus: get(o, 'Estatus') || '',
+                filas: Number(get(o, 'TotalFilas')) || 0,
+                piezas: Number(get(o, 'Piezas')) || 0,
+                vigente: get(o, 'Vigente') === true || get(o, 'Vigente') === 1
+            });
+
+            function mensaje(t) {
+                const m = $('msg');
+                if (!t) { m.className = 'msg'; m.textContent = ''; return; }
+                m.className = 'msg error'; m.textContent = t;
+            }
+
+            const claveMes = () => { const f = fin(S.semIni); return `${f.getFullYear()}-${f.getMonth()}|${S.cargaId || ''}`; };
+            function rangoMes() {
+                const f = fin(S.semIni), y = f.getFullYear(), m = f.getMonth();
+                const prim = new Date(y, m, 1), ult = new Date(y, m + 1, 0);
+                return { desde: ini(prim), hasta: fin(ini(ult)) };
+            }
+
+            async function cargar() {
+                const { desde, hasta } = rangoMes();
+                const clave = claveMes();
+                $('loading').style.display = 'block';
+                mensaje('');
+                try {
+                    const qs = new URLSearchParams({ desde: iso(desde), hasta: iso(hasta) });
+                    if (S.cargaId) qs.set('importacionId', S.cargaId);
+                    const [r1, r2] = await Promise.all([
+                        fetch(`${urls.datos}?${qs}`, { credentials: 'same-origin' }),
+                        fetch(`${urls.cargas}?desde=${iso(desde)}&hasta=${iso(hasta)}`, { credentials: 'same-origin' })
+                    ]);
+                    const d1 = await r1.json().catch(() => null);
+                    const d2 = await r2.json().catch(() => null);
+                    if (!r1.ok || !d1?.ok) throw new Error(d1?.mensaje || `No fue posible cargar el calendario (${r1.status}).`);
+                    eventos = (Array.isArray(d1.eventos) ? d1.eventos : []).map(norm);
+                    cargasTodas = r2.ok && d2?.ok && Array.isArray(d2.cargas) ? d2.cargas.map(normCarga) : [];
+                    cargado = clave;
+                } catch (ex) {
+                    eventos = []; cargasTodas = []; cargado = '';
+                    mensaje(ex?.message || 'No fue posible cargar el calendario.');
+                } finally {
+                    $('loading').style.display = 'none';
+                }
+                render();
+                // Primera vez: si el mes en curso no tiene nada, abre donde está la última carga de Excel.
+                if (!saltoInicial) {
+                    saltoInicial = true;
+                    if (cargado && !eventos.length && !S.cargaId) await irUltimaCarga(true);
+                }
+            }
+
+            // ---------- ir a la última carga subida ----------
+            let saltoInicial = false;
+            async function irUltimaCarga(auto) {
+                try {
+                    const r = await fetch(`${urls.cargas}?desde=${iso(add(hoy, -540))}&hasta=${iso(add(hoy, 365))}`, { credentials: 'same-origin' });
+                    const d = await r.json().catch(() => null);
+                    if (!r.ok || !d?.ok) throw new Error(d?.mensaje || 'No fue posible consultar el historial de cargas.');
+                    const todas = (Array.isArray(d.cargas) ? d.cargas : []).map(normCarga)
+                        .filter(c => c.estatusCodigo !== 'CANCELADO' && TIPOS[c.tipo] && c.ini);
+                    if (!todas.length) { if (!auto) mensaje('Todavía no hay cargas de Excel de esta empresa.'); return; }
+                    const dias = c => Math.round((pIso(c.periodo.split('|')[1] || c.ini) - pIso(c.ini)) / 86400000);
+                    const semanales = todas.filter(c => dias(c) <= 14);
+                    const c = (semanales.length ? semanales : todas).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))[0];
+                    S.tipo = c.tipo; S.dia = 'TODOS'; S.cargaId = null; S.semIni = ini(pIso(c.ini));
+                    await cargar();
+                } catch (ex) {
+                    mensaje(ex?.message || 'No fue posible ir a la última carga.');
+                }
+            }
+
+            function irSem(i) {
+                S.semIni = i;
+                claveMes() === cargado ? render() : cargar();
+            }
+
+            // ---------- filtros ----------
+            function base() {
+                const q = S.q.trim().toLowerCase();
+                return eventos.filter(e => e.tipo === S.tipo &&
+                    (!q || `${e.cliente} ${e.linea} ${e.detalle}`.toLowerCase().includes(q)));
+            }
+            const visibles = () => base().filter(e => S.on.has(e.st));
+
+            // ---------- barra ----------
+            function fill() {
+                const f = fin(S.semIni), y = f.getFullYear(), m = f.getMonth();
+                const a = $('selAnio'); a.innerHTML = '';
+                for (let v = Math.min(hoy.getFullYear() - 2, y); v <= Math.max(hoy.getFullYear() + 2, y); v++) a.add(new Option(v, v));
+                a.value = y;
+                $('selMes').innerHTML = MESES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+                $('selMes').value = m;
+                $('selSem').innerHTML = semanasMes(y, m).map(i => `<option value="${iso(i)}">Semana ${numSem(i)} · ${corta(i)} – ${corta(fin(i))}</option>`).join('');
+                $('selSem').value = iso(S.semIni);
+                $('selDia').innerHTML = '<option value="TODOS">Todos los días</option>' +
+                    [0, 1, 2, 3, 4, 5, 6].map(n => { const d = add(S.semIni, n); return `<option value="${iso(d)}">${DC[n]} ${dm(d)}</option>`; }).join('');
+                if (![...$('selDia').options].some(o => o.value === S.dia)) S.dia = 'TODOS';
+                $('selDia').value = S.dia;
+                document.querySelectorAll('#tabs .tab').forEach(t => { const on = t.dataset.t === S.tipo; t.classList.toggle('on', on); t.setAttribute('aria-selected', on); });
+            }
+
+            function renderTabs() {
+                const cnt = { DOSIS: 0, HEMBRAS: 0, SEMENTALES: 0, RASTRO: 0 };
+                eventos.forEach(e => { if (cnt[e.tipo] !== undefined) cnt[e.tipo]++; });
+                Object.keys(cnt).forEach(t => { const n = $('n-' + t); if (n) n.textContent = cnt[t]; });
+            }
+
+            function renderBanner() {
+                const b = $('banner');
+                if (!S.cargaId) { b.className = 'banner'; b.innerHTML = ''; return; }
+                const c = cargasTodas.find(x => String(x.id) === String(S.cargaId));
+                const cuando = c?.fecha ? new Date(c.fecha).toLocaleString('es-MX') : '';
+                b.className = 'banner show';
+                b.innerHTML = `<span><b>Revisando la carga #${esc(S.cargaId)}</b>${c ? ` · ${esc(c.archivo)} · ${esc(cuando)} · ${esc(c.usuario)} · ${c.vigente ? 'vigente' : 'versión anterior'}` : ''}. Es una vista de consulta: no modifica nada.</span>
+                    <button type="button" class="nv" id="volver">Volver a lo vigente</button>`;
+            }
+
+            function renderChips() {
+                const a = iso(S.semIni), z = iso(fin(S.semIni));
+                const cnt = {}; PRIO.forEach(s => cnt[s] = 0);
+                base().filter(e => e.fecha >= a && e.fecha <= z && (S.dia === 'TODOS' || e.fecha === S.dia)).forEach(e => cnt[e.st]++);
+                $('chips').innerHTML = PRIO.map(s => `<span class="chip st-${s}${S.on.has(s) ? '' : ' off'}" data-s="${s}">${ST[s]} <i>${cnt[s]}</i></span>`).join('') +
+                    '<span class="hint">Cantidades de la semana · clic en un estatus para ocultarlo o mostrarlo</span>';
+            }
+
+            // ---------- calendario del mes ----------
+            function clientesDia(k, lista) {
+                const g = new Map();
+                lista.filter(e => e.fecha === k).forEach(e => {
+                    const key = `${e.tipo}|${e.cliente}`;
+                    const x = g.get(key) || { cliente: e.cliente, tipo: e.tipo, color: null, tot: 0, sts: new Set(), ev: [], orden: e.orden };
+                    x.tot += e.q; x.sts.add(e.st); x.ev.push(e); x.color = x.color || e.color;
+                    if (e.orden != null) x.orden = x.orden == null ? e.orden : Math.min(x.orden, e.orden);
+                    g.set(key, x);
+                });
+                return [...g.values()].sort((a, b) => b.tot - a.tot);
+            }
+
+            function renderMes() {
+                const f = fin(S.semIni), y = f.getFullYear(), m = f.getMonth();
+                $('mest').textContent = `${MESES[m]} ${y}`;
+                const prim = new Date(y, m, 1), ult = new Date(y, m + 1, 0), hoyK = iso(new Date());
+                const lista = visibles();
+                let h = '<div class="mg"><div class="mgh">Semana</div>' + DC.map(d => `<div class="mgh">${d}</div>`).join('');
+                for (let i = ini(prim); i <= ult; i = add(i, 7)) {
+                    h += `<div class="mgw${iso(i) === iso(S.semIni) ? ' cur' : ''}" data-w="${iso(i)}"><b>Semana ${numSem(i)}</b><span>${corta(i)} – ${corta(fin(i))}</span></div>`;
+                    for (let j = 0; j < 7; j++) {
+                        const d = add(i, j), k = iso(d), out = d.getMonth() !== m;
+                        const l = clientesDia(k, lista), tot = l.reduce((a, x) => a + x.tot, 0), vis = l.slice(0, 7);
+                        h += `<div class="mgd${out ? ' out' : ''}${k === hoyK ? ' hoy' : ''}${S.dia === k ? ' sel' : ''}" data-d="${k}"><div class="mgn"><span>${d.getDate()}</span>${tot ? `<em>${fmt(tot)}</em>` : ''}</div>` +
+                            vis.map(x => `<div class="cli st-${prio([...x.sts])}" style="border-left-color:${x.color || '#98A2B3'}" title="${esc(x.cliente)} · ${fmt(x.tot)}"><span>${esc(x.cliente)}</span><b>${fmt(x.tot)}</b></div>`).join('') +
+                            (l.length > vis.length ? `<div class="mas">+${l.length - vis.length} clientes más</div>` : '') + '</div>';
+                    }
+                }
+                $('mes').innerHTML = h + '</div>';
+            }
+
+            // ---------- matriz de la semana (como el Excel) ----------
+            // Dosis: columnas por línea (LD, LW, MX…). Hembras, Sementales y Rastro: columnas por día de entrega,
+            // con una fila por cliente y su detalle (tipo, granja, destino).
+            const subFila = e =>
+                e.tipo === 'RASTRO' ? [e.granja, e.destino].filter(Boolean).join(' → ')
+                : e.tipo === 'DOSIS' ? ''
+                : [e.linea, e.granja].filter(Boolean).join(' · ');
+
+            function matrizHtml(ev) {
+                const modoLineas = ev.every(e => e.tipo === 'DOSIS' && e.linea);
+                let cols = [];
+                if (modoLineas) {
+                    const bloques = [...new Map(ev.map(e => [`${e.prod}|${e.fecha}`, { prod: e.prod, fecha: e.fecha }])).values()]
+                        .sort((x, y) => x.fecha.localeCompare(y.fecha) || x.prod.localeCompare(y.prod));
+                    const lineasSemana = [...new Set(ev.map(e => e.linea))].sort(cmpLinea);
+                    bloques.forEach(bq => {
+                        const usadas = new Set(ev.filter(e => e.prod === bq.prod && e.fecha === bq.fecha).map(e => e.linea));
+                        const ls = S.compact ? lineasSemana.filter(l => usadas.has(l)) : lineasSemana;
+                        ls.forEach((l, j) => cols.push({ bq, l, last: j === ls.length - 1 }));
+                    });
+                } else {
+                    const dias = S.compact ? [...new Set(ev.map(e => e.fecha))].sort() : [0, 1, 2, 3, 4, 5, 6].map(n => iso(add(S.semIni, n)));
+                    cols = dias.map(d => ({ d, last: true }));
+                }
+                const coincide = (e, c) => modoLineas ? (e.prod === c.bq.prod && e.fecha === c.bq.fecha && e.linea === c.l) : e.fecha === c.d;
+
+                const filas = new Map();
+                ev.forEach(e => {
+                    const sub = modoLineas ? '' : subFila(e);
+                    const key = `${e.cliente}|${sub}`;
+                    const r = filas.get(key) || { cliente: e.cliente, sub, color: null, orden: null, notaCliente: '', ev: [] };
+                    r.ev.push(e); r.color = r.color || e.color; r.notaCliente = r.notaCliente || e.notaCliente;
+                    if (e.orden != null) r.orden = r.orden == null ? e.orden : Math.min(r.orden, e.orden);
+                    filas.set(key, r);
+                });
+                const lista = [...filas.values()].sort((x, y) => (x.orden ?? 1e9) - (y.orden ?? 1e9) || x.cliente.localeCompare(y.cliente) || x.sub.localeCompare(y.sub));
+
+                let h1 = '', h2 = '', h3 = '';
+                if (modoLineas) {
+                    for (let i = 0; i < cols.length;) {
+                        const bq = cols[i].bq; let n = 0;
+                        while (i + n < cols.length && cols[i + n].bq === bq) n++;
+                        const pd = pIso(bq.prod || bq.fecha), ed = pIso(bq.fecha);
+                        h1 += `<th colspan="${n}" class="blk">Producción · ${DIAS[pd.getDay()]} ${dm(pd)}</th>`;
+                        h2 += `<th colspan="${n}" class="blk">Entrega · ${DIAS[ed.getDay()]} ${dm(ed)}</th>`;
+                        i += n;
+                    }
+                    h3 = cols.map(c => `<th class="${c.last ? 'blk' : ''}">${esc(c.l)}</th>`).join('');
+                } else {
+                    h1 = cols.map(c => `<th class="blk">${DIAS[pIso(c.d).getDay()]}</th>`).join('');
+                    h2 = cols.map(c => `<th class="blk">Entrega ${dm(pIso(c.d))}</th>`).join('');
+                    h3 = cols.map(() => `<th class="blk">${S.tipo === 'RASTRO' ? 'Animales' : S.tipo === 'HEMBRAS' ? 'Hembras' : 'Cant.'}</th>`).join('');
+                }
+
+                let body = '', suma = 0, n = 0;
+                const tot = cols.map(() => 0);
+                lista.forEach(r => {
+                    const bg = r.color, fg = lum(bg) < .45 ? '#fff' : '#101828';
+                    body += `<tr><td class="cl" style="${bg ? `background:${bg};color:${fg}` : 'background:#fff'}" title="${esc(r.cliente)}${r.sub ? ' · ' + esc(r.sub) : ''}">${esc(r.cliente)}${r.notaCliente ? ' 🗒' : ''}${r.sub ? `<span class="sub">${esc(r.sub)}</span>` : ''}</td>`;
+                    cols.forEach((c, ci) => {
+                        const evs = r.ev.filter(e => coincide(e, c));
+                        if (!evs.length) { body += `<td class="c${c.last ? ' blk' : ''}"></td>`; return; }
+                        const q = evs.reduce((s2, e) => s2 + e.q, 0), st = prio(evs.map(e => e.st)), conNota = evs.some(e => e.nota);
+                        tot[ci] += q; suma += q; n++;
+                        celdasIdx.push({ r, evs });
+                        body += `<td class="c has st-${st}${conNota ? ' nt' : ''}${c.last ? ' blk' : ''}" data-i="${celdasIdx.length - 1}">${fmt(q)}</td>`;
+                    });
+                    body += '</tr>';
+                });
+                const pie = tot.map((t, ci) => `<td class="${cols[ci].last ? 'blk' : ''}">${t ? fmt(t) : ''}</td>`).join('');
+                const html = `<table class="mx"><thead><tr><th class="cl" rowspan="3">Cliente</th>${h1}</tr><tr>${h2}</tr><tr>${h3}</tr></thead><tbody>${body}</tbody><tfoot><tr><td class="cl">TOTALES</td>${pie}</tr></tfoot></table>`;
+                return { html, n, suma, cl: new Set(lista.map(r => r.cliente)).size };
+            }
+
+            function renderMatriz() {
+                const f = fin(S.semIni), a = iso(S.semIni), z = iso(f);
+                $('mt').textContent = `${TIPOS[S.tipo]} · Semana ${numSem(S.semIni)} · ${dm(S.semIni)} al ${dm(f)} de ${f.getFullYear()}`;
+                celdasIdx = [];
+                const ev = visibles().filter(e => e.fecha >= a && e.fecha <= z && (S.dia === 'TODOS' || e.fecha === S.dia));
+
+                if (!ev.length) {
+                    $('ms').textContent = 'Sin programación';
+                    $('scroll').innerHTML = `<div class="empty"><b>No hay programación de ${esc(TIPOS[S.tipo])} para esta semana con los filtros actuales.</b><br>Importa el Excel de ${esc(TIPOS[S.tipo])} desde <b>Programación semanal</b> y aparecerá aquí como <b>En revisión</b>.<br>Revisa también el historial de cargas de abajo: ahí se ven las semanas que sí tienen datos.<br><button type="button" class="btn btn-main" id="irUltima" style="margin-top:10px">Ir a la última carga subida</button></div>`;
+                    return;
+                }
+
+                const r = matrizHtml(ev);
+                $('scroll').innerHTML = r.html;
+                $('ms').textContent = `${r.n} cantidades · ${fmt(r.suma)} ${S.tipo === 'RASTRO' ? 'animales' : S.tipo === 'HEMBRAS' ? 'hembras' : 'piezas'} · ${r.cl} clientes`;
+            }
+
+            // ---------- historial de cargas ----------
+            function renderCargas() {
+                const cargas = cargasTodas.filter(c => c.tipo === S.tipo);
+                $('histN').textContent = cargas.length ? `(${cargas.length})` : '';
+                const cls = c => c === 'APLICADO' ? 'ok' : c === 'CANCELADO' ? 'mut' : c === 'CON_ERRORES' ? 'err' : 'warn';
+                $('cargasBody').innerHTML = cargas.length ? cargas.map(c => {
+                    const cuando = c.fecha ? new Date(c.fecha).toLocaleString('es-MX') : '—';
+                    const [i1, i2] = c.periodo.split('|').map(s => s ? s.split('-').reverse().join('/') : '—');
+                    return `<tr>
+                        <td>${esc(cuando)}</td><td>${esc(c.usuario)}</td><td>${esc(TIPOS[c.tipo] || c.tipo)}</td>
+                        <td>${i1} a ${i2}</td><td>${esc(c.archivo)}</td><td>${fmt(c.filas)}</td><td>${fmt(c.piezas)}</td>
+                        <td><span class="val ${cls(c.estatusCodigo)}">${esc(c.estatus)}</span></td>
+                        <td>${c.vigente ? '<span class="val ok">Vigente</span>' : '<span class="val mut">Anterior</span>'}</td>
+                        <td><button type="button" class="nv js-ver" data-id="${esc(c.id)}" data-ini="${esc(c.ini)}">Ver</button></td></tr>`;
+                }).join('') : '<tr><td colspan="10" class="empty">No hay cargas de Excel de este tipo en este mes.</td></tr>';
+            }
+
+            // ---------- diálogos ----------
+            function abrirDlg(t, cuerpo, pie) { $('dt').textContent = t; $('db').innerHTML = cuerpo; $('df').innerHTML = pie || ''; $('mask').classList.add('open'); }
+            const cerrarDlg = () => $('mask').classList.remove('open');
+
+            function abrirDia(k) {
+                const d = pIso(k), tit = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                const l = clientesDia(k, visibles());
+                if (!l.length) { abrirDlg(tit, '<div class="empty">No hay programación para este día con los filtros actuales.</div>', ''); return; }
+                const filas = l.map(x => x.ev.map((e, i) => `<tr><td>${i === 0 ? `<span class="sw" style="background:${x.color || '#98A2B3'}"></span><b>${esc(x.cliente)}</b>` : ''}</td>
+                    <td>${esc(e.detalle || e.linea || e.granja || '—')}</td><td><b>${fmt(e.q)}</b></td>
+                    <td>${e.prod ? e.prod.split('-').reverse().join('/') : '—'}</td>
+                    <td><span class="chip dis st-${e.st}">${ST[e.st]}</span>${e.estatusExcel ? `<div class="nota">Estatus en el Excel: ${esc(e.estatusExcel)}</div>` : ''}${e.nota ? `<div class="nota">🗒 ${esc(e.nota)}</div>` : ''}${!e.valido && e.mensaje ? `<div class="nota">${esc(e.mensaje)}</div>` : ''}</td></tr>`).join('')).join('');
+                const total = l.reduce((a, x) => a + x.tot, 0);
+                abrirDlg(tit, `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Cliente</th><th>Línea / destino</th><th>Cantidad</th><th>Producción</th><th>Estatus</th></tr></thead><tbody>${filas}</tbody></table></div>`,
+                    `<span><b>${l.length}</b> clientes · <b>${fmt(total)}</b> piezas</span><button type="button" class="btn btn-main" id="soloDia" data-d="${k}">Ver sólo este día en la matriz</button>`);
+            }
+
+            function abrirCelda(i) {
+                const { r, evs } = celdasIdx[i];
+                const filas = evs.map(e => `<tr><td>${esc(e.detalle || e.linea || e.granja || '—')}</td><td><b>${fmt(e.q)}</b></td>
+                    <td>${e.prod ? e.prod.split('-').reverse().join('/') : '—'}</td><td>${e.fecha.split('-').reverse().join('/')}</td>
+                    <td><span class="chip dis st-${e.st}">${ST[e.st]}</span>${e.estatusExcel ? `<div class="nota">Estatus en el Excel: ${esc(e.estatusExcel)}</div>` : ''}${e.pedido ? `<div class="nota">Pedido ${esc(e.pedido)}</div>` : ''}${e.archivo ? `<div class="nota">${esc(e.archivo)}</div>` : ''}
+                    ${e.nota ? `<div class="nota">🗒 ${esc(e.nota)}</div>` : ''}${!e.valido && e.mensaje ? `<div class="nota">${esc(e.mensaje)}</div>` : ''}</td></tr>`).join('');
+                abrirDlg(r.cliente, `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Línea / destino</th><th>Cantidad</th><th>Producción</th><th>Entrega</th><th>Estatus y notas</th></tr></thead><tbody>${filas}</tbody></table></div>`,
+                    r.notaCliente ? `<span>🗒 <b>Nota del cliente:</b> ${esc(r.notaCliente)}</span>` : '');
+            }
+
+            function render() { fill(); renderTabs(); renderBanner(); renderChips(); renderMes(); renderMatriz(); renderCargas(); }
+
+            // ---------- eventos ----------
+            $('prev').onclick = () => { S.dia = 'TODOS'; irSem(add(S.semIni, -7)); };
+            $('next').onclick = () => { S.dia = 'TODOS'; irSem(add(S.semIni, 7)); };
+            $('hoy').onclick = () => { S.dia = 'TODOS'; irSem(ini(new Date())); };
+            $('selAnio').onchange = $('selMes').onchange = () => {
+                const l = semanasMes(+$('selAnio').value, +$('selMes').value);
+                S.dia = 'TODOS'; if (l.length) irSem(l[0]);
+            };
+            $('selSem').onchange = () => { S.dia = 'TODOS'; irSem(pIso($('selSem').value)); };
+            $('selDia').onchange = () => { S.dia = $('selDia').value; render(); };
+            $('tabs').onclick = e => { const t = e.target.closest('.tab'); if (!t) return; S.tipo = t.dataset.t; S.dia = 'TODOS'; render(); };
+            $('buscar').oninput = () => { S.q = $('buscar').value; renderChips(); renderMes(); renderMatriz(); };
+            $('cCompact').onchange = () => { S.compact = $('cCompact').checked; renderMatriz(); };
+            $('chips').onclick = e => {
+                const c = e.target.closest('.chip'); if (!c) return;
+                const s = c.dataset.s; S.on.has(s) ? S.on.delete(s) : S.on.add(s);
+                renderChips(); renderMes(); renderMatriz();
+            };
+            $('mes').onclick = e => {
+                const w = e.target.closest('.mgw');
+                if (w) { S.dia = 'TODOS'; irSem(pIso(w.dataset.w)); $('scroll').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
+                const d = e.target.closest('.mgd'); if (d) abrirDia(d.dataset.d);
+            };
+            $('scroll').onclick = e => {
+                if (e.target.closest('#irUltima')) { irUltimaCarga(false); return; }
+                const c = e.target.closest('td.has'); if (c) abrirCelda(+c.dataset.i);
+            };
+            $('dx').onclick = cerrarDlg;
+            $('mask').onclick = e => { if (e.target === $('mask')) cerrarDlg(); };
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarDlg(); });
+            $('df').onclick = e => {
+                const b = e.target.closest('#soloDia'); if (!b) return;
+                S.dia = b.dataset.d; cerrarDlg(); render(); $('scroll').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            };
+            $('banner').onclick = e => { if (e.target.closest('#volver')) { S.cargaId = null; cargar(); } };
+            $('cargasBody').onclick = e => {
+                const b = e.target.closest('.js-ver'); if (!b) return;
+                S.cargaId = b.dataset.id; S.dia = 'TODOS';
+                if (b.dataset.ini) S.semIni = ini(pIso(b.dataset.ini));
+                cargar();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            cargar();
+        })();
+    </script>
+}

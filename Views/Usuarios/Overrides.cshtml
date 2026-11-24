@@ -1,0 +1,863 @@
+﻿@using SistemaNutri.Areas.AdminUsuarios.DTOs
+@model SistemaNutri.Areas.AdminUsuarios.DTOs.OverridesVm
+
+@{
+    var items = Model?.Items ?? new List<OverrideItemDto>();
+}
+
+<div class="overrides-view">
+    <form id="frmOverrides"
+          asp-controller="Usuarios"
+          asp-action="GuardarOverrides"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly"
+             class="text-danger mb-3">
+        </div>
+
+        <input type="hidden"
+               name="UsuarioID"
+               value="@Model?.UsuarioID" />
+
+        @if (TempData["WarningMessage"] != null)
+        {
+            <div class="alert alert-warning override-alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                @TempData["WarningMessage"]
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger override-alert">
+                <i class="fa-solid fa-circle-exclamation me-2"></i>
+                @TempData["ErrorMessage"]
+            </div>
+        }
+
+        @if (TempData["SuccessMessage"] != null || TempData["Ok"] != null)
+        {
+            <div class="alert alert-success override-alert">
+                <i class="fa-solid fa-circle-check me-2"></i>
+                @((TempData["SuccessMessage"] ?? TempData["Ok"])!.ToString())
+            </div>
+        }
+
+        <section class="override-card">
+            <div class="override-card-header">
+                <div class="override-title-wrap">
+                    <div class="override-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+
+                    <div>
+                        <h3 class="override-title">Permisos específicos</h3>
+                        <p class="override-subtitle">
+                            Define excepciones para este usuario sin modificar los permisos generales de su rol.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="override-header-badge">
+                    <i class="fa-solid fa-list-check"></i>
+                    @items.Count permiso@(items.Count == 1 ? "" : "s")
+                </div>
+            </div>
+
+            <div class="override-help-grid">
+                <div class="override-help-item inherit">
+                    <span class="override-help-icon">
+                        <i class="fa-solid fa-link"></i>
+                    </span>
+                    <div>
+                        <strong>Heredar</strong>
+                        <small>Usa el permiso definido por el rol.</small>
+                    </div>
+                </div>
+
+                <div class="override-help-item allow">
+                    <span class="override-help-icon">
+                        <i class="fa-solid fa-check"></i>
+                    </span>
+                    <div>
+                        <strong>Permitir</strong>
+                        <small>Concede acceso exclusivamente a este usuario.</small>
+                    </div>
+                </div>
+
+                <div class="override-help-item deny">
+                    <span class="override-help-icon">
+                        <i class="fa-solid fa-ban"></i>
+                    </span>
+                    <div>
+                        <strong>Denegar</strong>
+                        <small>Bloquea el acceso exclusivamente a este usuario.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="override-toolbar">
+                <div class="override-toolbar-label">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Aplicar a todos
+                </div>
+
+                <div class="override-toolbar-actions">
+                    <button type="button"
+                            id="btnAllHeredar"
+                            class="override-mass-btn inherit">
+                        <i class="fa-solid fa-link"></i>
+                        Heredar todos
+                    </button>
+
+                    <button type="button"
+                            id="btnAllPermitir"
+                            class="override-mass-btn allow">
+                        <i class="fa-solid fa-check"></i>
+                        Permitir todos
+                    </button>
+
+                    <button type="button"
+                            id="btnAllDenegar"
+                            class="override-mass-btn deny">
+                        <i class="fa-solid fa-ban"></i>
+                        Denegar todos
+                    </button>
+                </div>
+            </div>
+
+            <div class="override-table-wrapper">
+                <div class="table-responsive override-table-scroll">
+                    <table class="table override-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Submenú</th>
+                                <th class="text-center override-column">
+                                    Override
+                                </th>
+                                <th class="text-center effective-column">
+                                    Efectivo
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @if (items.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="3">
+                                        <div class="override-empty">
+                                            <div class="override-empty-icon">
+                                                <i class="fa-solid fa-shield"></i>
+                                            </div>
+
+                                            <h4>No hay permisos para mostrar</h4>
+
+                                            <p>
+                                                No se encontraron submenús disponibles para configurar overrides en este usuario.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                for (int i = 0; i < items.Count; i++)
+                                {
+                                    <tr class="override-row">
+                                        <td>
+                                            <div class="submenu-cell">
+                                                <span class="submenu-icon">
+                                                    <i class="fa-solid fa-file-lines"></i>
+                                                </span>
+
+                                                <div class="submenu-info">
+                                                    <strong>@items[i].Nombre</strong>
+                                                    <small>
+                                                        SubMenú ID: @items[i].SubMenuID
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            <input type="hidden"
+                                                   name="Items[@i].SubMenuID"
+                                                   value="@items[i].SubMenuID" />
+
+                                            <input type="hidden"
+                                                   name="Items[@i].Nombre"
+                                                   value="@items[i].Nombre" />
+                                        </td>
+
+                                        <td class="text-center">
+                                            <div class="override-choice-group"
+                                                 role="group"
+                                                 aria-label="Override para @items[i].Nombre">
+
+                                                <input class="btn-check override-radio"
+                                                       type="radio"
+                                                       name="Items[@i].Estado"
+                                                       id="her_@i"
+                                                       value="-1"
+                                                       @(items[i].Estado == -1 ? "checked" : "") />
+
+                                                <label class="override-choice inherit"
+                                                       for="her_@i"
+                                                       title="Heredar permiso del rol">
+                                                    <i class="fa-solid fa-link"></i>
+                                                    <span>Heredar</span>
+                                                </label>
+
+                                                <input class="btn-check override-radio"
+                                                       type="radio"
+                                                       name="Items[@i].Estado"
+                                                       id="per_@i"
+                                                       value="1"
+                                                       @(items[i].Estado == 1 ? "checked" : "") />
+
+                                                <label class="override-choice allow"
+                                                       for="per_@i"
+                                                       title="Permitir acceso">
+                                                    <i class="fa-solid fa-check"></i>
+                                                    <span>Permitir</span>
+                                                </label>
+
+                                                <input class="btn-check override-radio"
+                                                       type="radio"
+                                                       name="Items[@i].Estado"
+                                                       id="den_@i"
+                                                       value="0"
+                                                       @(items[i].Estado == 0 ? "checked" : "") />
+
+                                                <label class="override-choice deny"
+                                                       for="den_@i"
+                                                       title="Denegar acceso">
+                                                    <i class="fa-solid fa-ban"></i>
+                                                    <span>Denegar</span>
+                                                </label>
+                                            </div>
+                                        </td>
+
+                                        <td class="text-center">
+                                            @if (items[i].PermisoEfectivo)
+                                            {
+                                                <span class="effective-badge yes">
+                                                    <i class="fa-solid fa-circle-check"></i>
+                                                    Sí
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="effective-badge no">
+                                                    <i class="fa-solid fa-circle-xmark"></i>
+                                                    No
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div class="override-savebar">
+            <div class="override-save-info">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>
+                    Los cambios se aplicarán únicamente a este usuario.
+                </span>
+            </div>
+
+            <button type="submit"
+                    id="btnSaveOverrides"
+                    class="override-save-btn">
+                <i class="fa-solid fa-floppy-disk"></i>
+                Guardar permisos
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .overrides-view {
+        --ov-primary: #084F83;
+        --ov-primary-dark: #062F55;
+        --ov-primary-soft: #EFF6FB;
+        --ov-green: #58A83F;
+        --ov-green-dark: #3F8E30;
+        --ov-green-soft: #F0F8EC;
+        --ov-danger: #C33B3B;
+        --ov-danger-soft: #FFF1F1;
+        --ov-text: #17212B;
+        --ov-muted: #667085;
+        --ov-border: #E4E9EF;
+        --ov-surface: #FFFFFF;
+        --ov-surface-soft: #F8FAFC;
+        width: 100%;
+        padding-bottom: 96px;
+        color: var(--ov-text);
+    }
+
+    .override-card {
+        overflow: hidden;
+        background: var(--ov-surface);
+        border: 1px solid var(--ov-border);
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+    }
+
+    .override-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 17px 20px;
+        background: linear-gradient(90deg, #F7FAFC 0%, #FFFFFF 100%);
+        border-bottom: 1px solid #EEF1F4;
+    }
+
+    .override-title-wrap {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .override-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: var(--ov-primary-soft);
+        color: var(--ov-primary);
+        font-size: 1rem;
+    }
+
+    .override-title {
+        margin: 0;
+        color: var(--ov-primary-dark);
+        font-size: .96rem;
+        font-weight: 850;
+    }
+
+    .override-subtitle {
+        margin: 3px 0 0;
+        color: var(--ov-muted);
+        font-size: .7rem;
+        line-height: 1.45;
+    }
+
+    .override-header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex: 0 0 auto;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: var(--ov-green-soft);
+        color: var(--ov-green-dark);
+        font-size: .68rem;
+        font-weight: 800;
+    }
+
+    .override-help-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        padding: 14px 20px;
+        background: #FBFCFD;
+        border-bottom: 1px solid #EEF1F4;
+    }
+
+    .override-help-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--ov-border);
+        background: #FFFFFF;
+    }
+
+    .override-help-icon {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        font-size: .74rem;
+    }
+
+    .override-help-item.inherit .override-help-icon {
+        background: #EEF2F6;
+        color: #667085;
+    }
+
+    .override-help-item.allow .override-help-icon {
+        background: var(--ov-green-soft);
+        color: var(--ov-green-dark);
+    }
+
+    .override-help-item.deny .override-help-icon {
+        background: var(--ov-danger-soft);
+        color: var(--ov-danger);
+    }
+
+    .override-help-item strong {
+        display: block;
+        color: #344054;
+        font-size: .72rem;
+        line-height: 1.25;
+    }
+
+    .override-help-item small {
+        display: block;
+        margin-top: 2px;
+        color: #98A2B3;
+        font-size: .62rem;
+        line-height: 1.35;
+    }
+
+    .override-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 12px 20px;
+        border-bottom: 1px solid #EEF1F4;
+        background: #FFFFFF;
+    }
+
+    .override-toolbar-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #475467;
+        font-size: .7rem;
+        font-weight: 800;
+    }
+
+        .override-toolbar-label i {
+            color: var(--ov-primary);
+        }
+
+    .override-toolbar-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 7px;
+    }
+
+    .override-mass-btn {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 9px;
+        background: #FFFFFF;
+        font-size: .67rem;
+        font-weight: 800;
+        transition: all .18s ease;
+    }
+
+        .override-mass-btn.inherit {
+            color: #667085;
+            border: 1px solid #CBD2DA;
+        }
+
+            .override-mass-btn.inherit:hover {
+                background: #F2F4F7;
+                color: #344054;
+            }
+
+        .override-mass-btn.allow {
+            color: var(--ov-green-dark);
+            border: 1px solid rgba(88, 168, 63, .35);
+        }
+
+            .override-mass-btn.allow:hover {
+                background: var(--ov-green-soft);
+            }
+
+        .override-mass-btn.deny {
+            color: var(--ov-danger);
+            border: 1px solid rgba(195, 59, 59, .30);
+        }
+
+            .override-mass-btn.deny:hover {
+                background: var(--ov-danger-soft);
+            }
+
+    .override-table-wrapper {
+        background: #FFFFFF;
+    }
+
+    .override-table-scroll {
+        max-height: calc(100vh - 260px);
+        overflow: auto;
+    }
+
+    .override-table {
+        width: 100%;
+        margin: 0;
+    }
+
+        .override-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+        }
+
+            .override-table thead th {
+                padding: .82rem 1rem;
+                background: linear-gradient(135deg, var(--ov-primary) 0%, var(--ov-primary-dark) 100%);
+                color: #FFFFFF;
+                border: 0;
+                font-size: .68rem;
+                font-weight: 850;
+                text-transform: uppercase;
+                letter-spacing: .04em;
+                white-space: nowrap;
+            }
+
+    .override-column {
+        min-width: 330px;
+    }
+
+    .effective-column {
+        min-width: 105px;
+    }
+
+    .override-table tbody td {
+        padding: .82rem 1rem;
+        border-color: #EEF1F4;
+        background: #FFFFFF;
+        color: #475467;
+        font-size: .72rem;
+    }
+
+    .override-row:hover td {
+        background: #F9FBFD;
+    }
+
+    .submenu-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 190px;
+    }
+
+    .submenu-icon {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: var(--ov-primary-soft);
+        color: var(--ov-primary);
+        font-size: .72rem;
+    }
+
+    .submenu-info {
+        min-width: 0;
+    }
+
+        .submenu-info strong {
+            display: block;
+            color: #344054;
+            font-size: .74rem;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+
+        .submenu-info small {
+            display: block;
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .59rem;
+        }
+
+    .override-choice-group {
+        display: inline-grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        min-width: 310px;
+        padding: 4px;
+        border: 1px solid #E3E8EE;
+        border-radius: 11px;
+        background: #F8FAFC;
+    }
+
+    .override-choice {
+        min-height: 34px;
+        margin: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 6px 9px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: #667085;
+        background: transparent;
+        font-size: .66rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all .16s ease;
+    }
+
+        .override-choice:hover {
+            background: #FFFFFF;
+        }
+
+    .btn-check:checked + .override-choice.inherit {
+        color: var(--ov-primary-dark);
+        background: #FFFFFF;
+        border-color: #B8C3CD;
+        box-shadow: 0 3px 8px rgba(15, 23, 42, .07);
+    }
+
+    .btn-check:checked + .override-choice.allow {
+        color: var(--ov-green-dark);
+        background: var(--ov-green-soft);
+        border-color: rgba(88, 168, 63, .36);
+        box-shadow: 0 3px 8px rgba(88, 168, 63, .10);
+    }
+
+    .btn-check:checked + .override-choice.deny {
+        color: var(--ov-danger);
+        background: var(--ov-danger-soft);
+        border-color: rgba(195, 59, 59, .30);
+        box-shadow: 0 3px 8px rgba(195, 59, 59, .08);
+    }
+
+    .effective-badge {
+        min-width: 60px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 6px 9px;
+        border-radius: 999px;
+        font-size: .64rem;
+        font-weight: 850;
+    }
+
+        .effective-badge.yes {
+            color: var(--ov-green-dark);
+            background: var(--ov-green-soft);
+        }
+
+        .effective-badge.no {
+            color: #667085;
+            background: #EEF2F6;
+        }
+
+    .override-empty {
+        padding: 38px 20px;
+        text-align: center;
+    }
+
+    .override-empty-icon {
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background: var(--ov-primary-soft);
+        color: var(--ov-primary);
+        font-size: 1.25rem;
+    }
+
+    .override-empty h4 {
+        margin: 0;
+        color: #344054;
+        font-size: .86rem;
+        font-weight: 850;
+    }
+
+    .override-empty p {
+        max-width: 420px;
+        margin: 5px auto 0;
+        color: #98A2B3;
+        font-size: .68rem;
+        line-height: 1.5;
+    }
+
+    .override-alert {
+        border: 0;
+        border-radius: 11px;
+        font-size: .72rem;
+        font-weight: 650;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .04);
+    }
+
+    .override-savebar {
+        position: fixed;
+        right: 28px;
+        bottom: 22px;
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 9px 10px 9px 14px;
+        background: rgba(255, 255, 255, .96);
+        border: 1px solid #DCE3EA;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .14);
+        backdrop-filter: blur(8px);
+    }
+
+    .override-save-info {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: #667085;
+        font-size: .66rem;
+        font-weight: 650;
+    }
+
+        .override-save-info i {
+            color: var(--ov-primary);
+        }
+
+    .override-save-btn {
+        min-height: 38px;
+        border: 0;
+        border-radius: 10px;
+        padding: 8px 14px;
+        background: linear-gradient(135deg, var(--ov-green) 0%, var(--ov-green-dark) 100%);
+        color: #FFFFFF;
+        font-size: .7rem;
+        font-weight: 850;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        box-shadow: 0 7px 16px rgba(88, 168, 63, .22);
+        transition: transform .16s ease, filter .16s ease;
+    }
+
+        .override-save-btn:hover {
+            color: #FFFFFF;
+            filter: brightness(1.04);
+            transform: translateY(-1px);
+        }
+
+        .override-save-btn:disabled {
+            opacity: .7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    @@media (max-width: 991.98px) {
+        .override-help-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .override-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .override-toolbar-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .override-save-info {
+            display: none;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .override-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .override-header-badge {
+            align-self: flex-start;
+        }
+
+        .override-help-grid,
+        .override-toolbar {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .override-toolbar-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .override-mass-btn {
+            width: 100%;
+        }
+
+        .override-table-scroll {
+            max-height: none;
+        }
+
+        .override-savebar {
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            justify-content: stretch;
+        }
+
+        .override-save-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        const frm = document.getElementById('frmOverrides');
+        if (!frm) return;
+
+        function setAll(val) {
+            const inputs = frm.querySelectorAll(
+                `input[type="radio"][name$=".Estado"][value="${val}"]`
+            );
+
+            inputs.forEach(function (input) {
+                input.checked = true;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        }
+
+        document.getElementById('btnAllHeredar')
+            ?.addEventListener('click', function () {
+                setAll('-1');
+            });
+
+        document.getElementById('btnAllPermitir')
+            ?.addEventListener('click', function () {
+                setAll('1');
+            });
+
+        document.getElementById('btnAllDenegar')
+            ?.addEventListener('click', function () {
+                setAll('0');
+            });
+    })();
+</script>

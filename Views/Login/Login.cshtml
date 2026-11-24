@@ -1,0 +1,958 @@
+﻿@model SistemaNutri.Models.UsuarioModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acceso al Sistema | SistemaNutri</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --azul-principal: #0B4E8A;
+            --azul-secundario: #0A6FB5;
+            --azul-oscuro: #073B68;
+            --azul-suave: #EAF4FB;
+            --verde-principal: #50A83B;
+            --verde-secundario: #79BE43;
+            --verde-suave: #EFF8EB;
+            --texto: #1F2937;
+            --texto-secundario: #667085;
+            --borde: #E5EAF0;
+            --fondo: #F4F7FA;
+            --blanco: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--fondo);
+        }
+
+        body {
+            min-height: 100vh;
+        }
+
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(circle at 0 0, rgba(80, 168, 59, .08), transparent 28%), radial-gradient(circle at 100% 100%, rgba(11, 78, 138, .09), transparent 35%), #F5F7FA;
+        }
+
+            .login-page::before {
+                content: "";
+                position: absolute;
+                width: 420px;
+                height: 420px;
+                left: -170px;
+                top: -170px;
+                border-radius: 50%;
+                background: rgba(80, 168, 59, .05);
+            }
+
+            .login-page::after {
+                content: "";
+                position: absolute;
+                width: 520px;
+                height: 520px;
+                right: -220px;
+                bottom: -240px;
+                border-radius: 50%;
+                background: rgba(11, 78, 138, .05);
+            }
+
+        .login-shell {
+            width: 100%;
+            max-width: 1120px;
+            min-height: 610px;
+            display: grid;
+            grid-template-columns: 1.15fr .85fr;
+            background: var(--blanco);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 28px 80px rgba(31, 41, 55, .15);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* PANEL CORPORATIVO */
+        .brand-panel {
+            position: relative;
+            overflow: hidden;
+            padding: 58px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: #fff;
+            background: linear-gradient( 135deg, rgba(7, 59, 104, .98) 0%, rgba(11, 78, 138, .96) 48%, rgba(10, 111, 181, .94) 100% );
+        }
+
+            .brand-panel::before {
+                content: "";
+                position: absolute;
+                width: 460px;
+                height: 460px;
+                border-radius: 50%;
+                left: -230px;
+                bottom: -170px;
+                background: rgba(80, 168, 59, .19);
+            }
+
+            .brand-panel::after {
+                content: "";
+                position: absolute;
+                width: 340px;
+                height: 340px;
+                border-radius: 50%;
+                right: -130px;
+                top: -100px;
+                background: rgba(255, 255, 255, .06);
+            }
+
+        .brand-content,
+        .brand-footer {
+            position: relative;
+            z-index: 2;
+        }
+
+        .brand-logo-wrapper {
+            width: 160px;
+            height: 82px;
+            background: #fff;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            margin-bottom: 54px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .10);
+        }
+
+            .brand-logo-wrapper img {
+                width: 100%;
+                max-height: 100%;
+                object-fit: contain;
+            }
+
+        .brand-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .12);
+            border: 1px solid rgba(255, 255, 255, .14);
+            font-size: .77rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 22px;
+        }
+
+            .brand-label i {
+                color: #B8EB9D;
+            }
+
+        .brand-title {
+            font-size: clamp(2.4rem, 4vw, 4rem);
+            line-height: 1.04;
+            font-weight: 800;
+            margin-bottom: 22px;
+            max-width: 520px;
+            letter-spacing: -.04em;
+        }
+
+            .brand-title span {
+                color: #A8E38B;
+            }
+
+        .brand-description {
+            max-width: 520px;
+            font-size: 1.02rem;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, .79);
+            margin: 0;
+        }
+
+        .brand-features {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 34px;
+        }
+
+        .feature-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 13px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .10);
+            border: 1px solid rgba(255, 255, 255, .12);
+            font-size: .82rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, .92);
+        }
+
+            .feature-pill i {
+                color: #B5E799;
+            }
+
+        .brand-footer {
+            margin-top: 50px;
+            font-size: .78rem;
+            color: rgba(255, 255, 255, .56);
+        }
+
+        /* LOGIN */
+        .login-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 54px 58px;
+            background: #fff;
+        }
+
+        .login-content {
+            width: 100%;
+            max-width: 390px;
+        }
+
+        .login-heading {
+            margin-bottom: 34px;
+        }
+
+            .login-heading .small-label {
+                color: var(--verde-principal);
+                font-size: .78rem;
+                font-weight: 800;
+                letter-spacing: .09em;
+                text-transform: uppercase;
+                margin-bottom: 10px;
+            }
+
+            .login-heading h1 {
+                margin: 0;
+                font-size: 2rem;
+                line-height: 1.2;
+                font-weight: 800;
+                color: var(--azul-oscuro);
+                letter-spacing: -.025em;
+            }
+
+            .login-heading p {
+                margin: 11px 0 0;
+                color: var(--texto-secundario);
+                font-size: .92rem;
+                line-height: 1.6;
+            }
+
+        .alert-custom {
+            border: 1px solid #F7C7C7;
+            background: #FFF5F5;
+            color: #9E2D2D;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 22px;
+            font-size: .86rem;
+        }
+
+        .alert-title {
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .error-message + .error-message {
+            margin-top: 4px;
+        }
+
+        .form-group-custom {
+            margin-bottom: 22px;
+        }
+
+        .form-label-custom {
+            display: block;
+            font-size: .81rem;
+            font-weight: 700;
+            color: #344054;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #98A2B3;
+            font-size: .95rem;
+            pointer-events: none;
+            transition: color .2s ease;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            height: 52px;
+            border: 1px solid #D9E0E7;
+            border-radius: 12px;
+            padding: 0 46px 0 44px;
+            font-size: .92rem;
+            color: var(--texto);
+            outline: none;
+            background: #fff;
+            transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+
+            .form-control-custom::placeholder {
+                color: #A9B1BC;
+            }
+
+            .form-control-custom:focus {
+                border-color: var(--azul-secundario);
+                box-shadow: 0 0 0 4px rgba(10, 111, 181, .10);
+                background: #fff;
+            }
+
+        .input-wrapper:focus-within .input-icon {
+            color: var(--azul-secundario);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border: 0;
+            background: transparent;
+            color: #667085;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .2s ease, color .2s ease;
+        }
+
+            .password-toggle:hover {
+                background: var(--azul-suave);
+                color: var(--azul-principal);
+            }
+
+        .validation-error {
+            display: block;
+            margin-top: 6px;
+            color: #C43D3D;
+            font-size: .76rem;
+        }
+
+        .form-options {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: -6px;
+            margin-bottom: 25px;
+        }
+
+        .forgot-password-link {
+            color: var(--azul-principal);
+            font-size: .82rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: color .2s ease;
+        }
+
+            .forgot-password-link:hover {
+                color: var(--verde-principal);
+            }
+
+        .btn-login {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 52px;
+            border: none;
+            border-radius: 12px;
+            font-size: .92rem;
+            font-weight: 800;
+            color: #fff;
+            background: linear-gradient( 100deg, var(--azul-principal) 0%, var(--azul-secundario) 58%, var(--verde-principal) 130% );
+            box-shadow: 0 12px 26px rgba(11, 78, 138, .20);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+
+            .btn-login:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 15px 30px rgba(11, 78, 138, .27);
+            }
+
+            .btn-login:active {
+                transform: translateY(0);
+            }
+
+            .btn-login.loading {
+                pointer-events: none;
+                opacity: .82;
+            }
+
+        .security-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            margin-top: 20px;
+            color: #98A2B3;
+            font-size: .74rem;
+        }
+
+            .security-note i {
+                color: var(--verde-principal);
+            }
+
+        .mobile-logo {
+            display: none;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+
+            .mobile-logo img {
+                width: 135px;
+                max-height: 70px;
+                object-fit: contain;
+            }
+
+        /* MODAL EMPRESA */
+        .modal-content {
+            border: 0;
+            border-radius: 22px;
+            box-shadow: 0 25px 70px rgba(31, 41, 55, .20);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            border: 0;
+            padding: 24px 28px 10px;
+        }
+
+        .modal-title {
+            color: var(--azul-oscuro);
+            font-weight: 800;
+        }
+
+            .modal-title i {
+                color: var(--verde-principal);
+                margin-right: 8px;
+            }
+
+        .modal-body {
+            padding: 12px 28px 30px;
+        }
+
+        .empresa-card {
+            height: 100%;
+            min-height: 145px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-decoration: none;
+            background: #fff;
+            border: 1px solid var(--borde);
+            border-radius: 16px;
+            padding: 18px;
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+
+            .empresa-card:hover {
+                transform: translateY(-3px);
+                border-color: rgba(11, 78, 138, .35);
+                box-shadow: 0 12px 28px rgba(31, 41, 55, .10);
+            }
+
+        .empresa-logo {
+            max-width: 100px;
+            max-height: 58px;
+            object-fit: contain;
+        }
+
+        .empresa-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--verde-suave);
+            color: var(--verde-principal);
+            font-size: 1.25rem;
+        }
+
+        .empresa-nombre {
+            margin: 0;
+            text-align: center;
+            color: var(--texto);
+            font-size: .84rem;
+            font-weight: 700;
+        }
+
+        @@media (max-width: 900px) {
+            .login-page {
+                padding: 20px;
+            }
+
+            .login-shell {
+                max-width: 520px;
+                min-height: unset;
+                display: block;
+            }
+
+            .brand-panel {
+                display: none;
+            }
+
+            .login-panel {
+                padding: 42px 34px;
+            }
+
+            .mobile-logo {
+                display: flex;
+            }
+        }
+
+        @@media (max-width: 480px) {
+            .login-page {
+                padding: 0;
+                align-items: stretch;
+                background: #fff;
+            }
+
+            .login-shell {
+                width: 100%;
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .login-panel {
+                min-height: 100vh;
+                padding: 42px 24px;
+            }
+
+            .login-heading h1 {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-page">
+
+        <main class="login-shell">
+
+            <!-- PANEL IZQUIERDO -->
+            <section class="brand-panel">
+
+                <div class="brand-content">
+
+                    <div class="brand-logo-wrapper">
+                        <img src="~/Imagenes/logoAzul.jpeg" alt="SistemaNutri" />
+                    </div>
+
+                    <div class="brand-label">
+                        <i class="fa-solid fa-leaf"></i>
+                        Plataforma empresarial
+                    </div>
+
+                    <h2 class="brand-title">
+                        Gestión integrada para una operación
+                        <span>más eficiente.</span>
+                    </h2>
+
+                    <p class="brand-description">
+                        Centraliza la información comercial, operativa y administrativa
+                        de tus empresas en una sola plataforma.
+                    </p>
+
+                    <div class="brand-features">
+
+                        <div class="feature-pill">
+                            <i class="fa-solid fa-chart-line"></i>
+                            Información centralizada
+                        </div>
+
+                        <div class="feature-pill">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Acceso seguro
+                        </div>
+
+                        <div class="feature-pill">
+                            <i class="fa-solid fa-building"></i>
+                            Gestión multiempresa
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="brand-footer">
+                    SistemaNutri · Plataforma de gestión empresarial
+                </div>
+
+            </section>
+
+            <!-- PANEL LOGIN -->
+            <section class="login-panel">
+
+                <div class="login-content">
+
+                    <div class="mobile-logo">
+                        <img src="~/Imagenes/logoAzul.jpeg" alt="SistemaNutri" />
+                    </div>
+
+                    <div class="login-heading">
+
+                        <div class="small-label">
+                            Acceso al sistema
+                        </div>
+
+                        <h1>Bienvenido</h1>
+
+                        <p>
+                            Ingresa tus credenciales para continuar a la plataforma.
+                        </p>
+
+                    </div>
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert-custom">
+
+                            <div class="alert-title">
+                                <i class="fas fa-circle-exclamation me-1"></i>
+                                No fue posible iniciar sesión
+                            </div>
+
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <div class="error-message">
+                                    @error.ErrorMessage
+                                </div>
+                            }
+
+                        </div>
+                    }
+
+                    <form asp-action="Login"
+                          method="post"
+                          autocomplete="off"
+                          id="loginForm">
+
+                        @Html.AntiForgeryToken()
+
+                        <div class="form-group-custom">
+
+                            <label asp-for="Username"
+                                   class="form-label-custom">
+                                Usuario
+                            </label>
+
+                            <div class="input-wrapper">
+
+                                <i class="fa-regular fa-user input-icon"></i>
+
+                                <input asp-for="Username"
+                                       class="form-control-custom"
+                                       placeholder="Ingresa tu usuario"
+                                       autocomplete="username"
+                                       required />
+
+                            </div>
+
+                            <span asp-validation-for="Username"
+                                  class="validation-error">
+                            </span>
+
+                        </div>
+
+                        <div class="form-group-custom">
+
+                            <label asp-for="Password"
+                                   class="form-label-custom">
+                                Contraseña
+                            </label>
+
+                            <div class="input-wrapper">
+
+                                <i class="fa-solid fa-lock input-icon"></i>
+
+                                <input asp-for="Password"
+                                       id="passwordField"
+                                       type="password"
+                                       class="form-control-custom"
+                                       placeholder="Ingresa tu contraseña"
+                                       autocomplete="current-password"
+                                       required />
+
+                                <button type="button"
+                                        class="password-toggle"
+                                        id="togglePassword"
+                                        aria-label="Mostrar u ocultar contraseña">
+
+                                    <i class="fa-regular fa-eye"
+                                       id="toggleIcon"></i>
+
+                                </button>
+
+                            </div>
+
+                            <span asp-validation-for="Password"
+                                  class="validation-error">
+                            </span>
+
+                        </div>
+
+                        <div class="form-options">
+
+                            <a href="@Url.Action("RecuperarPassword", "Login")"
+                               class="forgot-password-link">
+
+                                ¿Olvidaste tu contraseña?
+
+                            </a>
+
+                        </div>
+
+                        <button type="submit"
+                                class="btn-login"
+                                id="loginBtn">
+
+                            <span class="btn-text">
+                                Iniciar sesión
+                            </span>
+
+                        </button>
+
+                        <div class="security-note">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Acceso protegido y controlado
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- MODAL SELECCIÓN EMPRESA -->
+    <div class="modal fade"
+         id="empresaModal"
+         tabindex="-1"
+         aria-labelledby="empresaModalLabel"
+         aria-hidden="true">
+
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title"
+                        id="empresaModalLabel">
+
+                        <i class="fas fa-building"></i>
+                        Selecciona tu empresa
+
+                    </h5>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <p class="text-center text-secondary mb-4">
+                        Selecciona la empresa con la que deseas trabajar.
+                    </p>
+
+                    <div class="row g-3"
+                         id="empresasContainer">
+
+                        @if (Model?.Empresas != null)
+                        {
+                            @foreach (var empresa in Model.Empresas)
+                            {
+                                <div class="col-6 col-md-4 col-lg-3">
+
+                                    <form asp-action="SeleccionarEmpresa"
+                                          method="post"
+                                          class="h-100">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="usuarioId"
+                                               value="@Model.UsuarioID" />
+
+                                        <input type="hidden"
+                                               name="empresaId"
+                                               value="@empresa.EmpresaID" />
+
+                                        <button type="submit"
+                                                class="empresa-card w-100 border-0">
+
+                                            @if (!string.IsNullOrWhiteSpace(empresa.Logo))
+                                            {
+                                                <img src="~/Imagenes/@empresa.Logo"
+                                                     alt="@empresa.Nombre"
+                                                     class="empresa-logo" />
+                                            }
+                                            else
+                                            {
+                                                <div class="empresa-icon">
+                                                    <i class="fas fa-building"></i>
+                                                </div>
+                                            }
+
+                                            <p class="empresa-nombre">
+                                                @empresa.Nombre
+                                            </p>
+
+                                        </button>
+
+                                    </form>
+
+                                </div>
+                            }
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const loginForm = document.getElementById('loginForm');
+            const loginBtn = document.getElementById('loginBtn');
+
+            const passwordField = document.getElementById('passwordField');
+            const togglePassword = document.getElementById('togglePassword');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            if (togglePassword && passwordField) {
+
+                togglePassword.addEventListener('click', function () {
+
+                    const oculto = passwordField.type === 'password';
+
+                    passwordField.type = oculto
+                        ? 'text'
+                        : 'password';
+
+                    toggleIcon.classList.toggle('fa-eye', !oculto);
+                    toggleIcon.classList.toggle('fa-eye-slash', oculto);
+
+                });
+
+            }
+
+            if (loginForm && loginBtn) {
+
+                loginForm.addEventListener('submit', function () {
+
+                    loginBtn.classList.add('loading');
+
+                    const texto = loginBtn.querySelector('.btn-text');
+
+                    if (texto) {
+                        texto.textContent = 'Validando...';
+                    }
+
+                });
+
+            }
+
+            /*
+             * IMPORTANTE:
+             * El modal ya NO intercepta el login.
+             *
+             * Solo se muestra cuando el servidor devuelve
+             * el usuario validado con empresas disponibles.
+             */
+
+            const tieneEmpresas =
+                @(Model?.Empresas != null && Model.Empresas.Any()
+                                        ? "true"
+                                        : "false");
+
+            const usuarioValidado =
+                @(Model?.UsuarioID > 0
+                                        ? "true"
+                                        : "false");
+
+            if (usuarioValidado && tieneEmpresas) {
+
+                const modalElement =
+                    document.getElementById('empresaModal');
+
+                if (modalElement) {
+
+                    const modalEmpresa =
+                        new bootstrap.Modal(
+                            modalElement,
+                            {
+                                backdrop: 'static',
+                                keyboard: false
+                            }
+                        );
+
+                    modalEmpresa.show();
+
+                }
+
+            }
+
+        });
+
+    </script>
+
+</body>
+</html>

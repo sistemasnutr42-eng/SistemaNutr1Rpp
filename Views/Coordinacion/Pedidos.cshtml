@@ -1,0 +1,1076 @@
+﻿@using System
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@model SistemaNutri.Models.CoordinacionPedidosIndexVm
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+
+    var modo = (ViewData["ModoBandeja"]?.ToString() ?? "Bandeja").Trim();
+    var esFueraDeTiempo = string.Equals(modo, "FueraDeTiempo", StringComparison.OrdinalIgnoreCase);
+    var esHistorico = string.Equals(modo, "Historico", StringComparison.OrdinalIgnoreCase);
+    var esTipo = string.Equals(modo, "Tipo", StringComparison.OrdinalIgnoreCase);
+
+    var pedidos = Model?.Pedidos ?? new List<SistemaNutri.Models.CoordinacionPedidoBandejaVm>();
+    var filtros = Model?.Filtros ?? new SistemaNutri.Models.CoordinacionFiltroPedidosVm();
+    var tipos = Model?.TiposPedido ?? new List<SistemaNutri.Models.CoordinacionTipoPedidoVm>();
+    var estatus = Model?.EstatusPedido ?? new List<SistemaNutri.Models.CoordinacionEstatusPedidoVm>();
+    var clientes = Model?.Clientes ?? new List<SistemaNutri.Models.CoordinacionClienteVm>();
+
+    var tipoCodigo = (ViewData["TipoPedidoCodigo"]?.ToString() ?? string.Empty).Trim().ToUpperInvariant();
+    var tipoNombre = (ViewData["TipoPedidoNombre"]?.ToString() ?? string.Empty).Trim();
+    int? tipoPedidoId = null;
+    if (ViewData["TipoPedidoID"] != null && int.TryParse(ViewData["TipoPedidoID"]!.ToString(), out var tipoIdView) && tipoIdView > 0)
+    {
+        tipoPedidoId = tipoIdView;
+    }
+    else if (filtros.TipoPedidoID.HasValue && filtros.TipoPedidoID.Value > 0)
+    {
+        tipoPedidoId = filtros.TipoPedidoID.Value;
+    }
+
+    string AccionPorTipo() => tipoCodigo switch
+    {
+        "DOSIS" => "PedidosDosis",
+        "HEMBRAS" => "PedidosHembras",
+        "SEMENTALES" => "PedidosSementales",
+        "RASTRO" => "PedidosRastro",
+        _ => "Pedidos"
+    };
+
+    var accionFiltro = esFueraDeTiempo
+        ? "PedidosFueraDeTiempo"
+        : esHistorico
+            ? "HistoricoPedidos"
+            : esTipo
+                ? AccionPorTipo()
+                : "Pedidos";
+
+    string TituloPagina()
+    {
+        if (esFueraDeTiempo) return "Pedidos fuera de tiempo";
+        if (esHistorico) return "Histórico de pedidos";
+        if (esTipo && !string.IsNullOrWhiteSpace(tipoNombre)) return $"Pedidos de {tipoNombre.ToLowerInvariant()}";
+        return "Bandeja de pedidos";
+    }
+
+    string SubtituloPagina()
+    {
+        if (esFueraDeTiempo) return "Consulta y atiende solicitudes ingresadas o modificadas fuera de la ventana operativa.";
+        if (esHistorico) return "Consulta pedidos cerrados o cancelados y conserva su trazabilidad.";
+        if (!esTipo) return "Consulta y da seguimiento a los pedidos registrados en Coordinación.";
+        return tipoCodigo switch
+        {
+            "DOSIS" => "Consulta y da seguimiento a las solicitudes de dosis pendientes de validación y programación.",
+            "HEMBRAS" => "Consulta y da seguimiento a las solicitudes de hembras y su avance hacia programación.",
+            "SEMENTALES" => "Consulta y da seguimiento a las solicitudes de sementales e importación.",
+            "RASTRO" => "Consulta y da seguimiento a las solicitudes de animales para rastro.",
+            _ => "Consulta y da seguimiento a los pedidos de Coordinación."
+        };
+    }
+
+    string Eyebrow()
+    {
+        if (esTipo && !string.IsNullOrWhiteSpace(tipoNombre)) return $"Coordinación · Pedidos · {tipoNombre}";
+        return "Coordinación · Pedidos";
+    }
+
+    string TipoClase(string? codigo) => (codigo ?? string.Empty).ToUpperInvariant() switch
+    {
+        "DOSIS" => "tipo-dosis",
+        "HEMBRAS" => "tipo-hembras",
+        "SEMENTALES" => "tipo-sementales",
+        "RASTRO" => "tipo-rastro",
+        _ => "tipo-general"
+    };
+
+    string TipoIcono(string? codigo) => (codigo ?? string.Empty).ToUpperInvariant() switch
+    {
+        "DOSIS" => "fa-solid fa-flask-vial",
+        "HEMBRAS" => "fa-solid fa-venus",
+        "SEMENTALES" => "fa-solid fa-mars",
+        "RASTRO" => "fa-solid fa-truck-fast",
+        _ => "fa-solid fa-box"
+    };
+
+    string EstatusClase(string? codigo) => (codigo ?? string.Empty).ToUpperInvariant() switch
+    {
+        "BORRADOR" => "estado-borrador",
+        "RECIBIDO" => "estado-recibido",
+        "PENDIENTE_VALIDACION" => "estado-pendiente",
+        "PENDIENTE_PROGRAMAR" => "estado-pendiente",
+        "PROGRAMADO" => "estado-programado",
+        "EN_PROCESO" => "estado-proceso",
+        "ATENDIDO" => "estado-atendido",
+        "CERRADO" => "estado-cerrado",
+        "CANCELADO" => "estado-cancelado",
+        _ => "estado-general"
+    };
+
+    string PrioridadClase(string? codigo) => (codigo ?? string.Empty).ToUpperInvariant() switch
+    {
+        "URGENTE" => "prioridad-urgente",
+        "ALTA" => "prioridad-alta",
+        "BAJA" => "prioridad-baja",
+        _ => "prioridad-normal"
+    };
+
+    string FormatoCantidad(decimal valor)
+    {
+        return valor == decimal.Truncate(valor)
+            ? valor.ToString("N0", CultureInfo.GetCultureInfo("es-MX"))
+            : valor.ToString("N3", CultureInfo.GetCultureInfo("es-MX")).TrimEnd('0').TrimEnd('.');
+    }
+
+    string CantidadLabel() => tipoCodigo switch
+    {
+        "DOSIS" => "Dosis",
+        "HEMBRAS" => "Hembras",
+        "SEMENTALES" => "Sementales",
+        "RASTRO" => "Animales",
+        _ => "Cantidad"
+    };
+
+    string TextoAccion(SistemaNutri.Models.CoordinacionPedidoBandejaVm pedido)
+    {
+        return string.Equals(pedido.EstatusCodigo, "CERRADO", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(pedido.EstatusCodigo, "CANCELADO", StringComparison.OrdinalIgnoreCase)
+            ? "Ver detalle"
+            : "Atender";
+    }
+
+    ViewData["Title"] = TituloPagina();
+}
+
+@section Estilos {
+    <style>
+        :root {
+            --coord-primary: #084F83;
+            --coord-primary-dark: #062F55;
+            --coord-primary-soft: #EFF6FB;
+            --coord-accent: #58A83F;
+            --coord-border: #E4E9EF;
+            --coord-text: #17212B;
+            --coord-muted: #667085;
+        }
+
+        .coord-page {
+            width: 100%;
+        }
+
+        .coord-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .coord-header-main {
+            min-width: 0;
+        }
+
+        .coord-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 5px;
+            color: var(--coord-accent);
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        .coord-title {
+            margin: 0;
+            color: var(--coord-primary-dark);
+            font-size: 1.55rem;
+            font-weight: 850;
+            letter-spacing: -.02em;
+        }
+
+        .coord-subtitle {
+            margin: 6px 0 0;
+            max-width: 800px;
+            color: var(--coord-muted);
+            font-size: .82rem;
+            line-height: 1.5;
+        }
+
+        .coord-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            flex-wrap: wrap;
+        }
+
+        .coord-btn-primary,
+        .coord-btn-secondary {
+            min-height: 38px;
+            border-radius: 9px;
+            padding: 8px 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            text-decoration: none;
+            font-size: .75rem;
+            font-weight: 800;
+            transition: .15s ease;
+            white-space: nowrap;
+        }
+
+        .coord-btn-primary {
+            border: 1px solid var(--coord-primary);
+            background: var(--coord-primary);
+            color: #fff;
+        }
+
+            .coord-btn-primary:hover {
+                background: var(--coord-primary-dark);
+                border-color: var(--coord-primary-dark);
+                color: #fff;
+            }
+
+        .coord-btn-secondary {
+            border: 1px solid #DCE2E8;
+            background: #fff;
+            color: #475467;
+        }
+
+            .coord-btn-secondary:hover {
+                background: #F8FAFC;
+                color: var(--coord-primary-dark);
+            }
+
+        .coord-context {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--coord-border);
+        }
+
+        .coord-context-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #475467;
+            font-size: .7rem;
+        }
+
+        .coord-result-count {
+            display: inline-flex;
+            align-items: center;
+            min-height: 27px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: #F2F4F7;
+            color: #475467;
+            font-size: .66rem;
+            font-weight: 800;
+        }
+
+        .coord-context-links {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .coord-context-link {
+            padding: 5px 8px;
+            border-radius: 7px;
+            color: #667085;
+            text-decoration: none;
+            font-size: .68rem;
+            font-weight: 750;
+        }
+
+            .coord-context-link:hover,
+            .coord-context-link.active {
+                background: var(--coord-primary-soft);
+                color: var(--coord-primary);
+            }
+
+        .filter-error {
+            margin-bottom: 12px;
+            padding: 9px 11px;
+            border: 1px solid #FECACA;
+            border-radius: 9px;
+            background: #FEF2F2;
+            color: #B42318;
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+        .coord-filters {
+            margin-bottom: 14px;
+            padding: 13px 14px;
+            border: 1px solid var(--coord-border);
+            border-radius: 11px;
+            background: #fff;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: minmax(220px,2fr) repeat(2,minmax(140px,1fr)) repeat(2,minmax(130px,.8fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+            .filters-grid.with-type {
+                grid-template-columns: minmax(220px,2fr) repeat(3,minmax(140px,1fr)) repeat(2,minmax(130px,.8fr));
+            }
+
+        .filter-field label {
+            display: block;
+            margin: 0 0 5px;
+            color: #475467;
+            font-size: .65rem;
+            font-weight: 800;
+        }
+
+        .filter-control,
+        .filter-search input {
+            width: 100%;
+            height: 37px;
+            border: 1px solid #DCE2E8;
+            border-radius: 8px;
+            background: #fff;
+            color: #344054;
+            padding: 0 10px;
+            outline: none;
+            font-size: .72rem;
+        }
+
+            .filter-control:focus,
+            .filter-search input:focus {
+                border-color: #0B6FAF;
+                box-shadow: 0 0 0 3px rgba(11,111,175,.07);
+            }
+
+        .filter-search {
+            position: relative;
+        }
+
+            .filter-search input {
+                padding-left: 32px;
+            }
+
+            .filter-search i {
+                position: absolute;
+                left: 11px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #98A2B3;
+                font-size: .7rem;
+                pointer-events: none;
+            }
+
+        .filters-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+        .btn-filter,
+        .btn-clear {
+            min-height: 34px;
+            border-radius: 8px;
+            padding: 6px 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+            font-size: .69rem;
+            font-weight: 800;
+        }
+
+        .btn-filter {
+            border: 1px solid var(--coord-primary);
+            background: var(--coord-primary);
+            color: #fff;
+        }
+
+            .btn-filter:hover {
+                background: var(--coord-primary-dark);
+                color: #fff;
+            }
+
+        .btn-clear {
+            border: 1px solid #DCE2E8;
+            background: #fff;
+            color: #667085;
+        }
+
+            .btn-clear:hover {
+                background: #F8FAFC;
+                color: #344054;
+            }
+
+        .orders-panel {
+            border: 1px solid var(--coord-border);
+            border-radius: 11px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .orders-toolbar {
+            min-height: 44px;
+            padding: 9px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border-bottom: 1px solid #EEF1F4;
+            background: #FBFCFD;
+        }
+
+        .orders-title {
+            margin: 0;
+            color: #344054;
+            font-size: .8rem;
+            font-weight: 850;
+        }
+
+        .orders-help {
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .62rem;
+        }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .coord-table {
+            width: 100%;
+            min-width: 1010px;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+            .coord-table thead th {
+                padding: 9px 10px;
+                border-bottom: 1px solid #E7EBF0;
+                background: #fff;
+                color: #667085;
+                font-size: .62rem;
+                font-weight: 850;
+                text-transform: uppercase;
+                letter-spacing: .02em;
+                white-space: nowrap;
+            }
+
+            .coord-table tbody td {
+                padding: 11px 10px;
+                border-bottom: 1px solid #F0F2F4;
+                color: #344054;
+                font-size: .71rem;
+                vertical-align: middle;
+            }
+
+            .coord-table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+
+            .coord-table tbody tr:hover {
+                background: #FAFCFD;
+            }
+
+        .folio-link {
+            color: var(--coord-primary-dark);
+            font-weight: 850;
+            text-decoration: none;
+        }
+
+            .folio-link:hover {
+                color: var(--coord-primary);
+                text-decoration: underline;
+            }
+
+        .cell-main {
+            color: #344054;
+            font-weight: 750;
+        }
+
+        .cell-sub {
+            margin-top: 3px;
+            color: #98A2B3;
+            font-size: .61rem;
+            line-height: 1.3;
+        }
+
+        .type-badge,
+        .status-badge,
+        .priority-badge,
+        .program-badge,
+        .late-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 999px;
+            white-space: nowrap;
+            font-size: .61rem;
+            font-weight: 800;
+        }
+
+        .type-badge {
+            padding: 4px 7px;
+            border: 1px solid transparent;
+        }
+
+        .tipo-dosis.type-badge {
+            background: #EAF5FC;
+            color: #0B6FAF;
+            border-color: #D2EAF8;
+        }
+
+        .tipo-hembras.type-badge {
+            background: #F6F0FF;
+            color: #6941C6;
+            border-color: #E9DDFD;
+        }
+
+        .tipo-sementales.type-badge {
+            background: #FFF2E8;
+            color: #B93815;
+            border-color: #FDDDC8;
+        }
+
+        .tipo-rastro.type-badge {
+            background: #EEF7EA;
+            color: #347526;
+            border-color: #DAEDD2;
+        }
+
+        .tipo-general.type-badge {
+            background: #F2F4F7;
+            color: #475467;
+            border-color: #E4E7EC;
+        }
+
+        .status-badge {
+            padding: 4px 7px;
+        }
+
+        .estado-borrador, .estado-general {
+            background: #F2F4F7;
+            color: #475467;
+        }
+
+        .estado-recibido {
+            background: #EAF5FC;
+            color: #0B6FAF;
+        }
+
+        .estado-pendiente {
+            background: #FFF4E5;
+            color: #B54708;
+        }
+
+        .estado-programado {
+            background: #EEF4FF;
+            color: #3538CD;
+        }
+
+        .estado-proceso {
+            background: #F4F0FF;
+            color: #6941C6;
+        }
+
+        .estado-atendido, .estado-cerrado {
+            background: #ECF8E8;
+            color: #347526;
+        }
+
+        .estado-cancelado {
+            background: #FEECEC;
+            color: #B42318;
+        }
+
+        .priority-badge {
+            padding: 4px 7px;
+        }
+
+        .prioridad-urgente {
+            background: #FEECEC;
+            color: #B42318;
+        }
+
+        .prioridad-alta {
+            background: #FFF4E5;
+            color: #B54708;
+        }
+
+        .prioridad-normal {
+            background: #F2F4F7;
+            color: #475467;
+        }
+
+        .prioridad-baja {
+            background: #ECF8E8;
+            color: #347526;
+        }
+
+        .program-badge {
+            padding: 4px 7px;
+            background: #EEF7EA;
+            color: #347526;
+        }
+
+            .program-badge.pending {
+                background: #F2F4F7;
+                color: #667085;
+            }
+
+        .late-badge {
+            margin-top: 4px;
+            padding: 4px 7px;
+            background: #FEECEC;
+            color: #B42318;
+        }
+
+        .btn-row-action {
+            min-height: 31px;
+            padding: 5px 9px;
+            border: 1px solid #DCE2E8;
+            border-radius: 8px;
+            background: #fff;
+            color: #344054;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+            font-size: .66rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+            .btn-row-action:hover {
+                border-color: var(--coord-primary);
+                color: var(--coord-primary);
+                background: var(--coord-primary-soft);
+            }
+
+        .empty-state {
+            padding: 42px 20px;
+            text-align: center;
+        }
+
+            .empty-state i {
+                margin-bottom: 10px;
+                color: #98A2B3;
+                font-size: 1.4rem;
+            }
+
+        .empty-title {
+            margin: 0;
+            color: #344054;
+            font-size: .86rem;
+            font-weight: 850;
+        }
+
+        .empty-text {
+            margin: 5px auto 0;
+            max-width: 480px;
+            color: #98A2B3;
+            font-size: .69rem;
+            line-height: 1.45;
+        }
+
+        @@media (max-width: 1180px) {
+            .filters-grid,
+            .filters-grid.with-type {
+                grid-template-columns: repeat(3,minmax(0,1fr));
+            }
+        }
+
+        @@media (max-width: 820px) {
+            .coord-header {
+                flex-direction: column;
+            }
+
+            .coord-header-actions {
+                width: 100%;
+            }
+
+            .coord-btn-primary, .coord-btn-secondary {
+                flex: 1;
+            }
+
+            .filters-grid,
+            .filters-grid.with-type {
+                grid-template-columns: repeat(2,minmax(0,1fr));
+            }
+
+            .coord-context {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        @@media (max-width: 560px) {
+            .coord-title {
+                font-size: 1.3rem;
+            }
+
+            .filters-grid,
+            .filters-grid.with-type {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-actions {
+                flex-direction: column-reverse;
+            }
+
+            .btn-filter, .btn-clear {
+                width: 100%;
+            }
+        }
+    </style>
+}
+
+<div class="coord-page">
+    <div class="coord-header">
+        <div class="coord-header-main">
+            <div class="coord-eyebrow">
+                <i class="@(esTipo? TipoIcono(tipoCodigo) : "fa-solid fa-list-check")"></i>
+                @Eyebrow()
+            </div>
+            <h1 class="coord-title">@TituloPagina()</h1>
+            <p class="coord-subtitle">@SubtituloPagina()</p>
+        </div>
+        <div class="coord-header-actions">
+            <a asp-controller="Menu" asp-action="Index" class="coord-btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i>
+                Regresar
+            </a>
+            @if (esTipo && tipoPedidoId.HasValue && !esHistorico)
+            {
+                <a asp-controller="Coordinacion" asp-action="NuevoPedido" asp-route-tipoPedidoId="@tipoPedidoId.Value" class="coord-btn-primary">
+                    <i class="fa-solid fa-plus"></i>
+                    Nuevo pedido
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="coord-context">
+        <div class="coord-context-left">
+            <span class="coord-result-count">@pedidos.Count @(pedidos.Count == 1 ? "pedido" : "pedidos")</span>
+            @if (esTipo && !string.IsNullOrWhiteSpace(tipoNombre))
+            {
+                <span>Bandeja de @tipoNombre.ToLowerInvariant()</span>
+            }
+        </div>
+        <div class="coord-context-links">
+            <a asp-controller="Coordinacion" asp-action="PedidosFueraDeTiempo" class="coord-context-link @(esFueraDeTiempo ? "active" : "")">
+                <i class="fa-regular fa-clock"></i> Fuera de tiempo
+            </a>
+            <a asp-controller="Coordinacion" asp-action="HistoricoPedidos" class="coord-context-link @(esHistorico ? "active" : "")">
+                <i class="fa-solid fa-box-archive"></i> Histórico
+            </a>
+        </div>
+    </div>
+
+    @if (ViewData["ErrorFiltros"] != null)
+    {
+        <div class="filter-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            @ViewData["ErrorFiltros"]
+        </div>
+    }
+
+    <section class="coord-filters">
+        <form id="formFiltrosPedidos" asp-controller="Coordinacion" asp-action="@accionFiltro" method="get">
+            <div class="filters-grid @(!esTipo ? "with-type" : "")">
+                <div class="filter-field">
+                    <label for="Buscar">Buscar</label>
+                    <div class="filter-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input id="Buscar" name="Buscar" value="@filtros.Buscar" maxlength="150" autocomplete="off" placeholder="Folio, cliente, destino o referencia..." />
+                    </div>
+                </div>
+
+                @if (!esTipo)
+                {
+                    <div class="filter-field">
+                        <label for="TipoPedidoID">Tipo de pedido</label>
+                        <select id="TipoPedidoID" name="TipoPedidoID" class="filter-control">
+                            <option value="">Todos</option>
+                            @foreach (var tipo in tipos)
+                            {
+                                if (filtros.TipoPedidoID == tipo.TipoPedidoID)
+                                {
+                                    <option value="@tipo.TipoPedidoID" selected>@tipo.Nombre</option>
+                                }
+                                else
+                                {
+                                    <option value="@tipo.TipoPedidoID">@tipo.Nombre</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                }
+                else if (tipoPedidoId.HasValue)
+                {
+                    <input type="hidden" name="TipoPedidoID" value="@tipoPedidoId.Value" />
+                }
+
+                <div class="filter-field">
+                    <label for="EstatusPedidoID">Estatus</label>
+                    <select id="EstatusPedidoID" name="EstatusPedidoID" class="filter-control">
+                        <option value="">Todos</option>
+                        @foreach (var item in estatus)
+                        {
+                            if (filtros.EstatusPedidoID == item.EstatusPedidoID)
+                            {
+                                <option value="@item.EstatusPedidoID" selected>@item.Nombre</option>
+                            }
+                            else
+                            {
+                                <option value="@item.EstatusPedidoID">@item.Nombre</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="ClienteID">Cliente</label>
+                    <select id="ClienteID" name="ClienteID" class="filter-control">
+                        <option value="">Todos</option>
+                        @foreach (var cliente in clientes)
+                        {
+                            if (filtros.ClienteID == cliente.ClienteID)
+                            {
+                                <option value="@cliente.ClienteID" selected>@cliente.NombreComercial</option>
+                            }
+                            else
+                            {
+                                <option value="@cliente.ClienteID">@cliente.NombreComercial</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="FechaDesde">Desde</label>
+                    <input id="FechaDesde" name="FechaDesde" type="date" class="filter-control" value="@(filtros.FechaDesde?.ToString("yyyy-MM-dd"))" />
+                </div>
+
+                <div class="filter-field">
+                    <label for="FechaHasta">Hasta</label>
+                    <input id="FechaHasta" name="FechaHasta" type="date" class="filter-control" value="@(filtros.FechaHasta?.ToString("yyyy-MM-dd"))" />
+                </div>
+            </div>
+
+            @if (esFueraDeTiempo)
+            {
+                <input type="hidden" name="SoloFueraDeTiempo" value="true" />
+            }
+
+            <div class="filters-actions">
+                <a asp-controller="Coordinacion" asp-action="@accionFiltro" class="btn-clear">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Limpiar
+                </a>
+                <button type="submit" class="btn-filter">
+                    <i class="fa-solid fa-filter"></i>
+                    Aplicar
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="orders-panel">
+        <div class="orders-toolbar">
+            <div>
+                <h2 class="orders-title">
+                    @(esHistorico
+                                        ? "Histórico"
+                                        : esFueraDeTiempo
+                                        ? "Pedidos fuera de tiempo"
+                                        : esTipo && !string.IsNullOrWhiteSpace(tipoNombre)
+                                        ? $"Pedidos de {tipoNombre.ToLowerInvariant()}"
+                                        : "Pedidos")
+                </h2>
+                <div class="orders-help">
+                    @(esHistorico
+                                        ? "Pedidos cerrados o cancelados."
+                                        : "Selecciona un pedido para revisar su información y continuar el flujo.")
+                </div>
+            </div>
+            <span class="coord-result-count">@pedidos.Count</span>
+        </div>
+
+        @if (pedidos.Count == 0)
+        {
+            <div class="empty-state">
+                <i class="fa-regular fa-folder-open"></i>
+                <h3 class="empty-title">No hay pedidos para mostrar</h3>
+                <p class="empty-text">
+                    @(esHistorico
+                                    ? "No existen pedidos históricos que coincidan con los filtros seleccionados."
+                                    : esFueraDeTiempo
+                                    ? "No existen pedidos fuera de tiempo que coincidan con los filtros actuales."
+                                    : "No hay pedidos que coincidan con los filtros actuales.")
+            </p>
+        </div>
+                }
+        else
+        {
+            <div class="table-wrap">
+                <table class="coord-table">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            @if (!esTipo)
+                            {
+                                <th>Tipo</th>
+                            }
+                            <th>Solicitud</th>
+                            <th>Cliente / destino</th>
+                            <th>@CantidadLabel()</th>
+                            <th>Fecha requerida</th>
+                            <th>Prioridad</th>
+                            <th>Estatus</th>
+                            <th>Programación</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pedido in pedidos)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-controller="Coordinacion" asp-action="DetallePedido" asp-route-id="@pedido.PedidoID" class="folio-link">@pedido.Folio</a>
+                                    @if (!string.IsNullOrWhiteSpace(pedido.ReferenciaExterna))
+                                    {
+                                        <div class="cell-sub">Ref. @pedido.ReferenciaExterna</div>
+                                    }
+                                </td>
+
+                                @if (!esTipo)
+                                {
+                                    <td>
+                                        <span class="type-badge @TipoClase(pedido.TipoPedidoCodigo)">
+                                            <i class="@TipoIcono(pedido.TipoPedidoCodigo)"></i>
+                                            @pedido.TipoPedido
+                                        </span>
+                                    </td>
+                                }
+
+                                <td>
+                                    <div class="cell-main">@pedido.FechaSolicitud.ToString("dd/MM/yyyy")</div>
+                                    <div class="cell-sub">@pedido.FechaSolicitud.ToString("HH:mm") · @pedido.Origen</div>
+                                </td>
+
+                                <td>
+                                    <div class="cell-main">@(string.IsNullOrWhiteSpace(pedido.Cliente) ? "Sin cliente" : pedido.Cliente)</div>
+                                    <div class="cell-sub">@(string.IsNullOrWhiteSpace(pedido.Destino) ? "Sin destino" : pedido.Destino)</div>
+                                </td>
+
+                                <td>
+                                    <div class="cell-main">@FormatoCantidad(pedido.CantidadTotal)</div>
+                                    @if (pedido.TotalRenglones > 1)
+                                    {
+                                        <div class="cell-sub">@pedido.TotalRenglones renglones</div>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (pedido.FechaRequerida.HasValue)
+                                    {
+                                        <div class="cell-main">@pedido.FechaRequerida.Value.ToString("dd/MM/yyyy")</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="cell-sub">Sin definir</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="priority-badge @PrioridadClase(pedido.PrioridadCodigo)">@pedido.Prioridad</span>
+                                </td>
+
+                                <td>
+                                    <span class="status-badge @EstatusClase(pedido.EstatusCodigo)">
+                                        @if (!string.IsNullOrWhiteSpace(pedido.ColorHex))
+                                        {
+                                            <span style="width:6px;height:6px;border-radius:50%;background:@pedido.ColorHex;display:inline-block;"></span>
+                                        }
+                                        @pedido.Estatus
+                                    </span>
+                                    @if (pedido.FueraDeTiempo)
+                                    {
+                                        <div>
+                                            <span class="late-badge">
+                                                <i class="fa-regular fa-clock"></i>
+                                                Fuera de tiempo
+                                            </span>
+                                        </div>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (pedido.TieneProgramacion)
+                                    {
+                                        <span class="program-badge">
+                                            <i class="fa-solid fa-calendar-check"></i>
+                                            Programado
+                                        </span>
+                                        @if (pedido.ProximaFechaProgramada.HasValue)
+                                        {
+                                            <div class="cell-sub">@pedido.ProximaFechaProgramada.Value.ToString("dd/MM/yyyy")</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="program-badge pending">
+                                            <i class="fa-regular fa-calendar"></i>
+                                            Sin programación
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <a asp-controller="Coordinacion" asp-action="DetallePedido" asp-route-id="@pedido.PedidoID" class="btn-row-action">
+                                        <i class="fa-solid @(TextoAccion(pedido) == "Atender" ? "fa-arrow-right" : "fa-eye")"></i>
+                                        @TextoAccion(pedido)
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.getElementById('formFiltrosPedidos');
+            const buscar = document.getElementById('Buscar');
+            if (buscar && form) {
+                buscar.addEventListener('keydown', event => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        form.submit();
+                    }
+                });
+            }
+        })();
+    </script>
+}

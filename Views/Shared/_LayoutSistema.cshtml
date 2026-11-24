@@ -1,0 +1,2033 @@
+﻿@using System.Security.Claims
+@using System.Text.Json
+@using SistemaNutri.Models
+
+@{
+    Layout = null;
+
+    ViewData["Title"] ??= "SistemaNutri";
+
+    var nombreUsuario =
+        Context.Session.GetString("NombreMostrar")
+        ?? Context.Session.GetString("Username")
+        ?? User.FindFirst(ClaimTypes.Name)?.Value
+        ?? "Usuario";
+
+    var nombreEmpresa =
+        Context.Session.GetString("EmpresaNombre")
+        ?? "NS Group";
+
+    var rolUsuario =
+        Context.Session.GetString("Rol")
+        ?? Context.Session.GetString("NombreRol")
+        ?? User.FindFirst(ClaimTypes.Role)?.Value
+        ?? "Colaborador";
+
+    var fotoPerfil =
+        Context.Session.GetString("FotoRuta")
+        ?? "";
+
+    var puestoUsuario =
+        Context.Session.GetString("Puesto")
+        ?? "";
+
+    var departamentoUsuario =
+        Context.Session.GetString("Departamento")
+        ?? "";
+
+    var empresaIdInt =
+        Context.Session.GetInt32("EmpresaID");
+
+    var empresaId =
+        empresaIdInt?.ToString()
+        ?? Context.Session.GetString("EmpresaId")
+        ?? "default";
+
+    var inicialUsuario =
+        !string.IsNullOrWhiteSpace(nombreUsuario)
+            ? nombreUsuario.Trim().Substring(0, 1).ToUpperInvariant()
+            : "U";
+
+  
+
+    var menuSidebar =
+        new List<MenuSidebarGrupoModel>();
+
+    var menuSidebarJson =
+        Context.Session.GetString("MenuSidebar");
+
+    if (!string.IsNullOrWhiteSpace(menuSidebarJson))
+    {
+        try
+        {
+            menuSidebar =
+                JsonSerializer.Deserialize<List<MenuSidebarGrupoModel>>(
+                    menuSidebarJson,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    })
+                ?? new List<MenuSidebarGrupoModel>();
+        }
+        catch
+        {
+            menuSidebar =
+                new List<MenuSidebarGrupoModel>();
+        }
+    }
+
+    string NormalizarTexto(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+            return "";
+
+        var normalizado =
+            texto.Normalize(
+                System.Text.NormalizationForm.FormD);
+
+        var sb =
+            new System.Text.StringBuilder();
+
+        foreach (var caracter in normalizado)
+        {
+            var categoria =
+                System.Globalization.CharUnicodeInfo
+                    .GetUnicodeCategory(caracter);
+
+            if (categoria !=
+                System.Globalization.UnicodeCategory
+                    .NonSpacingMark)
+            {
+                sb.Append(caracter);
+            }
+        }
+
+        return sb
+            .ToString()
+            .Normalize(
+                System.Text.NormalizationForm.FormC)
+            .Trim()
+            .ToLowerInvariant();
+    }
+
+    bool EsSubMenuUnicoDelMenu(
+        MenuSidebarMenuModel menu)
+    {
+        if (menu.SubMenus == null ||
+            menu.SubMenus.Count != 1)
+        {
+            return false;
+        }
+
+        var nombreMenu =
+            NormalizarTexto(menu.Nombre);
+
+        var nombreSubMenu =
+            NormalizarTexto(
+                menu.SubMenus[0].Nombre);
+
+        return nombreMenu == nombreSubMenu;
+    }
+}
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title>
+        @ViewData["Title"] | SistemaNutri
+    </title>
+
+
+    <!-- BOOTSTRAP -->
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+
+    <!-- FONT AWESOME -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+
+    <!-- FUENTE -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" />
+
+
+    <!-- CSS GENERAL -->
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+
+    <style>
+
+        :root {
+            --sidebar-width: 78px;
+            --sidebar-expanded-width: 292px;
+            --topbar-height: 82px;
+            --azul-oscuro: #062F55;
+            --azul-principal: #084D83;
+            --azul-secundario: #0B6FAF;
+            --verde-principal: #58A83F;
+            --verde-secundario: #76BC47;
+            --fondo: #F4F7FA;
+            --texto: #17212B;
+            --texto-suave: #667085;
+            --borde: #E4E9EF;
+            --blanco: #FFFFFF;
+        }
+
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--fondo);
+        }
+
+
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+
+      
+
+        .sistema-app {
+            min-height: 100vh;
+            background: var(--fondo);
+        }
+
+
+
+        .sistema-topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--topbar-height);
+            z-index: 1100;
+            background: linear-gradient( 90deg, #062F55 0%, #074A77 55%, #06335D 100% );
+            box-shadow: 0 3px 16px rgba(15, 23, 42, .14);
+        }
+
+
+            .sistema-topbar .top-navbar {
+                height: 100%;
+                background: transparent !important;
+                border: 0 !important;
+                box-shadow: none !important;
+                padding: 0 26px;
+            }
+
+
+            .sistema-topbar .navbar-content {
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 20px;
+            }
+
+
+            .sistema-topbar .navbar-left,
+            .sistema-topbar .navbar-right {
+                display: flex;
+                align-items: center;
+            }
+
+
+            .sistema-topbar .navbar-brand {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                color: #fff;
+                text-decoration: none;
+                font-weight: 800;
+            }
+
+
+            .sistema-topbar .navbar-logo {
+                width: 60px;
+                height: 60px;
+                object-fit: contain;
+                background: #fff;
+                border-radius: 12px;
+                padding: 5px;
+            }
+
+
+            .sistema-topbar .navbar-title {
+                color: #fff;
+                font-size: 1.14rem;
+                font-weight: 800;
+                letter-spacing: .01em;
+            }
+
+
+            .sistema-topbar .navbar-right {
+                gap: 16px;
+            }
+
+
+            .sistema-topbar .quick-actions-navbar,
+            .sistema-topbar .user-menu {
+                position: relative;
+            }
+
+
+            .sistema-topbar .quick-action-btn {
+                width: 46px;
+                height: 46px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, .92);
+                color: var(--azul-oscuro);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+                position: relative;
+                cursor: pointer;
+            }
+
+
+                .sistema-topbar .quick-action-btn:hover {
+                    background: #fff;
+                }
+
+
+                .sistema-topbar .quick-action-btn .badge {
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    background: #dc3545;
+                    color: #fff;
+                }
+
+
+            .sistema-topbar .user-toggle {
+                min-height: 48px;
+                border-radius: 999px;
+                border: 1px solid rgba(255, 255, 255, .20);
+                padding: 6px 15px 6px 7px;
+                background: rgba(1, 31, 66, .40);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                gap: 11px;
+                cursor: pointer;
+            }
+
+
+            .sistema-topbar .user-avatar {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                background: #fff;
+                color: var(--azul-oscuro);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+            }
+
+
+            .sistema-topbar .user-name {
+                color: #fff;
+                font-size: .84rem;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+
+
+            .sistema-topbar .user-role {
+                color: rgba(255, 255, 255, .70);
+                font-size: .73rem;
+                margin-top: 2px;
+            }
+
+
+            .sistema-topbar .user-dropdown,
+            .sistema-topbar .notif-dropdown {
+                position: absolute;
+                top: calc(100% + 12px);
+                right: 0;
+                background: #fff;
+                border: 1px solid var(--borde);
+                border-radius: 14px;
+                box-shadow: 0 20px 48px rgba(15, 23, 42, .17);
+                z-index: 2000;
+                display: none;
+            }
+
+
+            .sistema-topbar .user-dropdown {
+                min-width: 220px;
+                padding: 8px;
+            }
+
+
+                .sistema-topbar .user-dropdown.show,
+                .sistema-topbar .notif-dropdown.show {
+                    display: block;
+                }
+
+
+            .sistema-topbar .dropdown-item {
+                border-radius: 9px;
+                padding: 10px 12px;
+                font-size: .84rem;
+                color: #344054;
+                display: flex;
+                align-items: center;
+                gap: 9px;
+            }
+
+
+                .sistema-topbar .dropdown-item:hover {
+                    background: #F2F6FA;
+                    color: var(--azul-principal);
+                }
+
+
+            .sistema-topbar .notif-dropdown {
+                width: 360px;
+                max-height: 480px;
+                overflow: hidden;
+            }
+
+
+            .sistema-topbar .notif-header {
+                padding: 15px 17px;
+                border-bottom: 1px solid var(--borde);
+                color: var(--azul-oscuro);
+            }
+
+
+            .sistema-topbar .notif-list {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                max-height: 390px;
+                overflow-y: auto;
+            }
+
+
+    
+        .sistema-sidebar {
+            position: fixed;
+            top: var(--topbar-height);
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            z-index: 1000;
+            background: linear-gradient( 180deg, #062F55 0%, #073D68 100% );
+            display: flex;
+            flex-direction: column;
+            transition: width .23s ease, transform .23s ease;
+            box-shadow: 4px 0 18px rgba(15, 23, 42, .08);
+            overflow: hidden;
+        }
+
+
+            .sistema-sidebar.expanded {
+                width: var(--sidebar-expanded-width);
+            }
+
+
+        .sidebar-main {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 14px 10px;
+        }
+
+
+            .sidebar-main::-webkit-scrollbar {
+                width: 5px;
+            }
+
+
+            .sidebar-main::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, .13);
+                border-radius: 20px;
+            }
+
+
+        .sidebar-footer {
+            padding: 10px;
+            border-top: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(0, 0, 0, .05);
+        }
+
+
+
+        .sidebar-item {
+            width: 100%;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, .78);
+            text-decoration: none;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 6px;
+            transition: background .18s ease, color .18s ease;
+        }
+
+
+            .sidebar-item:hover {
+                background: rgba(255, 255, 255, .10);
+                color: #fff;
+            }
+
+
+            .sidebar-item.active {
+                background: linear-gradient( 100deg, rgba(88, 168, 63, .30), rgba(255, 255, 255, .08) );
+                color: #fff;
+            }
+
+
+                .sidebar-item.active .sidebar-icon {
+                    color: #ACEC8A;
+                }
+
+
+            .sidebar-item.sidebar-disabled {
+                opacity: .45;
+                cursor: default;
+            }
+
+
+                .sidebar-item.sidebar-disabled:hover {
+                    background: transparent;
+                }
+
+
+        .sidebar-icon {
+            width: 58px;
+            min-width: 58px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.12rem;
+        }
+
+
+        .sidebar-label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: .87rem;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateX(-7px);
+            transition: opacity .17s ease, transform .17s ease;
+        }
+
+
+        .sistema-sidebar.expanded
+        .sidebar-label {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+
+        .sidebar-arrow {
+            margin-left: auto;
+            margin-right: 14px;
+            opacity: 0;
+            font-size: .70rem;
+            transition: opacity .18s ease, transform .18s ease;
+        }
+
+
+        .sistema-sidebar.expanded
+        .sidebar-arrow {
+            opacity: .65;
+        }
+
+
+        .sidebar-item.open
+        .sidebar-arrow {
+            transform: rotate(90deg);
+        }
+
+
+        .sidebar-group-content {
+            display: none;
+            margin: 0 0 8px 48px;
+            padding: 2px 7px 8px 10px;
+            border-left: 1px solid rgba(255, 255, 255, .13);
+        }
+
+
+        .sistema-sidebar.expanded
+        .sidebar-group-content.open {
+            display: block;
+        }
+
+
+        .sidebar-menu-title {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 0;
+            background: transparent;
+            color: rgba(255, 255, 255, .83);
+            padding: 8px 7px;
+            border-radius: 8px;
+            font-size: .79rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: left;
+        }
+
+
+            .sidebar-menu-title:hover {
+                background: rgba(255, 255, 255, .06);
+                color: #fff;
+            }
+
+
+            .sidebar-menu-title .menu-icon {
+                width: 18px;
+                text-align: center;
+                color: rgba(255, 255, 255, .55);
+            }
+
+
+            .sidebar-menu-title .menu-arrow {
+                margin-left: auto;
+                font-size: .63rem;
+                transition: transform .18s ease;
+            }
+
+
+            .sidebar-menu-title.open
+            .menu-arrow {
+                transform: rotate(180deg);
+            }
+
+
+        .sidebar-subitems {
+            display: none;
+            padding: 1px 0 4px 17px;
+        }
+
+
+            .sidebar-subitems.open {
+                display: block;
+            }
+
+
+        
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 8px;
+            margin: 1px 0;
+            border-radius: 7px;
+            color: rgba(255, 255, 255, .62);
+            text-decoration: none;
+            font-size: .76rem;
+            line-height: 1.3;
+            transition: background .16s ease, color .16s ease;
+        }
+
+
+            .sidebar-link::before {
+                content: "";
+                width: 5px;
+                height: 5px;
+                flex: 0 0 5px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, .25);
+            }
+
+
+            .sidebar-link:hover {
+                background: rgba(255, 255, 255, .07);
+                color: #fff;
+            }
+
+
+            .sidebar-link.active {
+                color: #B6EB9B;
+                background: rgba(88, 168, 63, .14);
+                font-weight: 600;
+            }
+
+
+                .sidebar-link.active::before {
+                    background: #85CB62;
+                }
+
+
+        .sidebar-direct-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 8px;
+            margin: 1px 0;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, .72);
+            text-decoration: none;
+            font-size: .79rem;
+            font-weight: 600;
+        }
+
+
+            .sidebar-direct-link:hover {
+                background: rgba(255, 255, 255, .07);
+                color: #fff;
+            }
+
+
+            .sidebar-direct-link.active {
+                color: #B6EB9B;
+                background: rgba(88, 168, 63, .14);
+            }
+
+
+            .sidebar-direct-link i {
+                width: 18px;
+                text-align: center;
+                color: rgba(255, 255, 255, .55);
+            }
+
+
+        .sidebar-toggle {
+            width: 100%;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: rgba(255, 255, 255, .72);
+            cursor: pointer;
+        }
+
+
+            .sidebar-toggle:hover {
+                background: rgba(255, 255, 255, .08);
+                color: #fff;
+            }
+
+
+        .sidebar-toggle-icon {
+            width: 58px;
+            min-width: 58px;
+            display: flex;
+            justify-content: center;
+        }
+
+
+        .sistema-content {
+            min-height: 100vh;
+            padding-top: var(--topbar-height);
+            margin-left: var(--sidebar-width);
+            transition: margin-left .23s ease;
+        }
+
+
+        .sistema-sidebar.expanded ~ .sistema-content {
+            margin-left: var(--sidebar-expanded-width);
+        }
+
+
+        .content-inner {
+            padding: 28px;
+            min-height: calc(100vh - var(--topbar-height));
+        }
+
+
+     
+
+        .sistema-alert {
+            position: fixed;
+            top: calc(var(--topbar-height) + 18px);
+            right: 24px;
+            z-index: 2500;
+            min-width: 320px;
+            max-width: 480px;
+            border-radius: 12px;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, .16);
+        }
+
+
+        .mobile-sidebar-button {
+            display: none;
+            position: fixed;
+            left: 12px;
+            top: calc(var(--topbar-height) + 12px);
+            z-index: 1300;
+            width: 42px;
+            height: 42px;
+            border: 0;
+            border-radius: 11px;
+            background: var(--azul-oscuro);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .16);
+        }
+
+
+        .mobile-sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: var(--topbar-height) 0 0 0;
+            z-index: 990;
+            background: rgba(15, 23, 42, .38);
+            backdrop-filter: blur(2px);
+        }
+
+
+            .mobile-sidebar-overlay.show {
+                display: block;
+            }
+
+
+      
+
+        @@media (max-width: 991px) {
+
+            .sistema-sidebar {
+                width: var(--sidebar-expanded-width);
+                transform: translateX(-100%);
+            }
+
+
+                .sistema-sidebar.mobile-open {
+                    transform: translateX(0);
+                }
+
+
+                    .sistema-sidebar.mobile-open
+                    .sidebar-label {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+
+
+                    .sistema-sidebar.mobile-open
+                    .sidebar-arrow {
+                        opacity: .65;
+                    }
+
+
+                    .sistema-sidebar.mobile-open
+                    .sidebar-group-content.open {
+                        display: block;
+                    }
+
+
+                .sistema-content,
+                .sistema-sidebar.expanded ~ .sistema-content {
+                    margin-left: 0;
+                }
+
+
+            .content-inner {
+                padding: 70px 20px 20px;
+            }
+
+
+            .mobile-sidebar-button {
+                display: block;
+            }
+
+
+            .sistema-topbar
+            .navbar-title {
+                display: none;
+            }
+
+
+            .sistema-topbar
+            .user-info {
+                display: none;
+            }
+        }
+
+
+        @@media (max-width: 600px) {
+
+            .content-inner {
+                padding: 70px 15px 15px;
+            }
+
+
+            .sistema-topbar
+            .top-navbar {
+                padding: 0 12px;
+            }
+
+
+            .sistema-topbar
+            .notif-dropdown {
+                width: 300px;
+                right: -75px;
+            }
+        }
+
+    </style>
+
+
+    @await RenderSectionAsync("Estilos", required: false)
+    @await RenderSectionAsync("Styles", required: false)
+
+</head>
+
+
+<body>
+
+
+    <div class="sistema-app">
+
+
+     
+
+        <header class="sistema-topbar">
+
+            @await Html.PartialAsync(
+                        "_TopNavbar")
+
+        </header>
+
+
+
+
+        <button type="button"
+                class="mobile-sidebar-button"
+                id="mobileSidebarButton"
+                aria-label="Abrir menú">
+
+            <i class="fa-solid fa-bars"></i>
+
+        </button>
+
+
+        <div class="mobile-sidebar-overlay"
+             id="mobileSidebarOverlay">
+        </div>
+
+
+
+        <aside class="sistema-sidebar"
+               id="sistemaSidebar">
+
+
+            <div class="sidebar-main">
+
+
+           
+
+                <a href="@Url.Action("Index", "Menu")"
+                   class="sidebar-item sidebar-home"
+                   data-route="/menu/index"
+                   title="Inicio">
+
+                    <span class="sidebar-icon">
+
+                        <i class="fa-solid fa-house"></i>
+
+                    </span>
+
+                    <span class="sidebar-label">
+
+                        Inicio
+
+                    </span>
+
+                </a>
+
+
+                
+                @if (menuSidebar != null &&
+                                menuSidebar.Any())
+                {
+                    foreach (var grupo in
+                    menuSidebar
+                    .OrderBy(x => x.Orden)
+                    .ThenBy(x => x.Nombre))
+                    {
+                        var grupoId =
+                        $"grupo-{grupo.MenuGrupoID}";
+
+                        var tieneContenido =
+                        grupo.Menus != null &&
+                        grupo.Menus.Any(
+                        x =>
+                        x.SubMenus != null &&
+                        x.SubMenus.Any());
+
+                        var iconoGrupo =
+                        string.IsNullOrWhiteSpace(
+                        grupo.IconoCss)
+                        ? "fa-solid fa-layer-group"
+                        : grupo.IconoCss;
+
+
+                        if (tieneContenido)
+                        {
+
+                            <button type="button"
+                                    class="sidebar-item sidebar-group-button"
+                                    data-group="@grupoId"
+                                    title="@grupo.Nombre">
+
+                                <span class="sidebar-icon">
+
+                                    <i class="@iconoGrupo"></i>
+
+                                </span>
+
+                                <span class="sidebar-label">
+
+                                    @grupo.Nombre
+
+                                </span>
+
+                                <span class="sidebar-arrow">
+
+                                    <i class="fa-solid fa-chevron-right"></i>
+
+                                </span>
+
+                            </button>
+
+
+                            <div class="sidebar-group-content"
+                                 id="@grupoId">
+
+
+                                @foreach (var menu in
+                                                    grupo.Menus
+                                                    .Where(
+                                                    x =>
+                                                    x.SubMenus != null &&
+                                                    x.SubMenus.Any())
+                                                    .OrderBy(x => x.MenuID))
+                                {
+                                    var submenuId =
+                                    $"menu-{menu.MenuID}";
+
+
+                                    if (EsSubMenuUnicoDelMenu(menu))
+                                    {
+                                        var subMenu =
+                                        menu.SubMenus[0];
+
+                                        <a href="@subMenu.UrlEnlace"
+                                           class="sidebar-direct-link sidebar-route-link"
+                                           data-route="@subMenu.UrlEnlace"
+                                           title="@subMenu.Descripcion">
+
+                                            <i class="@menu.IconoCss"></i>
+
+                                            <span>
+                                                @menu.Nombre
+                                            </span>
+
+                                        </a>
+                                    }
+                                    else
+                                    {
+
+                                        <button type="button"
+                                                class="sidebar-menu-title"
+                                                data-menu="@submenuId">
+
+                                            <span class="menu-icon">
+
+                                                <i class="@menu.IconoCss"></i>
+
+                                            </span>
+
+                                            <span>
+                                                @menu.Nombre
+                                            </span>
+
+                                            <span class="menu-arrow">
+
+                                                <i class="fa-solid fa-chevron-down"></i>
+
+                                            </span>
+
+                                        </button>
+
+
+                                        <div class="sidebar-subitems"
+                                             id="@submenuId">
+
+
+                                            @foreach (var subMenu in
+                                                                    menu.SubMenus
+                                                                    .OrderBy(x => x.SubMenuID))
+                                            {
+
+                                                <a href="@subMenu.UrlEnlace"
+                                                   class="sidebar-link sidebar-route-link"
+                                                   data-route="@subMenu.UrlEnlace"
+                                                   title="@subMenu.Descripcion">
+
+                                                    <span>
+                                                        @subMenu.Nombre
+                                                    </span>
+
+                                                </a>
+
+                                            }
+
+
+                                        </div>
+
+                                    }
+
+                                }
+
+
+                            </div>
+
+                        }
+                        else
+                        {
+
+                         
+                            <button type="button"
+                                    class="sidebar-item sidebar-disabled"
+                                    title="@($"{grupo.Nombre} - módulo en configuración")"
+                                    disabled>
+
+                                <span class="sidebar-icon">
+
+                                    <i class="@iconoGrupo"></i>
+
+                                </span>
+
+                                <span class="sidebar-label">
+
+                                    @grupo.Nombre
+
+                                </span>
+
+                            </button>
+
+                        }
+
+                    }
+                }
+                else
+                {
+
+                    <div class="sidebar-item sidebar-disabled"
+                         title="No hay módulos disponibles">
+
+                        <span class="sidebar-icon">
+
+                            <i class="fa-solid fa-circle-exclamation"></i>
+
+                        </span>
+
+                        <span class="sidebar-label">
+
+                            Sin módulos
+
+                        </span>
+
+                    </div>
+
+                }
+
+
+            </div>
+
+
+
+            <div class="sidebar-footer">
+
+
+                <button type="button"
+                        class="sidebar-item"
+                        id="btnPerfilSidebar"
+                        title="Mi perfil">
+
+                    <span class="sidebar-icon">
+
+                        <i class="fa-solid fa-user"></i>
+
+                    </span>
+
+                    <span class="sidebar-label">
+
+                        @nombreUsuario
+
+                    </span>
+
+                </button>
+
+
+                <button type="button"
+                        class="sidebar-toggle"
+                        id="sidebarToggle"
+                        title="Expandir o contraer menú">
+
+                    <span class="sidebar-toggle-icon">
+
+                        <i class="fa-solid fa-angles-right"
+                           id="sidebarToggleIcon">
+                        </i>
+
+                    </span>
+
+                    <span class="sidebar-label">
+
+                        Contraer menú
+
+                    </span>
+
+                </button>
+
+
+            </div>
+
+
+        </aside>
+
+
+       
+        <main class="sistema-content">
+
+
+            <div class="content-inner">
+
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+
+                    <div class="alert alert-success sistema-alert"
+                         id="successAlert">
+
+                        <i class="fa-solid fa-circle-check me-2"></i>
+
+                        @TempData["SuccessMessage"]
+
+                    </div>
+
+                }
+
+
+                @if (TempData["InfoMessage"] != null)
+                {
+
+                    <div class="alert alert-info sistema-alert"
+                         id="infoAlert">
+
+                        <i class="fa-solid fa-circle-info me-2"></i>
+
+                        @TempData["InfoMessage"]
+
+                    </div>
+
+                }
+
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+
+                    <div class="alert alert-danger sistema-alert"
+                         id="errorAlert">
+
+                        <i class="fa-solid fa-circle-exclamation me-2"></i>
+
+                        @TempData["ErrorMessage"]
+
+                    </div>
+
+                }
+
+
+                @RenderBody()
+
+
+            </div>
+
+
+        </main>
+
+
+    </div>
+
+
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+
+    <script>
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            function () {
+
+
+                const sidebar =
+                    document.getElementById(
+                        'sistemaSidebar'
+                    );
+
+
+                const sidebarToggle =
+                    document.getElementById(
+                        'sidebarToggle'
+                    );
+
+
+                const sidebarToggleIcon =
+                    document.getElementById(
+                        'sidebarToggleIcon'
+                    );
+
+
+                const mobileSidebarButton =
+                    document.getElementById(
+                        'mobileSidebarButton'
+                    );
+
+
+                const mobileSidebarOverlay =
+                    document.getElementById(
+                        'mobileSidebarOverlay'
+                    );
+
+
+                if (!sidebar) {
+                    return;
+                }
+
+
+               
+                function normalizarRuta(ruta) {
+
+                    if (!ruta) {
+                        return '';
+                    }
+
+                    ruta =
+                        ruta
+                            .split('?')[0]
+                            .split('#')[0]
+                            .toLowerCase()
+                            .replace(/\/+$/, '');
+
+                    if (ruta === '') {
+                        ruta = '/';
+                    }
+
+                    return ruta;
+
+                }
+
+
+                function expandirSidebar() {
+
+                    sidebar
+                        .classList
+                        .add('expanded');
+
+                    localStorage.setItem(
+                        'sistemaNutri.sidebar.expandido',
+                        'true'
+                    );
+
+                    if (sidebarToggleIcon) {
+
+                        sidebarToggleIcon
+                            .classList
+                            .remove(
+                                'fa-angles-right'
+                            );
+
+                        sidebarToggleIcon
+                            .classList
+                            .add(
+                                'fa-angles-left'
+                            );
+
+                    }
+
+                }
+
+
+                function contraerSidebar() {
+
+                    sidebar
+                        .classList
+                        .remove('expanded');
+
+                    localStorage.setItem(
+                        'sistemaNutri.sidebar.expandido',
+                        'false'
+                    );
+
+                    if (sidebarToggleIcon) {
+
+                        sidebarToggleIcon
+                            .classList
+                            .remove(
+                                'fa-angles-left'
+                            );
+
+                        sidebarToggleIcon
+                            .classList
+                            .add(
+                                'fa-angles-right'
+                            );
+
+                    }
+
+                }
+
+
+                function cerrarMobile() {
+
+                    sidebar
+                        .classList
+                        .remove(
+                            'mobile-open'
+                        );
+
+                    mobileSidebarOverlay
+                        ?.classList
+                        .remove('show');
+
+                }
+
+
+
+                const rutaActual = normalizarRuta(window.location.pathname);
+                const enInicio = rutaActual === '/' ||
+                    rutaActual === '/menu' ||
+                    rutaActual === '/menu/index';
+
+                const estadoGuardado = localStorage.getItem(
+                    'sistemaNutri.sidebar.expandido'
+                );
+
+                // Las vistas de los modulos arrancan con el menu compacto.
+                // El usuario puede expandirlo para elegir otra seccion.
+                if (window.innerWidth > 991) {
+                    if (!enInicio) {
+                        contraerSidebar();
+                    } else if (estadoGuardado === 'true') {
+                        expandirSidebar();
+                    }
+                }
+
+
+                sidebarToggle
+                    ?.addEventListener(
+                        'click',
+                        function () {
+
+                            const expandido =
+                                sidebar
+                                    .classList
+                                    .contains(
+                                        'expanded'
+                                    );
+
+                            if (expandido) {
+                                contraerSidebar();
+                            }
+                            else {
+                                expandirSidebar();
+                            }
+
+                        }
+                    );
+
+
+             
+
+                mobileSidebarButton
+                    ?.addEventListener(
+                        'click',
+                        function () {
+
+                            sidebar
+                                .classList
+                                .add(
+                                    'mobile-open'
+                                );
+
+                            sidebar
+                                .classList
+                                .add(
+                                    'expanded'
+                                );
+
+                            mobileSidebarOverlay
+                                ?.classList
+                                .add('show');
+
+                        }
+                    );
+
+
+                mobileSidebarOverlay
+                    ?.addEventListener(
+                        'click',
+                        cerrarMobile
+                    );
+
+
+
+                document
+                    .querySelectorAll(
+                        '.sidebar-group-button'
+                    )
+                    .forEach(
+                        function (button) {
+
+
+                            button
+                                .addEventListener(
+                                    'click',
+                                    function () {
+
+
+                                        const groupId =
+                                            button
+                                                .dataset
+                                                .group;
+
+
+                                        const content =
+                                            document
+                                                .getElementById(
+                                                    groupId
+                                                );
+
+
+                                        if (
+                                            window.innerWidth >
+                                            991
+                                        ) {
+
+                                            expandirSidebar();
+
+                                        }
+                                        else {
+
+                                            sidebar
+                                                .classList
+                                                .add(
+                                                    'expanded'
+                                                );
+
+                                        }
+
+
+                                        const abierto =
+                                            content
+                                                ?.classList
+                                                .contains(
+                                                    'open'
+                                                );
+
+
+                                   
+                                        document
+                                            .querySelectorAll(
+                                                '.sidebar-group-content.open'
+                                            )
+                                            .forEach(
+                                                function (elemento) {
+
+                                                    if (
+                                                        elemento !==
+                                                        content
+                                                    ) {
+
+                                                        elemento
+                                                            .classList
+                                                            .remove(
+                                                                'open'
+                                                            );
+
+                                                    }
+
+                                                }
+                                            );
+
+
+                                        document
+                                            .querySelectorAll(
+                                                '.sidebar-group-button.open'
+                                            )
+                                            .forEach(
+                                                function (elemento) {
+
+                                                    if (
+                                                        elemento !==
+                                                        button
+                                                    ) {
+
+                                                        elemento
+                                                            .classList
+                                                            .remove(
+                                                                'open'
+                                                            );
+
+                                                    }
+
+                                                }
+                                            );
+
+
+                                        if (abierto) {
+
+                                            content
+                                                ?.classList
+                                                .remove(
+                                                    'open'
+                                                );
+
+                                            button
+                                                .classList
+                                                .remove(
+                                                    'open'
+                                                );
+
+                                        }
+                                        else {
+
+                                            content
+                                                ?.classList
+                                                .add(
+                                                    'open'
+                                                );
+
+                                            button
+                                                .classList
+                                                .add(
+                                                    'open'
+                                                );
+
+                                        }
+
+
+                                    }
+                                );
+
+
+                        }
+                    );
+
+
+
+                document
+                    .querySelectorAll(
+                        '.sidebar-menu-title'
+                    )
+                    .forEach(
+                        function (button) {
+
+
+                            button
+                                .addEventListener(
+                                    'click',
+                                    function () {
+
+
+                                        const menuId =
+                                            button
+                                                .dataset
+                                                .menu;
+
+
+                                        const subitems =
+                                            document
+                                                .getElementById(
+                                                    menuId
+                                                );
+
+
+                                        const abierto =
+                                            subitems
+                                                ?.classList
+                                                .contains(
+                                                    'open'
+                                                );
+
+
+                                        if (abierto) {
+
+                                            subitems
+                                                ?.classList
+                                                .remove(
+                                                    'open'
+                                                );
+
+                                            button
+                                                .classList
+                                                .remove(
+                                                    'open'
+                                                );
+
+                                        }
+                                        else {
+
+                                            subitems
+                                                ?.classList
+                                                .add(
+                                                    'open'
+                                                );
+
+                                            button
+                                                .classList
+                                                .add(
+                                                    'open'
+                                                );
+
+                                        }
+
+
+                                    }
+                                );
+
+
+                        }
+                    );
+
+
+                const inicio =
+                    document.querySelector(
+                        '.sidebar-home'
+                    );
+
+
+                if (
+                    rutaActual === '/menu' ||
+                    rutaActual ===
+                        '/menu/index' ||
+                    rutaActual === '/'
+                ) {
+
+                    inicio
+                        ?.classList
+                        .add('active');
+
+                }
+
+
+                document
+                    .querySelectorAll(
+                        '.sidebar-route-link'
+                    )
+                    .forEach(
+                        function (link) {
+
+
+                            const rutaLink =
+                                normalizarRuta(
+                                    link
+                                        .getAttribute(
+                                            'href'
+                                        )
+                                );
+
+
+                            if (
+                                !rutaLink ||
+                                rutaLink === '#'
+                            ) {
+                                return;
+                            }
+
+
+                            if (
+                                rutaActual ===
+                                rutaLink
+                            ) {
+
+
+                                link
+                                    .classList
+                                    .add(
+                                        'active'
+                                    );
+
+
+                                const groupContent =
+                                    link
+                                        .closest(
+                                            '.sidebar-group-content'
+                                        );
+
+
+                                if (
+                                    groupContent
+                                ) {
+
+                                    groupContent
+                                        .classList
+                                        .add(
+                                            'open'
+                                        );
+
+
+                                    const groupId =
+                                        groupContent.id;
+
+
+                                    const groupButton =
+                                        document
+                                            .querySelector(
+                                                `[data-group="${groupId}"]`
+                                            );
+
+
+                                    groupButton
+                                        ?.classList
+                                        .add(
+                                            'open',
+                                            'active'
+                                        );
+
+                                }
+
+
+                                const subitems =
+                                    link
+                                        .closest(
+                                            '.sidebar-subitems'
+                                        );
+
+
+                                if (
+                                    subitems
+                                ) {
+
+                                    subitems
+                                        .classList
+                                        .add(
+                                            'open'
+                                        );
+
+
+                                    const menuButton =
+                                        document
+                                            .querySelector(
+                                                `[data-menu="${subitems.id}"]`
+                                            );
+
+
+                                    menuButton
+                                        ?.classList
+                                        .add(
+                                            'open'
+                                        );
+
+                                }
+
+
+                               
+
+                                // Conservar el grupo activo sin expandir automaticamente la barra.
+
+                            }
+
+
+                        }
+                    );
+
+
+              
+
+                document
+                    .querySelectorAll('.sidebar-route-link')
+                    .forEach(function (link) {
+                        link.addEventListener('click', function (event) {
+                            if (window.innerWidth <= 991) {
+                                cerrarMobile();
+                                return;
+                            }
+
+                            // No alterar el menu de la pestana actual si se abre otra.
+                            if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+                                return;
+                            }
+
+                            // Al seleccionar un submodulo, liberar espacio de trabajo.
+                            contraerSidebar();
+                        });
+                    });
+
+
+
+                document
+                    .getElementById(
+                        'btnPerfilSidebar'
+                    )
+                    ?.addEventListener(
+                        'click',
+                        function () {
+
+
+                            const perfilNavbar =
+                                document
+                                    .getElementById(
+                                        'linkMiPerfil'
+                                    );
+
+
+                            if (
+                                perfilNavbar
+                            ) {
+
+                                perfilNavbar.click();
+
+                                return;
+
+                            }
+
+
+                            const modalPerfil =
+                                document
+                                    .getElementById(
+                                        'modalPerfil'
+                                    );
+
+
+                            if (
+                                modalPerfil &&
+                                window.bootstrap
+                            ) {
+
+                                bootstrap
+                                    .Modal
+                                    .getOrCreateInstance(
+                                        modalPerfil
+                                    )
+                                    .show();
+
+                            }
+
+
+                        }
+                    );
+
+
+              
+
+                [
+                    'successAlert',
+                    'infoAlert',
+                    'errorAlert'
+                ]
+                .forEach(
+                    function (id) {
+
+
+                        const alerta =
+                            document
+                                .getElementById(
+                                    id
+                                );
+
+
+                        if (!alerta) {
+                            return;
+                        }
+
+
+                        setTimeout(
+                            function () {
+
+
+                                if (
+                                    window.bootstrap
+                                ) {
+
+                                    bootstrap
+                                        .Alert
+                                        .getOrCreateInstance(
+                                            alerta
+                                        )
+                                        .close();
+
+                                }
+
+
+                            },
+                            5000
+                        );
+
+
+                    }
+                );
+
+
+     
+
+                window
+                    .addEventListener(
+                        'resize',
+                        function () {
+
+
+                            if (
+                                window.innerWidth >
+                                991
+                            ) {
+
+                                cerrarMobile();
+
+                            }
+
+
+                        }
+                    );
+
+
+            }
+        );
+
+    </script>
+
+
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+
+</html>

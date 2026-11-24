@@ -1,0 +1,756 @@
+﻿@using System.Security.Claims
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+
+    ViewData["Title"] = "Inicio";
+
+    var nombreUsuario =
+        Context.Session.GetString("NombreMostrar")
+        ?? Context.Session.GetString("Username")
+        ?? User.FindFirst(ClaimTypes.Name)?.Value
+        ?? "Usuario";
+
+    var nombreEmpresa =
+        Context.Session.GetString("EmpresaNombre")
+        ?? "NS Group";
+
+    var gruposSidebar = ViewBag.MenuSidebar as List<MenuSidebarGrupoModel>;
+    var puedeVerCompras = gruposSidebar?.Any(g =>
+        g.Menus.Any(m => m.SubMenus.Any(sm =>
+            sm.UrlEnlace != null &&
+            sm.UrlEnlace.StartsWith("/Compras/", StringComparison.OrdinalIgnoreCase)))) == true;
+
+    var fechaActual =
+        DateTime.Now.ToString(
+            "dddd, dd 'de' MMMM 'de' yyyy",
+            new System.Globalization.CultureInfo("es-MX")
+        );
+}
+
+@section Estilos {
+
+    <style>
+
+        .dashboard-page {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 18px;
+        }
+
+        .dashboard-title-area {
+            min-width: 0;
+        }
+
+        .dashboard-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 4px;
+            color: #58A83F;
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .dashboard-title {
+            margin: 0;
+            color: #062F55;
+            font-size: 1.52rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+        }
+
+        .dashboard-date {
+            margin-top: 3px;
+            color: #667085;
+            font-size: .78rem;
+            text-transform: capitalize;
+        }
+
+
+        .welcome-card {
+            position: relative;
+            overflow: hidden;
+            min-height: 178px;
+            border-radius: 20px;
+            padding: 24px 30px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            background: linear-gradient( 120deg, #073C68 0%, #084F83 56%, #0A669E 100% );
+            box-shadow: 0 12px 30px rgba(6, 47, 85, .14);
+        }
+
+            .welcome-card::before {
+                content: "";
+                position: absolute;
+                width: 220px;
+                height: 220px;
+                border-radius: 50%;
+                right: -55px;
+                top: -115px;
+                background: rgba(255, 255, 255, .06);
+            }
+
+            .welcome-card::after {
+                content: "";
+                position: absolute;
+                width: 190px;
+                height: 190px;
+                border-radius: 50%;
+                left: 42%;
+                bottom: -140px;
+                background: rgba(88, 168, 63, .16);
+            }
+
+        .welcome-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 980px;
+        }
+
+        .welcome-small {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 10px;
+            margin-bottom: 12px;
+            border-radius: 999px;
+            color: #E7F5DF;
+            background: rgba(88, 168, 63, .17);
+            border: 1px solid rgba(158, 222, 124, .18);
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .welcome-title {
+            margin: 0;
+            color: #fff;
+            font-size: clamp(1.7rem, 2.7vw, 2.35rem);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -.03em;
+        }
+
+            .welcome-title span {
+                color: #A9E58A;
+            }
+
+        .welcome-text {
+            margin: 11px 0 0;
+            max-width: 920px;
+            color: rgba(255, 255, 255, .80);
+            font-size: .88rem;
+            line-height: 1.55;
+        }
+
+       
+
+        .dashboard-main-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 18px;
+            align-items: stretch;
+        }
+
+       
+        .dashboard-card {
+            background: #fff;
+            border: 1px solid #E4E9EF;
+            border-radius: 16px;
+            box-shadow: 0 7px 20px rgba(15, 23, 42, .045);
+        }
+
+        .dashboard-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 15px 18px 12px;
+            border-bottom: 1px solid #EEF1F4;
+        }
+
+        .dashboard-card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            color: #17324A;
+            font-size: .91rem;
+            font-weight: 800;
+        }
+
+            .dashboard-card-title i {
+                color: #58A83F;
+            }
+
+        .dashboard-card-body {
+            padding: 15px 18px 17px;
+        }
+
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 11px;
+        }
+
+        .quick-access-item {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            min-height: 66px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid #E7EBF0;
+            text-decoration: none;
+            background: #fff;
+            transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+        }
+
+            .quick-access-item:hover {
+                transform: translateY(-1px);
+                border-color: rgba(8, 79, 131, .28);
+                box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
+            }
+
+        .quick-access-icon {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: #EFF6FB;
+            color: #084F83;
+            font-size: .93rem;
+        }
+
+        .quick-access-item.green
+        .quick-access-icon {
+            color: #58A83F;
+            background: #F0F8EC;
+        }
+
+        .quick-access-title {
+            margin: 0;
+            color: #1F2937;
+            font-size: .78rem;
+            font-weight: 750;
+        }
+
+        .quick-access-text {
+            margin-top: 2px;
+            color: #84909C;
+            font-size: .65rem;
+            line-height: 1.28;
+        }
+
+        /* =========================================================
+                   RESUMEN DE INICIO
+                   ========================================================= */
+
+        .summary-card {
+            height: 100%;
+        }
+
+        .summary-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 0;
+        }
+
+            .summary-item + .summary-item {
+                border-top: 1px solid #EEF1F4;
+            }
+
+        .summary-icon {
+            width: 35px;
+            height: 35px;
+            min-width: 35px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #EFF6FB;
+            color: #084F83;
+        }
+
+            .summary-icon.green {
+                color: #58A83F;
+                background: #F0F8EC;
+            }
+
+        .summary-content {
+            min-width: 0;
+        }
+
+        .summary-title {
+            color: #344054;
+            font-size: .76rem;
+            font-weight: 750;
+        }
+
+        .summary-text {
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .64rem;
+            line-height: 1.3;
+        }
+
+       
+        @@media (max-width: 1100px) {
+
+            .dashboard-main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 760px) {
+
+            .welcome-card {
+                padding: 22px 22px;
+            }
+
+            .quick-access-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 480px) {
+
+            .welcome-title {
+                font-size: 1.65rem;
+            }
+
+            .dashboard-card-header,
+            .dashboard-card-body {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+        }
+
+    </style>
+
+}
+
+
+<div class="dashboard-page">
+
+
+
+    <header class="dashboard-header">
+
+        <div class="dashboard-title-area">
+
+            <div class="dashboard-eyebrow">
+
+                <i class="fa-solid fa-house"></i>
+
+                Inicio
+
+            </div>
+
+            <h1 class="dashboard-title">
+
+                Panel principal
+
+            </h1>
+
+            <div class="dashboard-date">
+
+                @fechaActual
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    
+    <section class="welcome-card">
+
+        <div class="welcome-content">
+
+            <div class="welcome-small">
+
+                <i class="fa-solid fa-leaf"></i>
+
+                SistemaNutri
+
+            </div>
+
+            <h2 class="welcome-title">
+
+                ¡Hola,
+                <span>@nombreUsuario!</span>
+
+            </h2>
+
+            <p class="welcome-text">
+
+                Bienvenido a la plataforma de gestión de
+                <strong>@nombreEmpresa</strong>.
+                Desde aquí podrás acceder a los módulos disponibles
+                según tu perfil y administrar la operación desde
+                un solo lugar.
+
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <div class="dashboard-main-grid">
+
+
+
+        <section class="dashboard-card">
+
+            <div class="dashboard-card-header">
+
+                <h3 class="dashboard-card-title">
+
+                    <i class="fa-solid fa-bolt"></i>
+
+                    Accesos rápidos
+
+                </h3>
+
+            </div>
+
+
+            <div class="dashboard-card-body">
+
+                <div class="quick-access-grid">
+
+                    @if (puedeVerCompras)
+                    {
+                        <a href="/Compras/Index" class="quick-access-item">
+                            <div class="quick-access-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                            <div>
+                                <p class="quick-access-title">Gestión de Compras</p>
+                                <div class="quick-access-text">Solicitudes, cotizaciones y seguimiento.</div>
+                            </div>
+                        </a>
+                        <a href="/Compras/NuevaSolicitud" class="quick-access-item green">
+                            <div class="quick-access-icon"><i class="fa-solid fa-circle-plus"></i></div>
+                            <div>
+                                <p class="quick-access-title">Nueva solicitud</p>
+                                <div class="quick-access-text">Crear una requisición de compra.</div>
+                            </div>
+                        </a>
+                    }
+
+
+
+                    <a href="/Coordinacion/ProgramacionSemanal"
+                       class="quick-access-item">
+
+                        <div class="quick-access-icon">
+
+                            <i class="fa-solid fa-calendar-days"></i>
+
+                        </div>
+
+                        <div>
+
+                            <p class="quick-access-title">
+
+                                Programación semanal
+
+                            </p>
+
+                            <div class="quick-access-text">
+
+                                Consulta la programación de coordinación.
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+
+                    <a href="/Coordinacion/Pedidos"
+                       class="quick-access-item green">
+
+                        <div class="quick-access-icon">
+
+                            <i class="fa-solid fa-clipboard-list"></i>
+
+                        </div>
+
+                        <div>
+
+                            <p class="quick-access-title">
+
+                                Bandeja de pedidos
+
+                            </p>
+
+                            <div class="quick-access-text">
+
+                                Revisa los pedidos recibidos.
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+
+                    <a href="/Coordinacion/DisponibilidadDosis"
+                       class="quick-access-item green">
+
+                        <div class="quick-access-icon">
+
+                            <i class="fa-solid fa-vial"></i>
+
+                        </div>
+
+                        <div>
+
+                            <p class="quick-access-title">
+
+                                Disponibilidad de dosis
+
+                            </p>
+
+                            <div class="quick-access-text">
+
+                                Consulta la disponibilidad operativa.
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+
+                    <a href="/Comercial/Pedidos"
+                       class="quick-access-item">
+
+                        <div class="quick-access-icon">
+
+                            <i class="fa-solid fa-handshake"></i>
+
+                        </div>
+
+                        <div>
+
+                            <p class="quick-access-title">
+
+                                Pedidos comerciales
+
+                            </p>
+
+                            <div class="quick-access-text">
+
+                                Accede al flujo comercial.
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+
+                    <a href="/Comercial/Clientes"
+                       class="quick-access-item">
+
+                        <div class="quick-access-icon">
+
+                            <i class="fa-solid fa-users"></i>
+
+                        </div>
+
+                        <div>
+
+                            <p class="quick-access-title">
+
+                                Clientes
+
+                            </p>
+
+                            <div class="quick-access-text">
+
+                                Consulta y administra clientes.
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+
+                    <a href="/Comercial/Cotizaciones"
+                       class="quick-access-item green">
+
+                        <div class="quick-access-icon">
+
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+
+                        </div>
+
+                        <div>
+
+                            <p class="quick-access-title">
+
+                                Cotizaciones
+
+                            </p>
+
+                            <div class="quick-access-text">
+
+                                Consulta las cotizaciones comerciales.
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="dashboard-card summary-card">
+
+            <div class="dashboard-card-header">
+
+                <h3 class="dashboard-card-title">
+
+                    <i class="fa-solid fa-circle-info"></i>
+
+                    Acceso al sistema
+
+                </h3>
+
+            </div>
+
+
+            <div class="dashboard-card-body">
+
+                <div class="summary-list">
+
+
+                    <div class="summary-item">
+
+                        <div class="summary-icon">
+
+                            <i class="fa-solid fa-bars"></i>
+
+                        </div>
+
+                        <div class="summary-content">
+
+                            <div class="summary-title">
+
+                                Menú lateral
+
+                            </div>
+
+                            <div class="summary-text">
+
+                                Usa los iconos de la izquierda
+                                para acceder a cada módulo.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-item">
+
+                        <div class="summary-icon green">
+
+                            <i class="fa-solid fa-calendar-check"></i>
+
+                        </div>
+
+                        <div class="summary-content">
+
+                            <div class="summary-title">
+
+                                Coordinación
+
+                            </div>
+
+                            <div class="summary-text">
+
+                                Programación, pedidos y disponibilidad.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-item">
+
+                        <div class="summary-icon">
+
+                            <i class="fa-solid fa-handshake"></i>
+
+                        </div>
+
+                        <div class="summary-content">
+
+                            <div class="summary-title">
+
+                                Comercial
+
+                            </div>
+
+                            <div class="summary-text">
+
+                                Pedidos, clientes y cotizaciones.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    </div>
+
+
+</div>

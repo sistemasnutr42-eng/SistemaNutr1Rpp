@@ -1,0 +1,66 @@
+@model SistemaNutri.Models.ComprasDashboardVm
+@using System.Linq
+@{
+    ViewData["Title"] = "Indicadores de Compras";
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    decimal total = Model.DonaValores.Sum();
+    int activos = Model.HeatmapData.Sum(g => g.data.Count);
+    int estados = Model.DonaEtiquetas.Count;
+}
+@section Estilos {
+    <link rel="stylesheet" href="~/css/compras-presentacion.css" asp-append-version="true" />
+}
+<div class="compras-modern compras-dashboard">
+    <section class="cn-hero cn-hero-slim">
+        <div class="cn-hero-copy"><div class="cn-eyebrow"><i class="fas fa-chart-pie"></i> ANALÍTICA / COMPRAS</div>
+            <h1>Indicadores de Dirección</h1>
+            <p>Estado actual de solicitudes y tiempos de permanencia por etapa. Datos obtenidos de NUTRI_TEST.</p>
+        </div>
+        <div class="cn-hero-actions"><a href="/Compras/Index" class="cn-secondary-btn"><i class="fas fa-arrow-left"></i> Volver a Compras</a></div>
+    </section>
+    <section class="cn-stat-grid" aria-label="Resumen de indicadores">
+        <div class="cn-stat"><div class="cn-stat-icon cn-icon-blue"><i class="fas fa-file-invoice"></i></div><div><span>Solicitudes registradas</span><strong>@total.ToString("N0")</strong></div></div>
+        <div class="cn-stat"><div class="cn-stat-icon cn-icon-purple"><i class="fas fa-layer-group"></i></div><div><span>Estados con registros</span><strong>@estados</strong></div></div>
+        <div class="cn-stat"><div class="cn-stat-icon cn-icon-orange"><i class="fas fa-clock"></i></div><div><span>Combinaciones activas</span><strong>@activos</strong></div></div>
+    </section>
+    <div class="cn-report-grid">
+        <section class="cn-report-card">
+            <div class="cn-section-header"><div><p>RESUMEN</p><h2>Solicitudes por estado</h2></div></div>
+            @if (total == 0)
+            {
+                <div class="cn-empty"><i class="fas fa-chart-bar"></i><strong>Sin solicitudes registradas</strong><p>Los indicadores aparecerán cuando existan solicitudes en la base de pruebas.</p></div>
+            }
+            else
+            {
+                <div class="cn-bars">
+                    @for (var i = 0; i < Model.DonaEtiquetas.Count && i < Model.DonaValores.Count; i++)
+                    {
+                        var cantidad = Model.DonaValores[i];
+                        var ancho = total > 0 ? (cantidad / total * 100m) : 0m;
+                        <div class="cn-bar-item"><div class="cn-bar-caption"><span>@Model.DonaEtiquetas[i]</span><strong>@cantidad.ToString("N0")</strong></div><div class="cn-bar-track"><div style="width:@(ancho.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div></div></div>
+                    }
+                </div>
+            }
+        </section>
+        <section class="cn-report-card">
+            <div class="cn-section-header"><div><p>SEGUIMIENTO</p><h2>Horas por área y estatus</h2></div></div>
+            @if (!Model.HeatmapData.Any())
+            {
+                <div class="cn-empty"><i class="fas fa-stopwatch"></i><strong>Sin etapas activas</strong><p>Cuando existan solicitudes en proceso, se mostrarán sus tiempos.</p></div>
+            }
+            else
+            {
+                <div class="table-responsive"><table class="table cn-table"><thead><tr><th>Área responsable</th><th>Estatus</th><th>Horas promedio</th></tr></thead><tbody>
+                    @foreach (var area in Model.HeatmapData)
+                    {
+                        @foreach (var punto in area.data)
+                        {
+                            <tr><td><strong>@area.name</strong></td><td>@punto.x</td><td>@punto.y h</td></tr>
+                        }
+                    }
+                </tbody></table></div>
+            }
+        </section>
+    </div>
+    <p class="cn-source-note">Fuente: procedimiento almacenado sp_Compras_DataDashBoard. Los resultados dependen de los registros existentes; esta pantalla no genera datos de ejemplo.</p>
+</div>

@@ -1,0 +1,4 @@
+@model SistemaNutri.Models.AlmDashboardVm
+@{ ViewData["Title"] = Model.Titulo; Layout = "_LayoutSistema"; }
+@section Estilos { <link rel="stylesheet" href="~/css/almacen-integral.css" asp-append-version="true" /> }
+<partial name="_Hub" model="Model" />

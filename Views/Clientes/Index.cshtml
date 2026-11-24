@@ -1,0 +1,2163 @@
+﻿@using System.Text.Encodings.Web
+@model SistemaNutri.Models.ClientesIndexVm
+
+@{
+    ViewData["Title"] = "Clientes";
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .clientes-page {
+        padding: 18px 20px 32px;
+    }
+
+    .clientes-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .clientes-title {
+        margin: 0;
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: #212529;
+    }
+
+    .clientes-subtitle {
+        margin-top: 4px;
+        color: #6c757d;
+        font-size: .9rem;
+    }
+
+    .clientes-toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .clientes-filtros {
+        display: grid;
+        grid-template-columns: minmax(240px, 1fr) auto auto;
+        gap: 10px;
+        align-items: end;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .clientes-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .clientes-table {
+        min-width: 1050px;
+        margin-bottom: 0;
+    }
+
+        .clientes-table th {
+            white-space: nowrap;
+            font-size: .82rem;
+            color: #495057;
+            background: #f8f9fa;
+            vertical-align: middle;
+        }
+
+        .clientes-table td {
+            vertical-align: middle;
+            font-size: .88rem;
+        }
+
+    .cliente-nombre {
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .cliente-secundario {
+        display: block;
+        margin-top: 2px;
+        color: #6c757d;
+        font-size: .78rem;
+    }
+
+    .badge-estado {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 600;
+    }
+
+    .badge-activo {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .badge-inactivo {
+        background: #e9ecef;
+        color: #6c757d;
+    }
+
+    .badge-biohypor {
+        background: #cff4fc;
+        color: #055160;
+    }
+
+    .acciones-tabla {
+        display: flex;
+        gap: 5px;
+        white-space: nowrap;
+    }
+
+    .modal-xl-custom {
+        max-width: 1120px;
+    }
+
+    .seccion-modal {
+        padding: 4px 0 16px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+        .seccion-modal:last-child {
+            border-bottom: 0;
+            margin-bottom: 0;
+        }
+
+    .seccion-titulo {
+        margin: 0 0 12px;
+        font-weight: 700;
+        font-size: .95rem;
+        color: #343a40;
+    }
+
+    .tabla-detalle th {
+        font-size: .8rem;
+        background: #f8f9fa;
+        white-space: nowrap;
+    }
+
+    .tabla-detalle td {
+        font-size: .84rem;
+        vertical-align: middle;
+    }
+
+    .empresa-checks {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 8px;
+    }
+
+    .empresa-check-item {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 8px 10px;
+    }
+
+    .detalle-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .detalle-campo {
+        min-width: 0;
+    }
+
+    .detalle-label {
+        display: block;
+        color: #6c757d;
+        font-size: .72rem;
+        margin-bottom: 2px;
+    }
+
+    .detalle-valor {
+        display: block;
+        font-size: .88rem;
+        color: #212529;
+        word-break: break-word;
+    }
+
+    .empty-state {
+        padding: 28px 12px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .spinner-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,.62);
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .spinner-overlay.show {
+            display: flex;
+        }
+
+    .spinner-box {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 18px 24px;
+        box-shadow: 0 8px 28px rgba(0,0,0,.12);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    @@media(max-width: 992px) {
+        .detalle-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .clientes-filtros {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media(max-width: 576px) {
+        .clientes-header {
+            flex-direction: column;
+        }
+
+        .detalle-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="clientes-page">
+
+    <div class="clientes-header">
+        <div>
+            <h1 class="clientes-title">Clientes</h1>
+           
+           <div class="clientes-subtitle">
+                Empresa actual:
+                <strong>@(string.IsNullOrWhiteSpace(Model.EmpresaNombre) ? $"Empresa #{Model.EmpresaID}" : Model.EmpresaNombre)</strong>
+            </div>
+        </div>
+
+        <div class="clientes-toolbar">
+            @if (Model.PuedeCrear)
+            {
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        onclick="abrirNuevoCliente()">
+                    <i class="bi bi-plus-lg"></i>
+                    Nuevo cliente
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+    <form method="get"
+          asp-controller="Clientes"
+          asp-action="Index"
+          class="clientes-filtros">
+
+        <div>
+            <label class="form-label mb-1">Buscar</label>
+            <input type="text"
+                   class="form-control form-control-sm"
+                   name="Buscar"
+                   value="@Model.Filtros.Buscar"
+                   maxlength="200"
+                   placeholder="Nombre, razón social, código, RFC o alias..." />
+        </div>
+
+        <div class="form-check mb-1">
+            <input class="form-check-input"
+                   type="checkbox"
+                   name="IncluirInactivos"
+                   value="true"
+                   id="filtroIncluirInactivos"
+            @(Model.Filtros.IncluirInactivos ? "checked" : "") />
+            <label class="form-check-label" for="filtroIncluirInactivos">
+                Incluir inactivos
+            </label>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-search"></i>
+                Buscar
+            </button>
+
+            <a asp-controller="Clientes"
+               asp-action="Index"
+               class="btn btn-outline-secondary btn-sm">
+                Limpiar
+            </a>
+        </div>
+    </form>
+
+    <div class="clientes-table-wrapper">
+        <table class="table table-hover clientes-table">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Código</th>
+                    <th>RFC</th>
+                    <th>Tipo</th>
+                    <th>Contacto</th>
+                    <th>Empresas</th>
+                    <th class="text-center">Ubicaciones</th>
+                    <th class="text-center">Alias</th>
+                    <th>Estado</th>
+                    <th style="width:145px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Clientes.Count == 0)
+                {
+                    <tr>
+                        <td colspan="10">
+                            <div class="empty-state">
+                                No se encontraron clientes con los filtros seleccionados.
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var cliente in Model.Clientes)
+                    {
+                        <tr>
+                            <td>
+                                <span class="cliente-nombre">@cliente.NombreComercial</span>
+
+                                @if (!string.IsNullOrWhiteSpace(cliente.RazonSocial))
+                                {
+                                    <span class="cliente-secundario">
+                                        @cliente.RazonSocial
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(cliente.CodigoCliente) ? "—" : cliente.CodigoCliente)
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(cliente.RFC) ? "—" : cliente.RFC)
+                            </td>
+
+                            <td>
+                                @if (cliente.EsBioHypor)
+                                {
+                                    <span class="badge-estado badge-biohypor">
+                                        BioHypor
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Externo</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(cliente.Telefono))
+                                {
+                                    <div>@cliente.Telefono</div>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(cliente.Correo))
+                                {
+                                    <small class="text-muted">@cliente.Correo</small>
+                                }
+
+                                @if (string.IsNullOrWhiteSpace(cliente.Telefono) &&
+                                     string.IsNullOrWhiteSpace(cliente.Correo))
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(cliente.Empresas) ? "—" : cliente.Empresas)
+                            </td>
+
+                            <td class="text-center">
+                                @cliente.TotalUbicaciones
+                            </td>
+
+                            <td class="text-center">
+                                @cliente.TotalAlias
+                            </td>
+
+                            <td>
+                                @if (cliente.Activo)
+                                {
+                                    <span class="badge-estado badge-activo">
+                                        Activo
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge-estado badge-inactivo">
+                                        Inactivo
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                <div class="acciones-tabla">
+
+                                    <button type="button"
+                                            class="btn btn-outline-secondary btn-sm"
+                                            title="Ver detalle"
+                                            onclick="abrirDetalleCliente(@cliente.ClienteID)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+
+                                    @if (Model.PuedeEditar)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-sm"
+                                                title="Editar"
+                                                onclick="abrirEditarCliente(@cliente.ClienteID)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    }
+
+                                    @if (cliente.Activo && Model.PuedeEliminar)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-outline-danger btn-sm"
+                                                title="Desactivar"
+                                                onclick="cambiarActivoCliente(@cliente.ClienteID, false, '@Html.Raw(JavaScriptEncoder.Default.Encode(cliente.NombreComercial))')">
+                                            <i class="bi bi-slash-circle"></i>
+                                        </button>
+                                    }
+                                    else if (!cliente.Activo && Model.PuedeEditar)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-outline-success btn-sm"
+                                                title="Activar"
+                                                onclick="cambiarActivoCliente(@cliente.ClienteID, true, '@Html.Raw(JavaScriptEncoder.Default.Encode(cliente.NombreComercial))')">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    }
+
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade"
+     id="modalCliente"
+     tabindex="-1"
+     aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalCliente">
+                    Nuevo cliente
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="formCliente" autocomplete="off">
+
+                    <input type="hidden"
+                           id="clienteID"
+                           name="ClienteID" />
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label">Código</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="codigoCliente"
+                                   name="CodigoCliente"
+                                   maxlength="50" />
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label">
+                                Nombre comercial
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="nombreComercial"
+                                   name="NombreComercial"
+                                   maxlength="200"
+                                   required />
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label">Razón social</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="razonSocial"
+                                   name="RazonSocial"
+                                   maxlength="200" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">RFC</label>
+                            <input type="text"
+                                   class="form-control text-uppercase"
+                                   id="rfc"
+                                   name="RFC"
+                                   maxlength="20" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="telefonoCliente"
+                                   name="Telefono"
+                                   maxlength="30" />
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label">Correo</label>
+                            <input type="email"
+                                   class="form-control"
+                                   id="correoCliente"
+                                   name="Correo"
+                                   maxlength="150" />
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="esBioHypor"
+                                       name="EsBioHypor"
+                                       value="true" />
+
+                                <label class="form-check-label"
+                                       for="esBioHypor">
+                                    Cliente BioHypor
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Observaciones</label>
+
+                            <textarea class="form-control"
+                                      id="observacionesCliente"
+                                      name="Observaciones"
+                                      rows="3"
+                                      maxlength="500"></textarea>
+                        </div>
+
+                    </div>
+
+                    <hr />
+
+                    <div class="seccion-titulo">
+                        Empresas relacionadas
+                    </div>
+
+                    <div class="empresa-checks"
+                         id="contenedorEmpresasCliente">
+
+                        @foreach (var empresa in Model.Catalogos.Empresas)
+                        {
+                            <div class="empresa-check-item">
+                                <div class="form-check">
+                                    <input class="form-check-input empresa-cliente-check"
+                                           type="checkbox"
+                                           value="@empresa.EmpresaID"
+                                           id="empresaCliente_@empresa.EmpresaID"
+                                    />
+
+                                    <label class="form-check-label"
+                                           for="empresaCliente_@empresa.EmpresaID">
+                                        @empresa.Nombre
+
+                                        @if (empresa.EsEmpresaActual)
+                                        {
+                                            <small class="text-muted">
+                                                (actual)
+                                            </small>
+                                        }
+                                    </label>
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        onclick="guardarCliente()">
+                    Guardar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade"
+     id="modalDetalleCliente"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-xl-custom modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0"
+                        id="detalleClienteTitulo">
+                        Detalle del cliente
+                    </h5>
+
+                    <small class="text-muted"
+                           id="detalleClienteSubtitulo">
+                    </small>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <input type="hidden"
+                       id="detalleClienteID" />
+
+                <div class="seccion-modal">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="seccion-titulo mb-0">
+                            Datos generales
+                        </div>
+
+                        @if (Model.PuedeEditar)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    id="btnEditarDesdeDetalle"
+                                    onclick="editarDesdeDetalle()">
+                                <i class="bi bi-pencil"></i>
+                                Editar
+                            </button>
+                        }
+                    </div>
+
+                    <div class="detalle-grid"
+                         id="detalleDatosGenerales">
+                    </div>
+                </div>
+
+                <div class="seccion-modal">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+
+                        <div class="seccion-titulo mb-0">
+                            Empresas
+                        </div>
+
+                    </div>
+
+                    <div id="detalleEmpresas">
+                    </div>
+
+                </div>
+
+                <div class="seccion-modal">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+
+                        <div class="seccion-titulo mb-0">
+                            Ubicaciones
+                        </div>
+
+                        @if (Model.PuedeCrear)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    onclick="abrirNuevaUbicacion()">
+                                <i class="bi bi-plus-lg"></i>
+                                Nueva ubicación
+                            </button>
+                        }
+
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover tabla-detalle">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Ubicación</th>
+                                    <th>Contacto</th>
+                                    <th>Estado</th>
+                                    <th style="width:115px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalleUbicacionesBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <div class="seccion-modal">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+
+                        <div>
+                            <div class="seccion-titulo mb-0">
+                                Alias
+                            </div>
+                            <small class="text-muted">
+                                Nombres alternos con los que puede aparecer el cliente en archivos de programación.
+                            </small>
+                        </div>
+
+                        @if (Model.PuedeCrear)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    onclick="abrirNuevoAlias()">
+                                <i class="bi bi-plus-lg"></i>
+                                Nuevo alias
+                            </button>
+                        }
+
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover tabla-detalle">
+                            <thead>
+                                <tr>
+                                    <th>Alias reconocido</th>
+                                    <th>Estado</th>
+                                    <th style="width:115px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalleAliasBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade"
+     id="modalUbicacion"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title"
+                    id="tituloModalUbicacion">
+                    Nueva ubicación
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="formUbicacion" autocomplete="off">
+
+                    <input type="hidden"
+                           id="ubicacionID"
+                           name="ClienteUbicacionID" />
+
+                    <input type="hidden"
+                           id="ubicacionClienteID"
+                           name="ClienteID" />
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                Nombre
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionNombre"
+                                   name="Nombre"
+                                   maxlength="150"
+                                   required />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Tipo</label>
+
+                            <select class="form-select"
+                                    id="ubicacionTipo"
+                                    name="TipoUbicacionClienteID">
+
+                                <option value="">
+                                    Seleccionar...
+                                </option>
+
+                                @foreach (var tipo in Model.Catalogos.TiposUbicacion)
+                                {
+                                    <option value="@tipo.TipoUbicacionClienteID">
+                                        @tipo.Nombre
+                                    </option>
+                                }
+
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Código</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionCodigo"
+                                   name="Codigo"
+                                   maxlength="50" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Dirección</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionDireccion"
+                                   name="Direccion"
+                                   maxlength="300" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Municipio</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionMunicipio"
+                                   name="Municipio"
+                                   maxlength="100" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Estado</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionEstado"
+                                   name="Estado"
+                                   maxlength="100" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Código postal</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionCP"
+                                   name="CodigoPostal"
+                                   maxlength="10" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Latitud</label>
+
+                            <input type="number"
+                                   class="form-control"
+                                   id="ubicacionLatitud"
+                                   name="Latitud"
+                                   min="-90"
+                                   max="90"
+                                   step="0.0000001" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Longitud</label>
+
+                            <input type="number"
+                                   class="form-control"
+                                   id="ubicacionLongitud"
+                                   name="Longitud"
+                                   min="-180"
+                                   max="180"
+                                   step="0.0000001" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">URL Maps</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionUrlMaps"
+                                   name="UrlMaps"
+                                   maxlength="500" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Contacto</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionContacto"
+                                   name="Contacto"
+                                   maxlength="150" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Teléfono</label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="ubicacionTelefono"
+                                   name="Telefono"
+                                   maxlength="30" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Correo</label>
+
+                            <input type="email"
+                                   class="form-control"
+                                   id="ubicacionCorreo"
+                                   name="Correo"
+                                   maxlength="150" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Observaciones</label>
+
+                            <textarea class="form-control"
+                                      id="ubicacionObservaciones"
+                                      name="Observaciones"
+                                      rows="3"
+                                      maxlength="500"></textarea>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        onclick="guardarUbicacion()">
+                    Guardar
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade"
+     id="modalAlias"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title"
+                    id="tituloModalAlias">
+                    Nuevo alias
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="formAlias"
+                      autocomplete="off">
+
+                    <input type="hidden"
+                           id="aliasID"
+                           name="ClienteAliasID" />
+
+                    <input type="hidden"
+                           id="aliasClienteID"
+                           name="ClienteID" />
+
+                    <label class="form-label">
+                        Alias
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           id="aliasNombre"
+                           name="Alias"
+                           maxlength="200"
+                           required />
+
+                    <div class="form-text mt-2">
+                        Debe capturarse exactamente como suele aparecer en los archivos de programación.
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        onclick="guardarAlias()">
+                    Guardar
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="spinner-overlay"
+     id="spinnerGlobal">
+
+    <div class="spinner-box">
+        <div class="spinner-border spinner-border-sm"
+             role="status">
+        </div>
+
+        <span>Procesando...</span>
+    </div>
+
+</div>
+
+@section Scripts
+{
+    <script>
+        const puedeCrear = @Model.PuedeCrear.ToString().ToLowerInvariant();
+        const puedeEditar = @Model.PuedeEditar.ToString().ToLowerInvariant();
+        const puedeEliminar = @Model.PuedeEliminar.ToString().ToLowerInvariant();
+
+        let clienteDetalleActual = null;
+
+        const modalCliente = bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalCliente'));
+
+        const modalDetalleCliente = bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalDetalleCliente'));
+
+        const modalUbicacion = bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalUbicacion'));
+
+        const modalAlias = bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalAlias'));
+
+        function tokenAntiforgery() {
+            return document.querySelector(
+                'input[name="__RequestVerificationToken"]')?.value ?? '';
+        }
+
+        function mostrarCarga(mostrar) {
+            document.getElementById('spinnerGlobal')
+                ?.classList.toggle('show', mostrar);
+        }
+
+        function texto(valor) {
+            if (valor === null ||
+                valor === undefined ||
+                valor === '') {
+                return '—';
+            }
+
+            return String(valor);
+        }
+
+        function escaparHtml(valor) {
+            if (valor === null ||
+                valor === undefined) {
+                return '';
+            }
+
+            return String(valor)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function notificar(mensaje, tipo = 'success') {
+            if (window.Swal) {
+                Swal.fire({
+                    icon: tipo === 'success'
+                        ? 'success'
+                        : tipo === 'warning'
+                            ? 'warning'
+                            : 'error',
+                    text: mensaje,
+                    confirmButtonText: 'Aceptar'
+                });
+
+                return;
+            }
+
+            alert(mensaje);
+        }
+
+        async function confirmar(mensaje) {
+            if (window.Swal) {
+                const respuesta = await Swal.fire({
+                    icon: 'question',
+                    text: mensaje,
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí',
+                    cancelButtonText: 'Cancelar'
+                });
+
+                return respuesta.isConfirmed;
+            }
+
+            return window.confirm(mensaje);
+        }
+
+              function abrirNuevoCliente() {
+            document.getElementById('formCliente').reset();
+            document.getElementById('clienteID').value = '';
+            document.getElementById('tituloModalCliente').textContent = 'Nuevo cliente';
+
+            document
+                .querySelectorAll('.empresa-cliente-check')
+                .forEach(x => x.checked = false);
+
+            modalCliente.show();
+}
+
+        async function abrirEditarCliente(clienteId) {
+            try {
+                mostrarCarga(true);
+
+                const detalle =
+                    await obtenerDetalleCliente(clienteId);
+
+                if (!detalle)
+                    return;
+
+                document.getElementById('formCliente').reset();
+
+                document.getElementById('clienteID').value =
+                    detalle.cliente.clienteID;
+
+                document.getElementById('codigoCliente').value =
+                    detalle.cliente.codigoCliente ?? '';
+
+                document.getElementById('nombreComercial').value =
+                    detalle.cliente.nombreComercial ?? '';
+
+                document.getElementById('razonSocial').value =
+                    detalle.cliente.razonSocial ?? '';
+
+                document.getElementById('rfc').value =
+                    detalle.cliente.rfc ?? '';
+
+                document.getElementById('telefonoCliente').value =
+                    detalle.cliente.telefono ?? '';
+
+                document.getElementById('correoCliente').value =
+                    detalle.cliente.correo ?? '';
+
+                document.getElementById('observacionesCliente').value =
+                    detalle.cliente.observaciones ?? '';
+
+                document.getElementById('esBioHypor').checked =
+                    detalle.cliente.esBioHypor === true;
+
+                document
+                    .querySelectorAll('.empresa-cliente-check')
+                    .forEach(x => x.checked = false);
+
+                for (const empresa of detalle.empresas ?? []) {
+                    const check =
+                        document.getElementById(
+                            `empresaCliente_${empresa.empresaID}`);
+
+                    if (check) {
+                        check.checked =
+                            empresa.seleccionada === true;
+                    }
+                }
+
+                document.getElementById('tituloModalCliente')
+                    .textContent =
+                    'Editar cliente';
+
+                modalDetalleCliente.hide();
+                modalCliente.show();
+            }
+            catch (error) {
+                notificar(
+                    error.message || 'No fue posible cargar el cliente.',
+                    'error');
+            }
+            finally {
+                mostrarCarga(false);
+            }
+        }
+
+       async function guardarCliente() {
+    const form = document.getElementById('formCliente');
+
+    if (!form.reportValidity())
+        return;
+
+    const empresas = [...document.querySelectorAll('.empresa-cliente-check:checked')];
+
+    const formData = new FormData(form);
+
+    for (const empresa of empresas) {
+        formData.append('EmpresasSeleccionadas', empresa.value);
+    }
+
+    if (!document.getElementById('esBioHypor').checked) {
+        formData.set('EsBioHypor', 'false');
+    }
+
+    formData.append('__RequestVerificationToken', tokenAntiforgery());
+
+    try {
+        mostrarCarga(true);
+
+        const response = await fetch(
+            '@Url.Action("Guardar", "Clientes")',
+            {
+                method: 'POST',
+                body: formData
+            });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'No fue posible guardar el cliente.');
+        }
+
+        modalCliente.hide();
+        notificar(result.message || 'Cliente guardado correctamente.');
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    }
+    catch (error) {
+        notificar(error.message || 'No fue posible guardar el cliente.', 'error');
+    }
+    finally {
+        mostrarCarga(false);
+    }
+}
+
+        async function abrirDetalleCliente(clienteId) {
+            try {
+                mostrarCarga(true);
+
+                const detalle =
+                    await obtenerDetalleCliente(clienteId);
+
+                if (!detalle)
+                    return;
+
+                clienteDetalleActual = detalle;
+
+                document.getElementById('detalleClienteID').value =
+                    detalle.cliente.clienteID;
+
+                document.getElementById('detalleClienteTitulo')
+                    .textContent =
+                    detalle.cliente.nombreComercial;
+
+                document.getElementById('detalleClienteSubtitulo')
+                    .textContent =
+                    detalle.cliente.razonSocial ?? '';
+
+                renderDatosGenerales(detalle);
+                renderEmpresas(detalle);
+                renderUbicaciones(detalle);
+                renderAlias(detalle);
+
+                modalDetalleCliente.show();
+            }
+            catch (error) {
+                notificar(
+                    error.message ||
+                    'No fue posible obtener el detalle del cliente.',
+                    'error');
+            }
+            finally {
+                mostrarCarga(false);
+            }
+        }
+
+        async function obtenerDetalleCliente(clienteId) {
+            const url =
+                '@Url.Action("ObtenerDetalle", "Clientes")'
+                + '?clienteId='
+                + encodeURIComponent(clienteId);
+
+            const response =
+                await fetch(url);
+
+            const result =
+                await response.json();
+
+            if (!response.ok ||
+                !result.success) {
+                throw new Error(
+                    result.message ||
+                    'No fue posible obtener el cliente.');
+            }
+
+            return result.data;
+        }
+
+        function renderDatosGenerales(detalle) {
+            const c = detalle.cliente;
+
+            document.getElementById('detalleDatosGenerales')
+                .innerHTML = `
+                        ${campoDetalle('Código', c.codigoCliente)}
+                        ${campoDetalle('RFC', c.rfc)}
+                        ${campoDetalle('Tipo', c.esBioHypor ? 'BioHypor' : 'Externo')}
+                        ${campoDetalle('Estado', c.activo ? 'Activo' : 'Inactivo')}
+                        ${campoDetalle('Teléfono', c.telefono)}
+                        ${campoDetalle('Correo', c.correo)}
+                        ${campoDetalle('Creado', formatoFecha(c.fechaCreacion))}
+                        ${campoDetalle('Última modificación', formatoFecha(c.fechaModificacion))}
+                        <div class="detalle-campo" style="grid-column:1/-1;">
+                            <span class="detalle-label">Observaciones</span>
+                            <span class="detalle-valor">
+                                ${escaparHtml(texto(c.observaciones))}
+                            </span>
+                        </div>
+                    `;
+        }
+
+        function campoDetalle(etiqueta, valor) {
+            return `
+                    <div class="detalle-campo">
+                        <span class="detalle-label">
+                            ${escaparHtml(etiqueta)}
+                        </span>
+                        <span class="detalle-valor">
+                            ${escaparHtml(texto(valor))}
+                        </span>
+                    </div>
+                `;
+        }
+
+        function renderEmpresas(detalle) {
+            const seleccionadas =
+                (detalle.empresas ?? [])
+                    .filter(x => x.seleccionada);
+
+            if (seleccionadas.length === 0) {
+                document.getElementById('detalleEmpresas')
+                    .innerHTML =
+                    '<span class="text-muted">Sin empresas relacionadas.</span>';
+                return;
+            }
+
+            document.getElementById('detalleEmpresas')
+                .innerHTML =
+                seleccionadas.map(x =>
+                    `<span class="badge bg-light text-dark border me-1 mb-1">
+                            ${escaparHtml(x.nombre)}
+                         </span>`
+                ).join('');
+        }
+
+        function renderUbicaciones(detalle) {
+            const body =
+                document.getElementById(
+                    'detalleUbicacionesBody');
+
+            const ubicaciones =
+                detalle.ubicaciones ?? [];
+
+            if (ubicaciones.length === 0) {
+                body.innerHTML = `
+                        <tr>
+                            <td colspan="6"
+                                class="text-center text-muted py-3">
+                                No hay ubicaciones registradas.
+                            </td>
+                        </tr>
+                    `;
+                return;
+            }
+
+            body.innerHTML =
+                ubicaciones.map(u => {
+
+                    const lugar =
+                        [
+                            u.municipio,
+                            u.estado
+                        ]
+                            .filter(Boolean)
+                            .join(', ');
+
+                    const contacto =
+                        [
+                            u.contacto,
+                            u.telefono
+                        ]
+                            .filter(Boolean)
+                            .join(' · ');
+
+                    let acciones = '';
+
+                    if (puedeEditar) {
+                        acciones += `
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm me-1"
+                                        onclick="abrirEditarUbicacion(${u.clienteUbicacionID})"
+                                        title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            `;
+                    }
+
+                    if (u.activo && puedeEliminar) {
+                        acciones += `
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="cambiarActivoUbicacion(${u.clienteUbicacionID},false)"
+                                        title="Desactivar">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                            `;
+                    }
+                    else if (!u.activo && puedeEditar) {
+                        acciones += `
+                                <button type="button"
+                                        class="btn btn-outline-success btn-sm"
+                                        onclick="cambiarActivoUbicacion(${u.clienteUbicacionID},true)"
+                                        title="Activar">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                            `;
+                    }
+
+                    return `
+                            <tr>
+                                <td>
+                                    <strong>${escaparHtml(u.nombre)}</strong>
+                                    ${u.codigo
+                            ? `<small class="d-block text-muted">${escaparHtml(u.codigo)}</small>`
+                            : ''}
+                                </td>
+                                <td>${escaparHtml(texto(u.tipo))}</td>
+                                <td>
+                                    ${escaparHtml(texto(u.direccion))}
+                                    ${lugar
+                            ? `<small class="d-block text-muted">${escaparHtml(lugar)}</small>`
+                            : ''}
+                                </td>
+                                <td>${escaparHtml(texto(contacto))}</td>
+                                <td>
+                                    ${u.activo
+                            ? '<span class="badge-estado badge-activo">Activo</span>'
+                            : '<span class="badge-estado badge-inactivo">Inactivo</span>'}
+                                </td>
+                                <td>
+                                    ${acciones}
+                                </td>
+                            </tr>
+                        `;
+                }).join('');
+        }
+
+        function renderAlias(detalle) {
+            const body =
+                document.getElementById(
+                    'detalleAliasBody');
+
+            const alias =
+                detalle.alias ?? [];
+
+            if (alias.length === 0) {
+                body.innerHTML = `
+                        <tr>
+                            <td colspan="3"
+                                class="text-center text-muted py-3">
+                                No hay alias registrados.
+                            </td>
+                        </tr>
+                    `;
+                return;
+            }
+
+            body.innerHTML =
+                alias.map(a => {
+
+                    let acciones = '';
+
+                    if (puedeEditar) {
+                        acciones += `
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm me-1"
+                                        onclick="abrirEditarAlias(${a.clienteAliasID})"
+                                        title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            `;
+                    }
+
+                    if (a.activo && puedeEliminar) {
+                        acciones += `
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="cambiarActivoAlias(${a.clienteAliasID},false)"
+                                        title="Desactivar">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                            `;
+                    }
+                    else if (!a.activo && puedeEditar) {
+                        acciones += `
+                                <button type="button"
+                                        class="btn btn-outline-success btn-sm"
+                                        onclick="cambiarActivoAlias(${a.clienteAliasID},true)"
+                                        title="Activar">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                            `;
+                    }
+
+                    return `
+                            <tr>
+                                <td>
+                                    <strong>${escaparHtml(a.alias)}</strong>
+                                </td>
+                                <td>
+                                    ${a.activo
+                            ? '<span class="badge-estado badge-activo">Activo</span>'
+                            : '<span class="badge-estado badge-inactivo">Inactivo</span>'}
+                                </td>
+                                <td>
+                                    ${acciones}
+                                </td>
+                            </tr>
+                        `;
+                }).join('');
+        }
+
+        function editarDesdeDetalle() {
+            const clienteId =
+                parseInt(
+                    document.getElementById(
+                        'detalleClienteID').value);
+
+            if (!clienteId)
+                return;
+
+            abrirEditarCliente(clienteId);
+        }
+
+        function abrirNuevaUbicacion() {
+            const clienteId =
+                parseInt(
+                    document.getElementById(
+                        'detalleClienteID').value);
+
+            if (!clienteId)
+                return;
+
+            document.getElementById(
+                'formUbicacion').reset();
+
+            document.getElementById(
+                'ubicacionID').value = '';
+
+            document.getElementById(
+                'ubicacionClienteID').value =
+                clienteId;
+
+            document.getElementById(
+                'tituloModalUbicacion').textContent =
+                'Nueva ubicación';
+
+            modalUbicacion.show();
+        }
+
+        function abrirEditarUbicacion(ubicacionId) {
+            if (!clienteDetalleActual)
+                return;
+
+            const u =
+                (clienteDetalleActual.ubicaciones ?? [])
+                    .find(x =>
+                        x.clienteUbicacionID === ubicacionId);
+
+            if (!u)
+                return;
+
+            document.getElementById(
+                'formUbicacion').reset();
+
+            document.getElementById('ubicacionID').value =
+                u.clienteUbicacionID;
+
+            document.getElementById('ubicacionClienteID').value =
+                u.clienteID;
+
+            document.getElementById('ubicacionNombre').value =
+                u.nombre ?? '';
+
+            document.getElementById('ubicacionTipo').value =
+                u.tipoUbicacionClienteID ?? '';
+
+            document.getElementById('ubicacionCodigo').value =
+                u.codigo ?? '';
+
+            document.getElementById('ubicacionDireccion').value =
+                u.direccion ?? '';
+
+            document.getElementById('ubicacionMunicipio').value =
+                u.municipio ?? '';
+
+            document.getElementById('ubicacionEstado').value =
+                u.estado ?? '';
+
+            document.getElementById('ubicacionCP').value =
+                u.codigoPostal ?? '';
+
+            document.getElementById('ubicacionLatitud').value =
+                u.latitud ?? '';
+
+            document.getElementById('ubicacionLongitud').value =
+                u.longitud ?? '';
+
+            document.getElementById('ubicacionUrlMaps').value =
+                u.urlMaps ?? '';
+
+            document.getElementById('ubicacionContacto').value =
+                u.contacto ?? '';
+
+            document.getElementById('ubicacionTelefono').value =
+                u.telefono ?? '';
+
+            document.getElementById('ubicacionCorreo').value =
+                u.correo ?? '';
+
+            document.getElementById('ubicacionObservaciones').value =
+                u.observaciones ?? '';
+
+            document.getElementById(
+                'tituloModalUbicacion').textContent =
+                'Editar ubicación';
+
+            modalUbicacion.show();
+        }
+
+        async function guardarUbicacion() {
+            const form =
+                document.getElementById(
+                    'formUbicacion');
+
+            if (!form.reportValidity())
+                return;
+
+            const formData =
+                new FormData(form);
+
+            formData.append(
+                '__RequestVerificationToken',
+                tokenAntiforgery());
+
+            try {
+                mostrarCarga(true);
+
+                const response = await fetch(
+                    '@Url.Action("GuardarUbicacion", "Clientes")',
+                    {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                const result =
+                    await response.json();
+
+                if (!response.ok ||
+                    !result.success) {
+                    throw new Error(
+                        result.message ||
+                        'No fue posible guardar la ubicación.');
+                }
+
+                modalUbicacion.hide();
+
+                notificar(
+                    result.message ||
+                    'Ubicación guardada correctamente.');
+
+                await recargarDetalleActual();
+            }
+            catch (error) {
+                notificar(
+                    error.message ||
+                    'No fue posible guardar la ubicación.',
+                    'error');
+            }
+            finally {
+                mostrarCarga(false);
+            }
+        }
+
+        function abrirNuevoAlias() {
+            const clienteId =
+                parseInt(
+                    document.getElementById(
+                        'detalleClienteID').value);
+
+            if (!clienteId)
+                return;
+
+            document.getElementById(
+                'formAlias').reset();
+
+            document.getElementById(
+                'aliasID').value = '';
+
+            document.getElementById(
+                'aliasClienteID').value =
+                clienteId;
+
+            document.getElementById(
+                'tituloModalAlias').textContent =
+                'Nuevo alias';
+
+            modalAlias.show();
+        }
+
+        function abrirEditarAlias(aliasId) {
+            if (!clienteDetalleActual)
+                return;
+
+            const alias =
+                (clienteDetalleActual.alias ?? [])
+                    .find(x =>
+                        x.clienteAliasID === aliasId);
+
+            if (!alias)
+                return;
+
+            document.getElementById(
+                'formAlias').reset();
+
+            document.getElementById(
+                'aliasID').value =
+                alias.clienteAliasID;
+
+            document.getElementById(
+                'aliasClienteID').value =
+                alias.clienteID;
+
+            document.getElementById(
+                'aliasNombre').value =
+                alias.alias ?? '';
+
+            document.getElementById(
+                'tituloModalAlias').textContent =
+                'Editar alias';
+
+            modalAlias.show();
+        }
+
+        async function guardarAlias() {
+            const form =
+                document.getElementById(
+                    'formAlias');
+
+            if (!form.reportValidity())
+                return;
+
+            const formData =
+                new FormData(form);
+
+            formData.append(
+                '__RequestVerificationToken',
+                tokenAntiforgery());
+
+            try {
+                mostrarCarga(true);
+
+                const response = await fetch(
+                    '@Url.Action("GuardarAlias", "Clientes")',
+                    {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                const result =
+                    await response.json();
+
+                if (!response.ok ||
+                    !result.success) {
+                    throw new Error(
+                        result.message ||
+                        'No fue posible guardar el alias.');
+                }
+
+                modalAlias.hide();
+
+                notificar(
+                    result.message ||
+                    'Alias guardado correctamente.');
+
+                await recargarDetalleActual();
+            }
+            catch (error) {
+                notificar(
+                    error.message ||
+                    'No fue posible guardar el alias.',
+                    'error');
+            }
+            finally {
+                mostrarCarga(false);
+            }
+        }
+
+        async function cambiarActivoCliente(
+            clienteId,
+            activo,
+            nombre) {
+
+            const mensaje =
+                activo
+                    ? `¿Deseas activar al cliente "${nombre}"?`
+                    : `¿Deseas desactivar al cliente "${nombre}"?`;
+
+            if (!await confirmar(mensaje))
+                return;
+
+            const formData =
+                new FormData();
+
+            formData.append(
+                'ClienteID',
+                clienteId);
+
+            formData.append(
+                'Activo',
+                activo ? 'true' : 'false');
+
+            formData.append(
+                '__RequestVerificationToken',
+                tokenAntiforgery());
+
+            try {
+                mostrarCarga(true);
+
+                const response = await fetch(
+                    '@Url.Action("CambiarActivo", "Clientes")',
+                    {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                const result =
+                    await response.json();
+
+                if (!response.ok ||
+                    !result.success) {
+                    throw new Error(
+                        result.message ||
+                        'No fue posible actualizar el cliente.');
+                }
+
+                notificar(result.message);
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+            }
+            catch (error) {
+                notificar(
+                    error.message ||
+                    'No fue posible actualizar el cliente.',
+                    'error');
+            }
+            finally {
+                mostrarCarga(false);
+            }
+        }
+
+        async function cambiarActivoUbicacion(
+            ubicacionId,
+            activo) {
+
+            const clienteId =
+                parseInt(
+                    document.getElementById(
+                        'detalleClienteID').value);
+
+            if (!clienteId)
+                return;
+
+            const mensaje =
+                activo
+                    ? '¿Deseas activar esta ubicación?'
+                    : '¿Deseas desactivar esta ubicación?';
+
+            if (!await confirmar(mensaje))
+                return;
+
+            const formData =
+                new FormData();
+
+            formData.append(
+                'ClienteUbicacionID',
+                ubicacionId);
+
+            formData.append(
+                'ClienteID',
+                clienteId);
+
+            formData.append(
+                'Activo',
+                activo ? 'true' : 'false');
+
+            formData.append(
+                '__RequestVerificationToken',
+                tokenAntiforgery());
+
+            try {
+                mostrarCarga(true);
+
+                const response = await fetch(
+                    '@Url.Action("CambiarActivoUbicacion", "Clientes")',
+                    {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                const result =
+                    await response.json();
+
+                if (!response.ok ||
+                    !result.success) {
+                    throw new Error(
+                        result.message ||
+                        'No fue posible actualizar la ubicación.');
+                }
+
+                notificar(result.message);
+
+                await recargarDetalleActual();
+            }
+            catch (error) {
+                notificar(
+                    error.message ||
+                    'No fue posible actualizar la ubicación.',
+                    'error');
+            }
+            finally {
+                mostrarCarga(false);
+            }
+        }
+
+        async function cambiarActivoAlias(
+            aliasId,
+            activo) {
+
+            const clienteId =
+                parseInt(
+                    document.getElementById(
+                        'detalleClienteID').value);
+
+            if (!clienteId)
+                return;
+
+            const mensaje =
+                activo
+                    ? '¿Deseas activar este alias?'
+                    : '¿Deseas desactivar este alias?';
+
+            if (!await confirmar(mensaje))
+                return;
+
+            const formData =
+                new FormData();
+
+            formData.append(
+                'ClienteAliasID',
+                aliasId);
+
+            formData.append(
+                'ClienteID',
+                clienteId);
+
+            formData.append(
+                'Activo',
+                activo ? 'true' : 'false');
+
+            formData.append(
+                '__RequestVerificationToken',
+                tokenAntiforgery());
+
+            try {
+                mostrarCarga(true);
+
+                const response = await fetch(
+                    '@Url.Action("CambiarActivoAlias", "Clientes")',
+                    {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                const result =
+                    await response.json();
+
+                if (!response.ok ||
+                    !result.success) {
+                    throw new Error(
+                        result.message ||
+                        'No fue posible actualizar el alias.');
+                }
+
+                notificar(result.message);
+
+                await recargarDetalleActual();
+            }
+            catch (error) {
+                notificar(
+                    error.message ||
+                    'No fue posible actualizar el alias.',
+                    'error');
+            }
+            finally {
+                mostrarCarga(false);
+            }
+        }
+
+        async function recargarDetalleActual() {
+            const clienteId =
+                parseInt(
+                    document.getElementById(
+                        'detalleClienteID').value);
+
+            if (!clienteId)
+                return;
+
+            const detalle =
+                await obtenerDetalleCliente(clienteId);
+
+            clienteDetalleActual =
+                detalle;
+
+            renderDatosGenerales(detalle);
+            renderEmpresas(detalle);
+            renderUbicaciones(detalle);
+            renderAlias(detalle);
+        }
+
+        function formatoFecha(valor) {
+            if (!valor)
+                return '—';
+
+            const fecha =
+                new Date(valor);
+
+            if (Number.isNaN(fecha.getTime()))
+                return '—';
+
+            return fecha.toLocaleString(
+                'es-MX',
+                {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+        }
+    </script>
+}

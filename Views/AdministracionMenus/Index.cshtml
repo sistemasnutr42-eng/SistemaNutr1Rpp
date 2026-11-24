@@ -1,0 +1,3478 @@
+﻿@using System.Text.Encodings.Web
+@model SistemaNutri.Models.AdministracionMenusVm
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    ViewData["Title"] = "Administración de menús";
+}
+
+@Html.AntiForgeryToken()
+
+@section Estilos
+{
+    <style>
+        .menu-admin-page {
+            width: 100%;
+        }
+
+        .menu-admin-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+
+        .menu-admin-title-area {
+            min-width: 0;
+        }
+
+        .menu-admin-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: #58A83F;
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 5px;
+        }
+
+        .menu-admin-title {
+            margin: 0;
+            color: #062F55;
+            font-size: 1.55rem;
+            font-weight: 800;
+        }
+
+        .menu-admin-description {
+            margin: 5px 0 0;
+            color: #667085;
+            font-size: .82rem;
+            line-height: 1.5;
+        }
+
+        .btn-menu-primary {
+            border: 0;
+            border-radius: 11px;
+            padding: 10px 15px;
+            background: #084F83;
+            color: #fff;
+            font-size: .78rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: .18s ease;
+        }
+
+            .btn-menu-primary:hover {
+                background: #063D69;
+                color: #fff;
+                transform: translateY(-1px);
+            }
+
+        .admin-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            border: 1px solid #E4E9EF;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+        }
+
+        .toolbar-search {
+            position: relative;
+            flex: 1;
+            min-width: 220px;
+            max-width: 420px;
+        }
+
+            .toolbar-search i {
+                position: absolute;
+                left: 13px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #98A2B3;
+                font-size: .8rem;
+            }
+
+            .toolbar-search input {
+                width: 100%;
+                height: 40px;
+                padding: 0 13px 0 36px;
+                border: 1px solid #DCE2E8;
+                border-radius: 10px;
+                outline: none;
+                color: #344054;
+                font-size: .78rem;
+            }
+
+                .toolbar-search input:focus {
+                    border-color: #0B6FAF;
+                    box-shadow: 0 0 0 3px rgba(11, 111, 175, .08);
+                }
+
+        .toolbar-help {
+            color: #667085;
+            font-size: .72rem;
+        }
+
+        .menu-tree {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .group-card {
+            overflow: hidden;
+            border: 1px solid #DEE5EB;
+            border-radius: 17px;
+            background: #fff;
+            box-shadow: 0 7px 20px rgba(15, 23, 42, .045);
+            transition: .18s ease;
+        }
+
+            .group-card.inactive {
+                opacity: .63;
+            }
+
+        .group-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 15px 17px;
+            background: linear-gradient(90deg, #F8FBFD 0%, #FFFFFF 100%);
+            border-bottom: 1px solid #EDF1F4;
+        }
+
+        .group-card-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .group-icon {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            color: #084F83;
+            background: #EBF4FA;
+            font-size: 1rem;
+        }
+
+        .group-card.inactive .group-icon {
+            color: #98A2B3;
+            background: #F2F4F7;
+        }
+
+        .group-info {
+            min-width: 0;
+        }
+
+        .group-name-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .group-name {
+            color: #17324A;
+            font-size: .9rem;
+            font-weight: 800;
+        }
+
+        .group-description {
+            margin-top: 2px;
+            color: #84909C;
+            font-size: .7rem;
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 7px;
+            border-radius: 999px;
+            font-size: .6rem;
+            font-weight: 700;
+        }
+
+        .badge-active {
+            color: #347526;
+            background: #EDF7E9;
+        }
+
+        .badge-inactive {
+            color: #8B5E00;
+            background: #FFF6DC;
+        }
+
+        .badge-order {
+            color: #475467;
+            background: #F2F4F7;
+        }
+
+        .group-actions,
+        .menu-actions,
+        .submenu-actions-buttons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tree-action {
+            width: 34px;
+            height: 34px;
+            border: 0;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            color: #667085;
+            transition: .15s ease;
+        }
+
+            .tree-action:hover {
+                background: #EEF4F8;
+                color: #084F83;
+            }
+
+            .tree-action.success:hover {
+                background: #EDF7E9;
+                color: #58A83F;
+            }
+
+            .tree-action.danger:hover {
+                background: #FFF0F0;
+                color: #D92D20;
+            }
+
+            .tree-action:disabled {
+                opacity: .35;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+        .group-toggle {
+            color: #98A2B3;
+            transition: transform .2s ease;
+        }
+
+        .group-card.open .group-toggle {
+            transform: rotate(180deg);
+        }
+
+        .group-content {
+            display: none;
+            padding: 13px;
+            background: #FBFCFD;
+        }
+
+        .group-card.open .group-content {
+            display: block;
+        }
+
+        .empty-group {
+            padding: 22px;
+            text-align: center;
+            border: 1px dashed #D8E0E7;
+            border-radius: 12px;
+            color: #98A2B3;
+            background: #fff;
+            font-size: .73rem;
+        }
+
+            .empty-group i {
+                display: block;
+                font-size: 1.4rem;
+                margin-bottom: 7px;
+                color: #B7C0C9;
+            }
+
+        .menu-node {
+            border: 1px solid #E5E9EE;
+            border-radius: 13px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+            .menu-node + .menu-node {
+                margin-top: 9px;
+            }
+
+        .menu-node-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 11px 13px;
+            background: #fff;
+        }
+
+        .menu-node-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .menu-node-icon {
+            width: 31px;
+            height: 31px;
+            min-width: 31px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            background: #F2F6F9;
+            color: #52677A;
+            font-size: .78rem;
+        }
+
+        .menu-node-name {
+            color: #344054;
+            font-size: .78rem;
+            font-weight: 750;
+        }
+
+        .menu-node-count {
+            color: #98A2B3;
+            font-size: .63rem;
+            margin-top: 2px;
+        }
+
+        .menu-toggle {
+            color: #A5ADB6;
+            transition: transform .2s ease;
+        }
+
+        .menu-node.open .menu-toggle {
+            transform: rotate(180deg);
+        }
+
+        .menu-node-content {
+            display: none;
+            padding: 0 12px 12px 53px;
+            background: #fff;
+        }
+
+        .menu-node.open .menu-node-content {
+            display: block;
+        }
+
+        .submenu-row {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) minmax(210px, 1.25fr) auto;
+            gap: 12px;
+            align-items: center;
+            padding: 10px 11px;
+            border-radius: 10px;
+            background: #F8FAFC;
+            border: 1px solid #EEF1F4;
+        }
+
+            .submenu-row + .submenu-row {
+                margin-top: 7px;
+            }
+
+            .submenu-row.inactive {
+                opacity: .58;
+            }
+
+        .submenu-info {
+            min-width: 0;
+        }
+
+        .submenu-name {
+            color: #344054;
+            font-size: .73rem;
+            font-weight: 700;
+        }
+
+        .submenu-description {
+            color: #98A2B3;
+            font-size: .62rem;
+            margin-top: 2px;
+        }
+
+        .submenu-url {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: .66rem;
+            color: #667085;
+            font-family: Consolas, monospace;
+        }
+
+        .action-chips {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .action-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 6px;
+            border-radius: 999px;
+            font-size: .56rem;
+            font-weight: 700;
+            background: #F2F4F7;
+            color: #667085;
+        }
+
+            .action-chip.enabled {
+                background: #EDF7E9;
+                color: #408130;
+            }
+
+            .action-chip i {
+                font-size: .52rem;
+            }
+
+        .modal-menu .modal-content {
+            border: 0;
+            border-radius: 17px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, .18);
+        }
+
+        .modal-menu .modal-header {
+            padding: 16px 19px;
+            border-bottom: 1px solid #EEF1F4;
+        }
+
+        .modal-menu .modal-title {
+            color: #17324A;
+            font-size: .96rem;
+            font-weight: 800;
+        }
+
+        .modal-menu .modal-body {
+            padding: 18px 19px;
+        }
+
+        .modal-menu .modal-footer {
+            padding: 13px 19px;
+            border-top: 1px solid #EEF1F4;
+        }
+
+        .form-label-menu {
+            display: block;
+            margin-bottom: 5px;
+            color: #475467;
+            font-size: .7rem;
+            font-weight: 700;
+        }
+
+        .form-control-menu,
+        .form-select-menu {
+            width: 100%;
+            min-height: 40px;
+            padding: 8px 11px;
+            border: 1px solid #DCE2E8;
+            border-radius: 9px;
+            color: #344054;
+            font-size: .76rem;
+            outline: none;
+            background: #fff;
+        }
+
+        textarea.form-control-menu {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-control-menu:focus,
+        .form-select-menu:focus {
+            border-color: #0B6FAF;
+            box-shadow: 0 0 0 3px rgba(11, 111, 175, .08);
+        }
+
+        .form-help {
+            margin-top: 4px;
+            color: #98A2B3;
+            font-size: .61rem;
+        }
+
+        .icon-picker {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 7px;
+            margin-top: 7px;
+        }
+
+        .icon-picker-button {
+            height: 39px;
+            border: 1px solid #E2E7EC;
+            border-radius: 9px;
+            background: #fff;
+            color: #667085;
+            transition: .14s ease;
+        }
+
+            .icon-picker-button:hover,
+            .icon-picker-button.selected {
+                border-color: #0B6FAF;
+                background: #EDF6FC;
+                color: #084F83;
+            }
+
+        .permissions-box {
+            padding: 12px;
+            border-radius: 11px;
+            background: #F8FAFC;
+            border: 1px solid #E8ECF0;
+        }
+
+        .permissions-title {
+            margin-bottom: 8px;
+            color: #344054;
+            font-size: .71rem;
+            font-weight: 750;
+        }
+
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .permission-option {
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px;
+            border: 1px solid #E3E7EC;
+            border-radius: 9px;
+            background: #fff;
+            font-size: .67rem;
+            color: #475467;
+        }
+
+            .permission-option input {
+                accent-color: #58A83F;
+            }
+
+        .roles-selector {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .role-option {
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 10px;
+            border: 1px solid #E3E7EC;
+            border-radius: 10px;
+            background: #fff;
+            color: #475467;
+            font-size: .68rem;
+            cursor: pointer;
+        }
+
+            .role-option:hover {
+                border-color: #B9D4E6;
+                background: #F8FBFD;
+            }
+
+            .role-option input {
+                accent-color: #58A83F;
+            }
+
+            .role-option.admin-role {
+                border-color: #CFE4F2;
+                background: #F2F8FC;
+            }
+
+        .role-option-text {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .role-option-name {
+            color: #344054;
+            font-weight: 750;
+        }
+
+        .role-option-note {
+            margin-top: 1px;
+            color: #98A2B3;
+            font-size: .58rem;
+        }
+
+        .role-summary-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 9px;
+        }
+
+        .role-summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            background: #F2F4F7;
+            color: #667085;
+            font-size: .6rem;
+            font-weight: 700;
+        }
+
+            .role-summary-chip.enabled {
+                background: #EDF7E9;
+                color: #347526;
+            }
+
+        .role-loading {
+            padding: 14px;
+            border: 1px dashed #D8E0E7;
+            border-radius: 10px;
+            color: #98A2B3;
+            text-align: center;
+            font-size: .68rem;
+        }
+
+        .menu-role-note {
+            display: flex;
+            gap: 9px;
+            padding: 10px 11px;
+            margin-top: 12px;
+            border: 1px solid #DCEAF4;
+            border-radius: 10px;
+            background: #F5FAFD;
+            color: #52677A;
+            font-size: .66rem;
+            line-height: 1.45;
+        }
+
+            .menu-role-note i {
+                margin-top: 2px;
+                color: #0B6FAF;
+            }
+
+        .modal-message {
+            display: none;
+            margin-bottom: 13px;
+            padding: 9px 11px;
+            border-radius: 9px;
+            font-size: .7rem;
+        }
+
+            .modal-message.error {
+                display: block;
+                background: #FFF1F1;
+                color: #B42318;
+            }
+
+            .modal-message.success {
+                display: block;
+                background: #EDF7E9;
+                color: #347526;
+            }
+
+        .loading-overlay-admin {
+            position: fixed;
+            inset: 0;
+            z-index: 4000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, .18);
+            backdrop-filter: blur(2px);
+        }
+
+            .loading-overlay-admin.show {
+                display: flex;
+            }
+
+        .loading-box-admin {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 17px;
+            border-radius: 12px;
+            background: #fff;
+            color: #344054;
+            box-shadow: 0 18px 55px rgba(15, 23, 42, .18);
+            font-size: .76rem;
+            font-weight: 700;
+        }
+
+        @@media (max-width: 950px) {
+            .submenu-row {
+                grid-template-columns: 1fr;
+            }
+
+            .submenu-actions-buttons {
+                justify-content: flex-start;
+            }
+        }
+
+        @@media (max-width: 700px) {
+            .menu-admin-header {
+                flex-direction: column;
+            }
+
+                .menu-admin-header .btn-menu-primary {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+            .group-card-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .group-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .menu-node-header {
+                align-items: flex-start;
+            }
+
+            .menu-node-content {
+                padding-left: 12px;
+            }
+
+            .permissions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .roles-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .icon-picker {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+    </style>
+}
+
+<div class="menu-admin-page">
+
+    <div class="menu-admin-header">
+        <div class="menu-admin-title-area">
+            <div class="menu-admin-eyebrow">
+                <i class="fa-solid fa-sitemap"></i>
+                Configuración
+            </div>
+
+            <h1 class="menu-admin-title">
+                Administración de menús
+            </h1>
+
+            <p class="menu-admin-description">
+                Crea y organiza grupos, menús, submenús, acciones y permisos sin modificar directamente la base de datos.
+            </p>
+        </div>
+
+        <button type="button"
+                class="btn-menu-primary"
+                onclick="abrirCrearGrupo()">
+            <i class="fa-solid fa-plus"></i>
+            Nuevo grupo
+        </button>
+    </div>
+
+    <div class="admin-toolbar">
+        <div class="toolbar-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input type="text"
+                   id="txtBuscarMenu"
+                   placeholder="Buscar grupo, menú o submenú..." />
+        </div>
+
+        <div class="toolbar-help">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Los grupos inactivos permanecen visibles aquí para poder reactivarlos, pero se ocultan del menú lateral.
+        </div>
+    </div>
+
+    <div class="menu-tree"
+         id="menuTree">
+
+        @if (Model?.Grupos != null &&
+                Model.Grupos.Any())
+        {
+            foreach (var grupo in Model.Grupos.OrderBy(x => x.Orden))
+            {
+                var claseGrupo =
+                grupo.Activo
+                ? ""
+                : "inactive";
+
+                <section class="group-card @claseGrupo"
+                         data-search="@($"{grupo.Nombre} {grupo.Descripcion}".ToLowerInvariant())"
+                         data-grupo-id="@grupo.MenuGrupoID">
+
+                    <div class="group-card-header">
+
+                        <div class="group-card-main"
+                             onclick="toggleGrupo(this)">
+
+                            <div class="group-icon">
+
+                                @if (!string.IsNullOrWhiteSpace(grupo.IconoCss))
+                                {
+                                    <i class="@grupo.IconoCss"></i>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-layer-group"></i>
+                                }
+
+                            </div>
+
+                            <div class="group-info">
+
+                                <div class="group-name-row">
+
+                                    <span class="group-name">
+                                        @grupo.Nombre
+                                    </span>
+
+                                    @if (grupo.Activo)
+                                    {
+                                        <span class="badge-status badge-active">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                            Activo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status badge-inactive">
+                                            <i class="fa-solid fa-circle-pause"></i>
+                                            Inactivo
+                                        </span>
+                                    }
+
+                                    <span class="badge-status badge-order">
+                                        Orden @grupo.Orden
+                                    </span>
+
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(grupo.Descripcion))
+                                {
+                                    <div class="group-description">
+                                        @grupo.Descripcion
+                                    </div>
+                                }
+
+                            </div>
+
+                            <i class="fa-solid fa-chevron-down group-toggle ms-auto"></i>
+
+                        </div>
+
+                        <div class="group-actions">
+
+                            <button type="button"
+                                    class="tree-action success"
+                                    title="@(grupo.Activo ? "Agregar menú" : "Activa el grupo para agregar menús")"
+                                    disabled="@(!grupo.Activo)"
+                                    onclick="abrirCrearMenu(@grupo.MenuGrupoID, '@Html.Raw(JavaScriptEncoder.Default.Encode(grupo.Nombre))')">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="tree-action"
+                                    title="Editar grupo"
+                                    onclick="abrirEditarGrupo(
+                                                                @grupo.MenuGrupoID,
+                                                                '@Html.Raw(JavaScriptEncoder.Default.Encode(grupo.Nombre))',
+                                                                '@Html.Raw(JavaScriptEncoder.Default.Encode(grupo.Descripcion ?? ""))',
+                                                                '@Html.Raw(JavaScriptEncoder.Default.Encode(grupo.IconoCss ?? ""))',
+                                                                @grupo.Orden)">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="tree-action @(grupo.Activo ? "danger" : "success")"
+                                    title="@(grupo.Activo ? "Desactivar" : "Activar")"
+                                    onclick="cambiarEstadoGrupo(@grupo.MenuGrupoID, @(grupo.Activo ? "false" : "true"))">
+
+                                <i class="fa-solid @(grupo.Activo ? "fa-toggle-on" : "fa-toggle-off")"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <div class="group-content">
+
+                        @if (grupo.Menus != null &&
+                                        grupo.Menus.Any())
+                        {
+                            foreach (var menu in grupo.Menus.OrderBy(x => x.MenuID))
+                            {
+                                <div class="menu-node"
+                                     data-search="@($"{menu.Nombre} {string.Join(" ", menu.SubMenus.Select(x => x.Nombre))}".ToLowerInvariant())"
+                                     data-menu-id="@menu.MenuID">
+
+                                    <div class="menu-node-header">
+
+                                        <div class="menu-node-main"
+                                             onclick="toggleMenu(this)">
+
+                                            <div class="menu-node-icon">
+                                                <i class="fa-solid fa-folder"></i>
+                                            </div>
+
+                                            <div>
+
+                                                <div class="menu-node-name">
+                                                    @menu.Nombre
+                                                </div>
+
+                                                <div class="menu-node-count">
+                                                    @(menu.SubMenus?.Count ?? 0)
+                                                    submenú(s)
+                                                </div>
+
+                                            </div>
+
+                                            <i class="fa-solid fa-chevron-down menu-toggle ms-auto"></i>
+
+                                        </div>
+
+                                        <div class="menu-actions">
+
+                                            <button type="button"
+                                                    class="tree-action success"
+                                                    title="Agregar submenú"
+                                                    onclick="abrirCrearSubMenu(@menu.MenuID, '@Html.Raw(JavaScriptEncoder.Default.Encode(menu.Nombre))')">
+                                                <i class="fa-solid fa-plus"></i>
+                                            </button>
+
+                                            <button type="button"
+                                                    class="tree-action"
+                                                    title="Editar menú"
+                                                    onclick="abrirEditarMenu(
+                                                                                                        @menu.MenuID,
+                                                                                                        @grupo.MenuGrupoID,
+                                                                                                        '@Html.Raw(JavaScriptEncoder.Default.Encode(menu.Nombre))')">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+
+                                            <button type="button"
+                                                    class="tree-action danger"
+                                                    title="Eliminar menú"
+                                                    onclick="eliminarMenu(@menu.MenuID, '@Html.Raw(JavaScriptEncoder.Default.Encode(menu.Nombre))')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div class="menu-node-content">
+
+                                        @if (menu.SubMenus != null &&
+                                                                menu.SubMenus.Any())
+                                        {
+                                            foreach (var subMenu in menu.SubMenus.OrderBy(x => x.SubMenuID))
+                                            {
+                                                var claseSubMenu =
+                                                subMenu.Activo
+                                                ? ""
+                                                : "inactive";
+
+                                                var accionVer =
+                                                subMenu.Acciones?.Any(
+                                                x => x.Nombre.Equals(
+                                                "Ver",
+                                                StringComparison.OrdinalIgnoreCase)
+                                                && x.PermisoAdministrador) == true;
+
+                                                var accionCrear =
+                                                subMenu.Acciones?.Any(
+                                                x => x.Nombre.Equals(
+                                                "Crear",
+                                                StringComparison.OrdinalIgnoreCase)
+                                                && x.PermisoAdministrador) == true;
+
+                                                var accionEditar =
+                                                subMenu.Acciones?.Any(
+                                                x => x.Nombre.Equals(
+                                                "Editar",
+                                                StringComparison.OrdinalIgnoreCase)
+                                                && x.PermisoAdministrador) == true;
+
+                                                var accionEliminar =
+                                                subMenu.Acciones?.Any(
+                                                x => x.Nombre.Equals(
+                                                "Eliminar",
+                                                StringComparison.OrdinalIgnoreCase)
+                                                && x.PermisoAdministrador) == true;
+
+                                                <div class="submenu-row @claseSubMenu"
+                                                     data-search="@($"{subMenu.Nombre} {subMenu.UrlEnlace} {subMenu.Descripcion}".ToLowerInvariant())">
+
+                                                    <div class="submenu-info">
+
+                                                        <div class="submenu-name">
+                                                            @subMenu.Nombre
+
+                                                            @if (!subMenu.Activo)
+                                                            {
+                                                                <span class="badge-status badge-inactive ms-1">
+                                                                    Inactivo
+                                                                </span>
+                                                            }
+                                                        </div>
+
+                                                        @if (!string.IsNullOrWhiteSpace(subMenu.Descripcion))
+                                                        {
+                                                            <div class="submenu-description">
+                                                                @subMenu.Descripcion
+                                                            </div>
+                                                        }
+
+                                <div class="action-chips">
+
+                                    <span class="action-chip @(accionVer ? "enabled" : "")">
+                                        <i class="fa-solid @(accionVer ? "fa-check" : "fa-minus")"></i>
+                                        Ver
+                                    </span>
+
+                                    <span class="action-chip @(accionCrear ? "enabled" : "")">
+                                        <i class="fa-solid @(accionCrear ? "fa-check" : "fa-minus")"></i>
+                                        Crear
+                                    </span>
+
+                                    <span class="action-chip @(accionEditar ? "enabled" : "")">
+                                        <i class="fa-solid @(accionEditar ? "fa-check" : "fa-minus")"></i>
+                                        Editar
+                                    </span>
+
+                                    <span class="action-chip @(accionEliminar ? "enabled" : "")">
+                                        <i class="fa-solid @(accionEliminar ? "fa-check" : "fa-minus")"></i>
+                                        Eliminar
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                            <div class="submenu-url"
+                                 title="@subMenu.UrlEnlace">
+                                @(string.IsNullOrWhiteSpace(subMenu.UrlEnlace)
+                                                                ? "Sin URL"
+                                                                : subMenu.UrlEnlace)
+                            </div>
+
+                                                    <div class="submenu-actions-buttons">
+
+                                                        <button type="button"
+                                                                class="tree-action"
+                                                                title="Editar submenú"
+                                                                onclick="abrirEditarSubMenu(
+                                                                                                                                            @subMenu.SubMenuID,
+                                                                                                                                            @menu.MenuID,
+                                                                                                                                            '@Html.Raw(JavaScriptEncoder.Default.Encode(subMenu.Nombre))',
+                                                                                                                                            '@Html.Raw(JavaScriptEncoder.Default.Encode(subMenu.UrlEnlace ?? ""))',
+                                                                                                                                            '@Html.Raw(JavaScriptEncoder.Default.Encode(subMenu.Descripcion ?? ""))')">
+                                                            <i class="fa-solid fa-pen"></i>
+                                                        </button>
+
+                                                        <button type="button"
+                                                                class="tree-action"
+                                                                title="Configurar acciones"
+                                                                onclick="abrirAcciones(
+                                                                                                                                            @subMenu.SubMenuID,
+                                                                                                                                            '@Html.Raw(JavaScriptEncoder.Default.Encode(subMenu.Nombre))',
+                                                                                                                                            @(accionVer ? "true" : "false"),
+                                                                                                                                            @(accionCrear ? "true" : "false"),
+                                                                                                                                            @(accionEditar ? "true" : "false"),
+                                                                                                                                            @(accionEliminar ? "true" : "false"))">
+                                                            <i class="fa-solid fa-key"></i>
+                                                        </button>
+
+                                                        <button type="button"
+                                                                class="tree-action"
+                                                                title="Configurar permisos por rol"
+                                                                onclick="abrirPermisosRol(
+                                                                                                                                            @subMenu.SubMenuID,
+                                                                                                                                            '@Html.Raw(JavaScriptEncoder.Default.Encode(subMenu.Nombre))')">
+                                                            <i class="fa-solid fa-user-shield"></i>
+                                                        </button>
+
+                                                        <button type="button"
+                                                                class="tree-action @(subMenu.Activo ? "danger" : "success")"
+                                                                title="@(subMenu.Activo ? "Desactivar" : "Activar")"
+                                                                onclick="cambiarEstadoSubMenu(
+                                                                                                                                            @subMenu.SubMenuID,
+                                                                                                                                            @(subMenu.Activo ? "false" : "true"))">
+
+                                                            <i class="fa-solid @(subMenu.Activo ? "fa-toggle-on" : "fa-toggle-off")"></i>
+
+                                                        </button>
+
+                                                    </div>
+
+                                                </div>
+                                                }
+                                        }
+                                        else
+                                        {
+                                            <div class="empty-group">
+                                                <i class="fa-regular fa-folder-open"></i>
+                                                Este menú todavía no tiene submenús.
+                                            </div>
+                                        }
+
+                                    </div>
+
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="empty-group">
+                                <i class="fa-regular fa-folder-open"></i>
+                                Este grupo todavía no tiene menús.
+                            </div>
+                        }
+
+                    </div>
+
+                </section>
+            }
+        }
+        else
+        {
+            <div class="empty-group">
+                <i class="fa-solid fa-sitemap"></i>
+                Todavía no existen grupos de menú.
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     MODAL GRUPO
+     ============================================================ -->
+
+<div class="modal fade modal-menu"
+     id="modalGrupo"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title"
+                    id="tituloModalGrupo">
+                    Nuevo grupo
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div id="mensajeGrupo"
+                     class="modal-message">
+                </div>
+
+                <input type="hidden"
+                       id="grupoId"
+                       value="0" />
+
+                <div class="mb-3">
+
+                    <label class="form-label-menu">
+                        Nombre *
+                    </label>
+
+                    <input type="text"
+                           id="grupoNombre"
+                           class="form-control-menu"
+                           maxlength="100" />
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label-menu">
+                        Descripción
+                    </label>
+
+                    <textarea id="grupoDescripcion"
+                              class="form-control-menu"
+                              maxlength="250"></textarea>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label-menu">
+                        Icono
+                    </label>
+
+                    <input type="text"
+                           id="grupoIcono"
+                           class="form-control-menu"
+                           maxlength="50"
+                           readonly />
+
+                    <div class="form-help">
+                        Selecciona un icono para identificar el grupo en el menú lateral.
+                    </div>
+
+                    <div class="icon-picker">
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-calendar-check">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-handshake">
+                            <i class="fa-solid fa-handshake"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-boxes-stacked">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-truck">
+                            <i class="fa-solid fa-truck"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-cart-shopping">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-users">
+                            <i class="fa-solid fa-users"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-chart-line">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-warehouse">
+                            <i class="fa-solid fa-warehouse"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-file-invoice">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-gears">
+                            <i class="fa-solid fa-gears"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-layer-group">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-clipboard-list">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-route">
+                            <i class="fa-solid fa-route"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-truck-fast">
+                            <i class="fa-solid fa-truck-fast"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-building">
+                            <i class="fa-solid fa-building"></i>
+                        </button>
+
+                        <button type="button"
+                                class="icon-picker-button"
+                                data-icon="fa-solid fa-folder-tree">
+                            <i class="fa-solid fa-folder-tree"></i>
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div>
+
+                    <label class="form-label-menu">
+                        Orden *
+                    </label>
+
+                    <input type="number"
+                           id="grupoOrden"
+                           class="form-control-menu"
+                           min="1"
+                           value="100" />
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-light btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        onclick="guardarGrupo()">
+
+                    <i class="fa-solid fa-floppy-disk me-1"></i>
+                    Guardar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     MODAL MENU
+     ============================================================ -->
+
+<div class="modal fade modal-menu"
+     id="modalMenu"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title"
+                    id="tituloModalMenu">
+                    Nuevo menú
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div id="mensajeMenu"
+                     class="modal-message">
+                </div>
+
+                <input type="hidden"
+                       id="menuId"
+                       value="0" />
+
+                <input type="hidden"
+                       id="menuGrupoId"
+                       value="0" />
+
+                <div class="mb-3">
+
+                    <label class="form-label-menu">
+                        Grupo
+                    </label>
+
+                    <input type="text"
+                           id="menuGrupoNombre"
+                           class="form-control-menu"
+                           readonly />
+
+                </div>
+
+                <div>
+
+                    <label class="form-label-menu">
+                        Nombre del menú *
+                    </label>
+
+                    <input type="text"
+                           id="menuNombre"
+                           class="form-control-menu"
+                           maxlength="100" />
+
+                </div>
+
+                <div class="menu-role-note">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <div>
+                        <strong>Visibilidad por rol:</strong> el menú se mostrará automáticamente cuando el rol tenga acceso a por lo menos uno de sus submenús. Los roles se seleccionan al crear cada submenú.
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-light btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        onclick="guardarMenu()">
+
+                    <i class="fa-solid fa-floppy-disk me-1"></i>
+                    Guardar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     MODAL SUBMENU
+     ============================================================ -->
+
+<div class="modal fade modal-menu"
+     id="modalSubMenu"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title"
+                    id="tituloModalSubMenu">
+                    Nuevo submenú
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div id="mensajeSubMenu"
+                     class="modal-message">
+                </div>
+
+                <input type="hidden"
+                       id="subMenuId"
+                       value="0" />
+
+                <input type="hidden"
+                       id="subMenuMenuId"
+                       value="0" />
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+
+                        <label class="form-label-menu">
+                            Menú
+                        </label>
+
+                        <input type="text"
+                               id="subMenuMenuNombre"
+                               class="form-control-menu"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label-menu">
+                            Nombre del submenú *
+                        </label>
+
+                        <input type="text"
+                               id="subMenuNombre"
+                               class="form-control-menu"
+                               maxlength="100" />
+
+                    </div>
+
+                    <div class="col-12">
+
+                        <label class="form-label-menu">
+                            URL
+                        </label>
+
+                        <input type="text"
+                               id="subMenuUrl"
+                               class="form-control-menu"
+                               maxlength="500"
+                               placeholder="/Coordinacion/Calendario" />
+
+                        <div class="form-help">
+                            Ejemplo: /Coordinacion/Calendario
+                        </div>
+
+                    </div>
+
+                    <div class="col-12">
+
+                        <label class="form-label-menu">
+                            Descripción
+                        </label>
+
+                        <textarea id="subMenuDescripcion"
+                                  class="form-control-menu"
+                                  maxlength="255"></textarea>
+
+                    </div>
+
+                    <div class="col-12"
+                         id="contenedorAccionesCrear">
+
+                        <div class="permissions-box">
+                            <div class="permissions-title">
+                                Acciones disponibles en este submenú
+                            </div>
+                            <div class="permissions-grid">
+                                <label class="permission-option">
+                                    <input type="checkbox" id="subAccionVer" checked />
+                                    Ver
+                                </label>
+                                <label class="permission-option">
+                                    <input type="checkbox" id="subAccionCrear" checked />
+                                    Crear
+                                </label>
+                                <label class="permission-option">
+                                    <input type="checkbox" id="subAccionEditar" checked />
+                                    Editar
+                                </label>
+                                <label class="permission-option">
+                                    <input type="checkbox" id="subAccionEliminar" checked />
+                                    Eliminar
+                                </label>
+                            </div>
+                            <div class="form-help mt-2">
+                                Si habilitas Crear, Editar o Eliminar, la acción Ver se mantendrá habilitada automáticamente.
+                            </div>
+                        </div>
+
+                        <div class="permissions-box mt-3">
+                            <div class="permissions-title">
+                                Roles que podrán visualizar este submenú *
+                            </div>
+                            <div id="subRolesLista" class="roles-selector">
+                                <div class="role-loading">
+                                    <i class="fa-solid fa-spinner fa-spin me-1"></i>
+                                    Cargando roles...
+                                </div>
+                            </div>
+                            <div class="form-help mt-2">
+                                Puedes seleccionar varios roles. El Administrador siempre conserva acceso a las acciones disponibles.
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-light btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        onclick="guardarSubMenu()">
+
+                    <i class="fa-solid fa-floppy-disk me-1"></i>
+                    Guardar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     MODAL ACCIONES
+     ============================================================ -->
+
+<div class="modal fade modal-menu"
+     id="modalAcciones"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    Configurar acciones
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div id="mensajeAcciones"
+                     class="modal-message">
+                </div>
+
+                <input type="hidden"
+                       id="accionesSubMenuId"
+                       value="0" />
+
+                <div class="mb-3">
+
+                    <label class="form-label-menu">
+                        Submenú
+                    </label>
+
+                    <input type="text"
+                           id="accionesSubMenuNombre"
+                           class="form-control-menu"
+                           readonly />
+
+                </div>
+
+                <div class="permissions-box">
+
+                    <div class="permissions-title">
+                        Acciones disponibles
+                    </div>
+
+                    <div class="permissions-grid">
+
+                        <label class="permission-option">
+                            <input type="checkbox"
+                                   id="accionVer" />
+                            Ver
+                        </label>
+
+                        <label class="permission-option">
+                            <input type="checkbox"
+                                   id="accionCrear" />
+                            Crear
+                        </label>
+
+                        <label class="permission-option">
+                            <input type="checkbox"
+                                   id="accionEditar" />
+                            Editar
+                        </label>
+
+                        <label class="permission-option">
+                            <input type="checkbox"
+                                   id="accionEliminar" />
+                            Eliminar
+                        </label>
+
+                    </div>
+
+                    <div class="form-help mt-3">
+                        El Administrador conservará automáticamente todas las acciones activas del submenú.
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-light btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        onclick="guardarAcciones()">
+
+                    <i class="fa-solid fa-key me-1"></i>
+                    Guardar acciones
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     MODAL PERMISOS POR ROL
+     ============================================================ -->
+
+<div class="modal fade modal-menu" id="modalPermisosRol" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Permisos por rol</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="mensajePermisosRol" class="modal-message"></div>
+                <input type="hidden" id="permisosRolSubMenuId" value="0" />
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-menu">Submenú</label>
+                        <input type="text" id="permisosRolSubMenuNombre" class="form-control-menu" readonly />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-menu">Rol *</label>
+                        <select id="permisosRolSelect" class="form-select-menu" onchange="cargarPermisosRolSeleccionado()">
+                            <option value="">Selecciona un rol</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="permissions-box">
+                            <div class="permissions-title">Acciones permitidas para el rol seleccionado</div>
+                            <div class="permissions-grid">
+                                <label class="permission-option">
+                                    <input type="checkbox" id="rolPermisoVer" />
+                                    Ver
+                                </label>
+                                <label class="permission-option">
+                                    <input type="checkbox" id="rolPermisoCrear" />
+                                    Crear
+                                </label>
+                                <label class="permission-option">
+                                    <input type="checkbox" id="rolPermisoEditar" />
+                                    Editar
+                                </label>
+                                <label class="permission-option">
+                                    <input type="checkbox" id="rolPermisoEliminar" />
+                                    Eliminar
+                                </label>
+                            </div>
+                            <div id="ayudaPermisosRol" class="form-help mt-2">
+                                Selecciona un rol para consultar y modificar sus permisos.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="permissions-box">
+                            <div class="permissions-title">Resumen de acceso por rol</div>
+                            <div id="resumenRolesSubMenu" class="role-summary-list">
+                                <span class="role-summary-chip">Cargando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnGuardarPermisosRol" onclick="guardarPermisosRol()">
+                    <i class="fa-solid fa-user-shield me-1"></i>
+                    Guardar permisos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="loading-overlay-admin"
+     id="loadingAdmin">
+
+    <div class="loading-box-admin">
+
+        <div class="spinner-border spinner-border-sm"
+             role="status">
+        </div>
+
+        Guardando cambios...
+
+    </div>
+
+</div>
+
+
+@section Scripts
+{
+    <script>
+
+        let modalGrupo;
+        let modalMenu;
+        let modalSubMenu;
+        let modalAcciones;
+        let modalPermisosRol;
+
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            function () {
+
+                modalGrupo =
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('modalGrupo')
+                    );
+
+                modalMenu =
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('modalMenu')
+                    );
+
+                modalSubMenu =
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('modalSubMenu')
+                    );
+
+                modalAcciones =
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('modalAcciones')
+                    );
+
+                modalPermisosRol =
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('modalPermisosRol')
+                    );
+
+                configurarDependenciasPermisos();
+
+
+                document
+                    .querySelectorAll('.icon-picker-button')
+                    .forEach(
+                        function (button) {
+
+                            button.addEventListener(
+                                'click',
+                                function () {
+
+                                    const icono =
+                                        button.dataset.icon;
+
+                                    document
+                                        .getElementById('grupoIcono')
+                                        .value = icono;
+
+                                    marcarIconoSeleccionado(icono);
+
+                                }
+                            );
+
+                        }
+                    );
+
+
+                document
+                    .getElementById('txtBuscarMenu')
+                    ?.addEventListener(
+                        'input',
+                        filtrarArbol
+                    );
+
+            }
+        );
+
+
+        function obtenerToken() {
+
+            return document
+                .querySelector(
+                    'input[name="__RequestVerificationToken"]'
+                )
+                ?.value ?? '';
+
+        }
+
+
+        function mostrarLoading() {
+
+            document
+                .getElementById('loadingAdmin')
+                ?.classList
+                .add('show');
+
+        }
+
+
+        function ocultarLoading() {
+
+            document
+                .getElementById('loadingAdmin')
+                ?.classList
+                .remove('show');
+
+        }
+
+
+        function limpiarMensaje(id) {
+
+            const element =
+                document.getElementById(id);
+
+            if (!element)
+                return;
+
+            element.className =
+                'modal-message';
+
+            element.textContent = '';
+
+        }
+
+
+        function mostrarMensaje(
+            id,
+            mensaje,
+            tipo = 'error'
+        ) {
+
+            const element =
+                document.getElementById(id);
+
+            if (!element)
+                return;
+
+            element.className =
+                `modal-message ${tipo}`;
+
+            element.textContent =
+                mensaje ?? '';
+
+        }
+
+
+        async function postJson(
+            url,
+            body
+        ) {
+
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method: 'POST',
+
+                        credentials:
+                            'same-origin',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'RequestVerificationToken':
+                                obtenerToken()
+                        },
+
+                        body:
+                            JSON.stringify(body)
+                    }
+                );
+
+
+            let data = {};
+
+            try {
+                data =
+                    await response.json();
+            }
+            catch {
+            }
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data?.mensaje
+                    ?? 'Ocurrió un error al procesar la solicitud.'
+                );
+
+            }
+
+
+            return data;
+
+        }
+
+
+        async function postForm(
+            url,
+            data
+        ) {
+
+            const body =
+                new URLSearchParams();
+
+            Object
+                .keys(data)
+                .forEach(
+                    function (key) {
+
+                        const value =
+                            data[key];
+
+                        if (value === null || value === undefined)
+                            return;
+
+                        if (Array.isArray(value)) {
+                            value.forEach(function (item) {
+                                body.append(key, item);
+                            });
+                            return;
+                        }
+
+                        body.append(key, value);
+
+                    }
+                );
+
+
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method: 'POST',
+
+                        credentials:
+                            'same-origin',
+
+                        headers: {
+                            'Content-Type':
+                                'application/x-www-form-urlencoded;charset=UTF-8',
+
+                            'RequestVerificationToken':
+                                obtenerToken()
+                        },
+
+                        body:
+                            body.toString()
+                    }
+                );
+
+
+            let result = {};
+
+            try {
+                result =
+                    await response.json();
+            }
+            catch {
+            }
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result?.mensaje
+                    ?? 'Ocurrió un error al procesar la solicitud.'
+                );
+
+            }
+
+
+            return result;
+
+        }
+
+
+        function recargarPagina() {
+
+            window.location.reload();
+
+        }
+
+
+        /* =========================================================
+           ARBOL
+           ========================================================= */
+
+        function toggleGrupo(element) {
+
+            const card =
+                element.closest('.group-card');
+
+            card?.classList.toggle('open');
+
+        }
+
+
+        function toggleMenu(element) {
+
+            const node =
+                element.closest('.menu-node');
+
+            node?.classList.toggle('open');
+
+        }
+
+
+        function filtrarArbol() {
+
+            const termino =
+                (
+                    document
+                        .getElementById('txtBuscarMenu')
+                        ?.value
+                    ?? ''
+                )
+                .trim()
+                .toLowerCase();
+
+
+            document
+                .querySelectorAll('.group-card')
+                .forEach(
+                    function (grupo) {
+
+                        if (!termino) {
+
+                            grupo.style.display = '';
+
+                            grupo
+                                .querySelectorAll('.menu-node')
+                                .forEach(
+                                    m =>
+                                        m.style.display = ''
+                                );
+
+                            grupo
+                                .querySelectorAll('.submenu-row')
+                                .forEach(
+                                    s =>
+                                        s.style.display = ''
+                                );
+
+                            return;
+
+                        }
+
+
+                        const textoGrupo =
+                            grupo.dataset.search
+                            ?? '';
+
+
+                        let grupoCoincide =
+                            textoGrupo.includes(
+                                termino
+                            );
+
+
+                        let tieneCoincidencias =
+                            grupoCoincide;
+
+
+                        grupo
+                            .querySelectorAll('.menu-node')
+                            .forEach(
+                                function (menu) {
+
+                                    const textoMenu =
+                                        menu.dataset.search
+                                        ?? '';
+
+                                    let menuCoincide =
+                                        textoMenu.includes(
+                                            termino
+                                        );
+
+                                    let subCoincide =
+                                        false;
+
+
+                                    menu
+                                        .querySelectorAll('.submenu-row')
+                                        .forEach(
+                                            function (sub) {
+
+                                                const textoSub =
+                                                    sub.dataset.search
+                                                    ?? '';
+
+                                                const coincide =
+                                                    textoSub.includes(
+                                                        termino
+                                                    );
+
+                                                sub.style.display =
+                                                    coincide ||
+                                                    menuCoincide ||
+                                                    grupoCoincide
+                                                        ? ''
+                                                        : 'none';
+
+                                                if (coincide)
+                                                    subCoincide = true;
+
+                                            }
+                                        );
+
+
+                                    const mostrarMenu =
+                                        menuCoincide ||
+                                        subCoincide ||
+                                        grupoCoincide;
+
+
+                                    menu.style.display =
+                                        mostrarMenu
+                                            ? ''
+                                            : 'none';
+
+
+                                    if (mostrarMenu) {
+
+                                        tieneCoincidencias =
+                                            true;
+
+                                        grupo
+                                            .classList
+                                            .add('open');
+
+                                        menu
+                                            .classList
+                                            .add('open');
+
+                                    }
+
+                                }
+                            );
+
+
+                        grupo.style.display =
+                            tieneCoincidencias
+                                ? ''
+                                : 'none';
+
+                    }
+                );
+
+        }
+
+
+        /* =========================================================
+           GRUPOS
+           ========================================================= */
+
+        function abrirCrearGrupo() {
+
+            limpiarMensaje(
+                'mensajeGrupo'
+            );
+
+            document
+                .getElementById('tituloModalGrupo')
+                .textContent =
+                'Nuevo grupo';
+
+            document
+                .getElementById('grupoId')
+                .value = 0;
+
+            document
+                .getElementById('grupoNombre')
+                .value = '';
+
+            document
+                .getElementById('grupoDescripcion')
+                .value = '';
+
+            document
+                .getElementById('grupoIcono')
+                .value =
+                'fa-solid fa-layer-group';
+
+            document
+                .getElementById('grupoOrden')
+                .value = 100;
+
+            marcarIconoSeleccionado(
+                'fa-solid fa-layer-group'
+            );
+
+            modalGrupo.show();
+
+        }
+
+
+        function abrirEditarGrupo(
+            id,
+            nombre,
+            descripcion,
+            icono,
+            orden
+        ) {
+
+            limpiarMensaje(
+                'mensajeGrupo'
+            );
+
+            document
+                .getElementById('tituloModalGrupo')
+                .textContent =
+                'Editar grupo';
+
+            document
+                .getElementById('grupoId')
+                .value = id;
+
+            document
+                .getElementById('grupoNombre')
+                .value = nombre ?? '';
+
+            document
+                .getElementById('grupoDescripcion')
+                .value = descripcion ?? '';
+
+            document
+                .getElementById('grupoIcono')
+                .value =
+                icono ||
+                'fa-solid fa-layer-group';
+
+            document
+                .getElementById('grupoOrden')
+                .value =
+                orden || 100;
+
+            marcarIconoSeleccionado(
+                icono ||
+                'fa-solid fa-layer-group'
+            );
+
+            modalGrupo.show();
+
+        }
+
+
+        function marcarIconoSeleccionado(
+            icono
+        ) {
+
+            document
+                .querySelectorAll(
+                    '.icon-picker-button'
+                )
+                .forEach(
+                    function (button) {
+
+                        button
+                            .classList
+                            .toggle(
+                                'selected',
+                                button.dataset.icon ===
+                                icono
+                            );
+
+                    }
+                );
+
+        }
+
+
+        async function guardarGrupo() {
+
+            limpiarMensaje(
+                'mensajeGrupo'
+            );
+
+            const id =
+                Number(
+                    document
+                        .getElementById('grupoId')
+                        .value
+                ) || 0;
+
+            const nombre =
+                document
+                    .getElementById('grupoNombre')
+                    .value
+                    .trim();
+
+            const descripcion =
+                document
+                    .getElementById('grupoDescripcion')
+                    .value
+                    .trim();
+
+            const icono =
+                document
+                    .getElementById('grupoIcono')
+                    .value
+                    .trim();
+
+            const orden =
+                Number(
+                    document
+                        .getElementById('grupoOrden')
+                        .value
+                ) || 100;
+
+
+            if (!nombre) {
+
+                mostrarMensaje(
+                    'mensajeGrupo',
+                    'Ingresa el nombre del grupo.'
+                );
+
+                return;
+
+            }
+
+
+            mostrarLoading();
+
+
+            try {
+
+                const url =
+                    id > 0
+                        ? '/AdministracionMenus/EditarGrupo'
+                        : '/AdministracionMenus/CrearGrupo';
+
+
+                const body = {
+                    MenuGrupoID: id,
+                    Nombre: nombre,
+                    Descripcion: descripcion,
+                    IconoCss: icono,
+                    Orden: orden
+                };
+
+
+                const result =
+                    await postForm(
+                        url,
+                        body
+                    );
+
+
+                if (!result.ok) {
+
+                    mostrarMensaje(
+                        'mensajeGrupo',
+                        result.mensaje
+                    );
+
+                    return;
+
+                }
+
+
+                mostrarMensaje(
+                    'mensajeGrupo',
+                    result.mensaje,
+                    'success'
+                );
+
+
+                setTimeout(
+                    recargarPagina,
+                    600
+                );
+
+            }
+            catch (error) {
+
+                mostrarMensaje(
+                    'mensajeGrupo',
+                    error.message
+                );
+
+            }
+            finally {
+
+                ocultarLoading();
+
+            }
+
+        }
+
+
+        async function cambiarEstadoGrupo(menuGrupoId, activo) {
+            const texto = activo
+                ? '¿Deseas activar este grupo? Volverá a mostrarse en el menú lateral para los usuarios que tengan permisos en sus submenús.'
+                : '¿Deseas desactivar este grupo? Se ocultará del menú lateral, pero sus menús, submenús, acciones y permisos permanecerán guardados.';
+
+            if (!confirm(texto))
+                return;
+
+            mostrarLoading();
+
+            try {
+                const result = await postForm('/AdministracionMenus/CambiarEstadoGrupo', {
+                    menuGrupoId: menuGrupoId,
+                    activo: activo
+                });
+
+                if (!result.ok) {
+                    alert(result.mensaje ?? 'No fue posible cambiar el estado del grupo.');
+                    return;
+                }
+
+                window.location.reload();
+            }
+            catch (error) {
+                alert(error.message ?? 'No fue posible cambiar el estado del grupo.');
+            }
+            finally {
+                ocultarLoading();
+            }
+        }
+
+
+        /* =========================================================
+           MENUS
+           ========================================================= */
+
+        function abrirCrearMenu(
+            grupoId,
+            grupoNombre
+        ) {
+
+            limpiarMensaje(
+                'mensajeMenu'
+            );
+
+            document
+                .getElementById('tituloModalMenu')
+                .textContent =
+                'Nuevo menú';
+
+            document
+                .getElementById('menuId')
+                .value = 0;
+
+            document
+                .getElementById('menuGrupoId')
+                .value = grupoId;
+
+            document
+                .getElementById('menuGrupoNombre')
+                .value = grupoNombre ?? '';
+
+            document
+                .getElementById('menuNombre')
+                .value = '';
+
+            modalMenu.show();
+
+        }
+
+
+        function abrirEditarMenu(
+            menuId,
+            grupoId,
+            nombre
+        ) {
+
+            limpiarMensaje(
+                'mensajeMenu'
+            );
+
+            document
+                .getElementById('tituloModalMenu')
+                .textContent =
+                'Editar menú';
+
+            document
+                .getElementById('menuId')
+                .value = menuId;
+
+            document
+                .getElementById('menuGrupoId')
+                .value = grupoId;
+
+            const grupo =
+                document.querySelector(
+                    `[data-grupo-id="${grupoId}"] .group-name`
+                );
+
+
+            document
+                .getElementById('menuGrupoNombre')
+                .value =
+                grupo?.textContent?.trim()
+                ?? '';
+
+            document
+                .getElementById('menuNombre')
+                .value =
+                nombre ?? '';
+
+            modalMenu.show();
+
+        }
+
+
+        async function guardarMenu() {
+
+            limpiarMensaje(
+                'mensajeMenu'
+            );
+
+            const menuId =
+                Number(
+                    document
+                        .getElementById('menuId')
+                        .value
+                ) || 0;
+
+            const menuGrupoId =
+                Number(
+                    document
+                        .getElementById('menuGrupoId')
+                        .value
+                ) || 0;
+
+            const nombre =
+                document
+                    .getElementById('menuNombre')
+                    .value
+                    .trim();
+
+
+            if (!nombre) {
+
+                mostrarMensaje(
+                    'mensajeMenu',
+                    'Ingresa el nombre del menú.'
+                );
+
+                return;
+
+            }
+
+
+            mostrarLoading();
+
+
+            try {
+
+                const url =
+                    menuId > 0
+                        ? '/AdministracionMenus/EditarMenu'
+                        : '/AdministracionMenus/CrearMenu';
+
+
+                const result =
+                    await postForm(
+                        url,
+                        {
+                            MenuID:
+                                menuId,
+
+                            MenuGrupoID:
+                                menuGrupoId,
+
+                            Nombre:
+                                nombre
+                        }
+                    );
+
+
+                if (!result.ok) {
+
+                    mostrarMensaje(
+                        'mensajeMenu',
+                        result.mensaje
+                    );
+
+                    return;
+
+                }
+
+
+                mostrarMensaje(
+                    'mensajeMenu',
+                    result.mensaje,
+                    'success'
+                );
+
+
+                setTimeout(
+                    recargarPagina,
+                    600
+                );
+
+            }
+            catch (error) {
+
+                mostrarMensaje(
+                    'mensajeMenu',
+                    error.message
+                );
+
+            }
+            finally {
+
+                ocultarLoading();
+
+            }
+
+        }
+
+
+        async function eliminarMenu(
+            menuId,
+            nombre
+        ) {
+
+            const confirmar =
+                confirm(
+                    `¿Eliminar el menú "${nombre}"?\n\nSolo se podrá eliminar si no tiene submenús.`
+                );
+
+
+            if (!confirmar)
+                return;
+
+
+            mostrarLoading();
+
+
+            try {
+
+                const result =
+                    await postForm(
+                        '/AdministracionMenus/EliminarMenu',
+                        {
+                            menuId:
+                                menuId
+                        }
+                    );
+
+
+                alert(
+                    result.mensaje
+                );
+
+
+                if (result.ok)
+                    recargarPagina();
+
+            }
+            catch (error) {
+
+                alert(
+                    error.message
+                );
+
+            }
+            finally {
+
+                ocultarLoading();
+
+            }
+
+        }
+
+
+        /* =========================================================
+           SUBMENUS
+           ========================================================= */
+
+        async function abrirCrearSubMenu(
+            menuId,
+            menuNombre
+        ) {
+            limpiarMensaje('mensajeSubMenu');
+            document.getElementById('tituloModalSubMenu').textContent = 'Nuevo submenú';
+            document.getElementById('subMenuId').value = 0;
+            document.getElementById('subMenuMenuId').value = menuId;
+            document.getElementById('subMenuMenuNombre').value = menuNombre ?? '';
+            document.getElementById('subMenuNombre').value = '';
+            document.getElementById('subMenuUrl').value = '';
+            document.getElementById('subMenuDescripcion').value = '';
+            document.getElementById('contenedorAccionesCrear').style.display = '';
+            document.getElementById('subAccionVer').checked = true;
+            document.getElementById('subAccionCrear').checked = true;
+            document.getElementById('subAccionEditar').checked = true;
+            document.getElementById('subAccionEliminar').checked = true;
+            document.getElementById('subRolesLista').innerHTML = '<div class="role-loading"><i class="fa-solid fa-spinner fa-spin me-1"></i>Cargando roles...</div>';
+            modalSubMenu.show();
+            await cargarRolesCreacionSubMenu();
+        }
+
+
+        function abrirEditarSubMenu(
+            subMenuId,
+            menuId,
+            nombre,
+            url,
+            descripcion
+        ) {
+
+            limpiarMensaje(
+                'mensajeSubMenu'
+            );
+
+            document
+                .getElementById('tituloModalSubMenu')
+                .textContent =
+                'Editar submenú';
+
+            document
+                .getElementById('subMenuId')
+                .value = subMenuId;
+
+            document
+                .getElementById('subMenuMenuId')
+                .value = menuId;
+
+            const menu =
+                document.querySelector(
+                    `[data-menu-id="${menuId}"] .menu-node-name`
+                );
+
+
+            document
+                .getElementById('subMenuMenuNombre')
+                .value =
+                menu?.textContent?.trim()
+                ?? '';
+
+            document
+                .getElementById('subMenuNombre')
+                .value =
+                nombre ?? '';
+
+            document
+                .getElementById('subMenuUrl')
+                .value =
+                url ?? '';
+
+            document
+                .getElementById('subMenuDescripcion')
+                .value =
+                descripcion ?? '';
+
+            document
+                .getElementById('contenedorAccionesCrear')
+                .style.display =
+                'none';
+
+            modalSubMenu.show();
+
+        }
+
+
+        async function guardarSubMenu() {
+            limpiarMensaje('mensajeSubMenu');
+            const subMenuId = Number(document.getElementById('subMenuId').value) || 0;
+            const menuId = Number(document.getElementById('subMenuMenuId').value) || 0;
+            const nombre = document.getElementById('subMenuNombre').value.trim();
+            const url = document.getElementById('subMenuUrl').value.trim();
+            const descripcion = document.getElementById('subMenuDescripcion').value.trim();
+            if (!nombre) {
+                mostrarMensaje('mensajeSubMenu', 'Ingresa el nombre del submenú.');
+                return;
+            }
+            mostrarLoading();
+            try {
+                let result;
+                if (subMenuId > 0) {
+                    result = await postForm('/AdministracionMenus/EditarSubMenu', {
+                        SubMenuID: subMenuId,
+                        MenuID: menuId,
+                        Nombre: nombre,
+                        UrlEnlace: url,
+                        Descripcion: descripcion
+                    });
+                }
+                else {
+                    const rolIds = Array.from(document.querySelectorAll('.sub-role-checkbox:checked')).map(x => Number(x.value)).filter(x => x > 0);
+                    if (rolIds.length === 0) {
+                        mostrarMensaje('mensajeSubMenu', 'Selecciona al menos un rol que pueda visualizar el submenú.');
+                        return;
+                    }
+                    const crear = document.getElementById('subAccionCrear').checked;
+                    const editar = document.getElementById('subAccionEditar').checked;
+                    const eliminar = document.getElementById('subAccionEliminar').checked;
+                    const ver = document.getElementById('subAccionVer').checked || crear || editar || eliminar;
+                    document.getElementById('subAccionVer').checked = ver;
+                    result = await postForm('/AdministracionMenus/CrearSubMenu', {
+                        MenuID: menuId,
+                        Nombre: nombre,
+                        UrlEnlace: url,
+                        Descripcion: descripcion,
+                        RolIDs: rolIds,
+                        Ver: ver,
+                        Crear: crear,
+                        Editar: editar,
+                        Eliminar: eliminar
+                    });
+                }
+                if (!result.ok) {
+                    mostrarMensaje('mensajeSubMenu', result.mensaje);
+                    return;
+                }
+                mostrarMensaje('mensajeSubMenu', result.mensaje, 'success');
+                setTimeout(recargarPagina, 600);
+            }
+            catch (error) {
+                mostrarMensaje('mensajeSubMenu', error.message);
+            }
+            finally {
+                ocultarLoading();
+            }
+        }
+
+
+        async function cambiarEstadoSubMenu(
+            subMenuId,
+            activo
+        ) {
+
+            const texto =
+                activo
+                    ? '¿Deseas activar este submenú?'
+                    : '¿Deseas desactivar este submenú?';
+
+
+            if (!confirm(texto))
+                return;
+
+
+            mostrarLoading();
+
+
+            try {
+
+                const result =
+                    await postForm(
+                        '/AdministracionMenus/CambiarEstadoSubMenu',
+                        {
+                            subMenuId:
+                                subMenuId,
+
+                            activo:
+                                activo
+                        }
+                    );
+
+
+                if (!result.ok) {
+
+                    alert(
+                        result.mensaje
+                    );
+
+                    return;
+
+                }
+
+
+                recargarPagina();
+
+            }
+            catch (error) {
+
+                alert(
+                    error.message
+                );
+
+            }
+            finally {
+
+                ocultarLoading();
+
+            }
+
+        }
+
+
+        /* =========================================================
+           ROLES Y PERMISOS
+           ========================================================= */
+
+        async function obtenerRolesAdministracion() {
+            const response = await fetch('/AdministracionMenus/ObtenerRoles', {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            let result = {};
+            try { result = await response.json(); } catch { }
+            if (!response.ok || !result.ok)
+                throw new Error(result?.mensaje ?? 'No fue posible obtener los roles.');
+            return result.roles ?? [];
+        }
+
+        async function cargarRolesCreacionSubMenu() {
+            const contenedor = document.getElementById('subRolesLista');
+            try {
+                const roles = await obtenerRolesAdministracion();
+                if (!roles.length) {
+                    contenedor.innerHTML = '<div class="role-loading">No existen roles disponibles.</div>';
+                    return;
+                }
+                contenedor.innerHTML = '';
+                roles.forEach(function (rol) {
+                    const rolId = Number(rol.rolId ?? rol.RolID ?? 0);
+                    const nombre = rol.nombre ?? rol.Nombre ?? '';
+                    const esAdministrador = rol.esAdministrador === true || rol.EsAdministrador === true;
+                    const label = document.createElement('label');
+                    label.className = `role-option${esAdministrador ? ' admin-role' : ''}`;
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'sub-role-checkbox';
+                    checkbox.value = rolId;
+                    checkbox.checked = esAdministrador;
+                    checkbox.disabled = esAdministrador;
+                    const texto = document.createElement('div');
+                    texto.className = 'role-option-text';
+                    const nombreDiv = document.createElement('div');
+                    nombreDiv.className = 'role-option-name';
+                    nombreDiv.textContent = nombre;
+                    const nota = document.createElement('div');
+                    nota.className = 'role-option-note';
+                    nota.textContent = esAdministrador ? 'Acceso administrativo obligatorio' : 'Seleccionar para otorgar acceso';
+                    texto.appendChild(nombreDiv);
+                    texto.appendChild(nota);
+                    label.appendChild(checkbox);
+                    label.appendChild(texto);
+                    contenedor.appendChild(label);
+                });
+            }
+            catch (error) {
+                contenedor.innerHTML = '<div class="role-loading">No fue posible cargar los roles.</div>';
+                mostrarMensaje('mensajeSubMenu', error.message);
+            }
+        }
+
+        function configurarDependenciasPermisos() {
+            const grupos = [
+                ['subAccionVer', 'subAccionCrear', 'subAccionEditar', 'subAccionEliminar'],
+                ['accionVer', 'accionCrear', 'accionEditar', 'accionEliminar'],
+                ['rolPermisoVer', 'rolPermisoCrear', 'rolPermisoEditar', 'rolPermisoEliminar']
+            ];
+            grupos.forEach(function (ids) {
+                const ver = document.getElementById(ids[0]);
+                const otros = ids.slice(1).map(id => document.getElementById(id)).filter(Boolean);
+                if (!ver) return;
+                otros.forEach(function (check) {
+                    check.addEventListener('change', function () {
+                        if (check.checked) ver.checked = true;
+                    });
+                });
+                ver.addEventListener('change', function () {
+                    if (!ver.checked && otros.some(x => x.checked)) ver.checked = true;
+                });
+            });
+        }
+
+        async function abrirPermisosRol(subMenuId, nombre) {
+            limpiarMensaje('mensajePermisosRol');
+            document.getElementById('permisosRolSubMenuId').value = subMenuId;
+            document.getElementById('permisosRolSubMenuNombre').value = nombre ?? '';
+            document.getElementById('permisosRolSelect').innerHTML = '<option value="">Cargando roles...</option>';
+            document.getElementById('resumenRolesSubMenu').innerHTML = '<span class="role-summary-chip">Cargando...</span>';
+            establecerEstadoPermisosRol(false, false, false, false, false, false, false, false, true);
+            modalPermisosRol.show();
+            mostrarLoading();
+            try {
+                const roles = await obtenerRolesAdministracion();
+                const select = document.getElementById('permisosRolSelect');
+                select.innerHTML = '<option value="">Selecciona un rol</option>';
+                roles.forEach(function (rol) {
+                    const option = document.createElement('option');
+                    option.value = Number(rol.rolId ?? rol.RolID ?? 0);
+                    option.textContent = rol.nombre ?? rol.Nombre ?? '';
+                    option.dataset.esAdministrador = (rol.esAdministrador === true || rol.EsAdministrador === true) ? 'true' : 'false';
+                    select.appendChild(option);
+                });
+                const primerNoAdmin = Array.from(select.options).find(x => x.value && x.dataset.esAdministrador !== 'true');
+                const primero = primerNoAdmin ?? Array.from(select.options).find(x => x.value);
+                if (primero) select.value = primero.value;
+                await Promise.all([
+                    cargarPermisosRolSeleccionado(),
+                    cargarResumenRolesSubMenu()
+                ]);
+            }
+            catch (error) {
+                mostrarMensaje('mensajePermisosRol', error.message);
+            }
+            finally {
+                ocultarLoading();
+            }
+        }
+
+        function establecerEstadoPermisosRol(ver, crear, editar, eliminar, disponibleVer, disponibleCrear, disponibleEditar, disponibleEliminar, bloquearTodo) {
+            const configuracion = [
+                ['rolPermisoVer', ver, disponibleVer],
+                ['rolPermisoCrear', crear, disponibleCrear],
+                ['rolPermisoEditar', editar, disponibleEditar],
+                ['rolPermisoEliminar', eliminar, disponibleEliminar]
+            ];
+            configuracion.forEach(function (item) {
+                const input = document.getElementById(item[0]);
+                input.checked = item[1] === true;
+                input.disabled = bloquearTodo === true || item[2] !== true;
+            });
+            document.getElementById('btnGuardarPermisosRol').disabled = bloquearTodo === true;
+        }
+
+        async function cargarPermisosRolSeleccionado() {
+            limpiarMensaje('mensajePermisosRol');
+            const subMenuId = Number(document.getElementById('permisosRolSubMenuId').value) || 0;
+            const select = document.getElementById('permisosRolSelect');
+            const rolId = Number(select.value) || 0;
+            if (!subMenuId || !rolId) {
+                establecerEstadoPermisosRol(false, false, false, false, false, false, false, false, true);
+                document.getElementById('ayudaPermisosRol').textContent = 'Selecciona un rol para consultar y modificar sus permisos.';
+                return;
+            }
+            const opcion = select.options[select.selectedIndex];
+            const esAdministrador = opcion?.dataset?.esAdministrador === 'true';
+            try {
+                const response = await fetch(`/AdministracionMenus/ObtenerPermisosSubMenuRol?subMenuId=${encodeURIComponent(subMenuId)}&rolId=${encodeURIComponent(rolId)}`, {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                let result = {};
+                try { result = await response.json(); } catch { }
+                if (!response.ok || !result.ok)
+                    throw new Error(result?.mensaje ?? 'No fue posible consultar los permisos del rol.');
+                const p = result.permisos ?? {};
+                const d = result.disponibles ?? {};
+                establecerEstadoPermisosRol(
+                    p.ver === true,
+                    p.crear === true,
+                    p.editar === true,
+                    p.eliminar === true,
+                    d.ver === true,
+                    d.crear === true,
+                    d.editar === true,
+                    d.eliminar === true,
+                    esAdministrador
+                );
+                document.getElementById('ayudaPermisosRol').textContent = esAdministrador
+                    ? 'El Administrador conserva automáticamente todas las acciones disponibles.'
+                    : 'Activa únicamente las acciones que este rol podrá ejecutar. Para Crear, Editar o Eliminar también se requiere Ver.';
+            }
+            catch (error) {
+                establecerEstadoPermisosRol(false, false, false, false, false, false, false, false, true);
+                mostrarMensaje('mensajePermisosRol', error.message);
+            }
+        }
+
+        async function cargarResumenRolesSubMenu() {
+            const subMenuId = Number(document.getElementById('permisosRolSubMenuId').value) || 0;
+            const contenedor = document.getElementById('resumenRolesSubMenu');
+            if (!subMenuId) return;
+            try {
+                const response = await fetch(`/AdministracionMenus/ObtenerResumenRolesSubMenu?subMenuId=${encodeURIComponent(subMenuId)}`, {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                let result = {};
+                try { result = await response.json(); } catch { }
+                if (!response.ok || !result.ok)
+                    throw new Error(result?.mensaje ?? 'No fue posible obtener el resumen de roles.');
+                const roles = result.roles ?? [];
+                contenedor.innerHTML = '';
+                if (!roles.length) {
+                    contenedor.innerHTML = '<span class="role-summary-chip">Sin roles</span>';
+                    return;
+                }
+                roles.forEach(function (rol) {
+                    const chip = document.createElement('span');
+                    chip.className = `role-summary-chip${rol.tieneAcceso === true ? ' enabled' : ''}`;
+                    const acciones = [];
+                    if (rol.ver === true) acciones.push('Ver');
+                    if (rol.crear === true) acciones.push('Crear');
+                    if (rol.editar === true) acciones.push('Editar');
+                    if (rol.eliminar === true) acciones.push('Eliminar');
+                    chip.textContent = `${rol.nombre}: ${acciones.length ? acciones.join(', ') : 'Sin acceso'}`;
+                    contenedor.appendChild(chip);
+                });
+            }
+            catch (error) {
+                contenedor.innerHTML = '<span class="role-summary-chip">No disponible</span>';
+            }
+        }
+
+        async function guardarPermisosRol() {
+            limpiarMensaje('mensajePermisosRol');
+            const subMenuId = Number(document.getElementById('permisosRolSubMenuId').value) || 0;
+            const select = document.getElementById('permisosRolSelect');
+            const rolId = Number(select.value) || 0;
+            if (!subMenuId || !rolId) {
+                mostrarMensaje('mensajePermisosRol', 'Selecciona un rol.');
+                return;
+            }
+            const opcion = select.options[select.selectedIndex];
+            if (opcion?.dataset?.esAdministrador === 'true') {
+                mostrarMensaje('mensajePermisosRol', 'Los permisos del Administrador se mantienen automáticamente activos.');
+                return;
+            }
+            const crear = document.getElementById('rolPermisoCrear').checked;
+            const editar = document.getElementById('rolPermisoEditar').checked;
+            const eliminar = document.getElementById('rolPermisoEliminar').checked;
+            const ver = document.getElementById('rolPermisoVer').checked || crear || editar || eliminar;
+            document.getElementById('rolPermisoVer').checked = ver;
+            mostrarLoading();
+            try {
+                const result = await postForm('/AdministracionMenus/GuardarPermisosSubMenuRol', {
+                    subMenuId: subMenuId,
+                    rolId: rolId,
+                    ver: ver,
+                    crear: crear,
+                    editar: editar,
+                    eliminar: eliminar
+                });
+                if (!result.ok) {
+                    mostrarMensaje('mensajePermisosRol', result.mensaje);
+                    return;
+                }
+                mostrarMensaje('mensajePermisosRol', result.mensaje, 'success');
+                await cargarResumenRolesSubMenu();
+                await cargarPermisosRolSeleccionado();
+            }
+            catch (error) {
+                mostrarMensaje('mensajePermisosRol', error.message);
+            }
+            finally {
+                ocultarLoading();
+            }
+        }
+
+        /* =========================================================
+           ACCIONES
+           ========================================================= */
+
+        function abrirAcciones(
+            subMenuId,
+            nombre,
+            ver,
+            crear,
+            editar,
+            eliminar
+        ) {
+
+            limpiarMensaje(
+                'mensajeAcciones'
+            );
+
+            document
+                .getElementById('accionesSubMenuId')
+                .value =
+                subMenuId;
+
+            document
+                .getElementById('accionesSubMenuNombre')
+                .value =
+                nombre ?? '';
+
+            document
+                .getElementById('accionVer')
+                .checked =
+                ver === true;
+
+            document
+                .getElementById('accionCrear')
+                .checked =
+                crear === true;
+
+            document
+                .getElementById('accionEditar')
+                .checked =
+                editar === true;
+
+            document
+                .getElementById('accionEliminar')
+                .checked =
+                eliminar === true;
+
+            modalAcciones.show();
+
+        }
+
+
+        async function guardarAcciones() {
+
+            limpiarMensaje(
+                'mensajeAcciones'
+            );
+
+            const subMenuId =
+                Number(
+                    document
+                        .getElementById('accionesSubMenuId')
+                        .value
+                ) || 0;
+
+
+            mostrarLoading();
+
+
+            try {
+
+                const result =
+                    await postForm(
+                        '/AdministracionMenus/GuardarAccionesSubMenu',
+                        {
+                            SubMenuID:
+                                subMenuId,
+
+                            Ver:
+                                document
+                                    .getElementById('accionVer')
+                                    .checked,
+
+                            Crear:
+                                document
+                                    .getElementById('accionCrear')
+                                    .checked,
+
+                            Editar:
+                                document
+                                    .getElementById('accionEditar')
+                                    .checked,
+
+                            Eliminar:
+                                document
+                                    .getElementById('accionEliminar')
+                                    .checked
+                        }
+                    );
+
+
+                if (!result.ok) {
+
+                    mostrarMensaje(
+                        'mensajeAcciones',
+                        result.mensaje
+                    );
+
+                    return;
+
+                }
+
+
+                mostrarMensaje(
+                    'mensajeAcciones',
+                    result.mensaje,
+                    'success'
+                );
+
+
+                setTimeout(
+                    recargarPagina,
+                    600
+                );
+
+            }
+            catch (error) {
+
+                mostrarMensaje(
+                    'mensajeAcciones',
+                    error.message
+                );
+
+            }
+            finally {
+
+                ocultarLoading();
+
+            }
+
+        }
+
+    </script>
+}

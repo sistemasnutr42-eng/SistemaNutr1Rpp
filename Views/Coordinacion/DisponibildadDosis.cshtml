@@ -1,0 +1,120 @@
+    @{
+        Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+        ViewData["Title"] = "Bandeja de pedidos de dosis no comerciales";
+    }
+    @Html.AntiForgeryToken()
+
+    @section Estilos {
+        <style>
+            :root{--p:#084F83;--pd:#062F55;--ps:#EFF6FB;--a:#58A83F;--b:#E4E9EF;--m:#667085;--ok:#347526;--okb:#ECF8E8;--w:#B54708;--wb:#FFF4E5;--e:#B42318;--eb:#FEECEC}
+            .prog-page{width:100%}.prog-head{display:flex;justify-content:space-between;gap:18px;margin-bottom:18px}.prog-eye{display:flex;gap:7px;align-items:center;color:var(--a);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.prog-title{margin:0;color:var(--pd);font-size:1.55rem;font-weight:850}.prog-sub{margin:6px 0 0;max-width:850px;color:var(--m);font-size:.82rem;line-height:1.5}
+            .head-actions{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+            .btn{min-height:38px;padding:8px 13px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer}.btn-main{border:1px solid var(--p);background:var(--p);color:#fff}.btn-main:hover{background:var(--pd);color:#fff}.btn-sec{border:1px solid #DCE2E8;background:#fff;color:#475467}.btn-sec:hover{background:#F8FAFC;color:var(--pd)}.btn:disabled{opacity:.58;cursor:not-allowed}
+            .panel{border:1px solid var(--b);border-radius:11px;background:#fff;overflow:hidden;margin-bottom:16px}.panel-head{min-height:46px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #EEF1F4;background:#FBFCFD}.panel-left{display:flex;align-items:center;gap:9px}.panel-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--ps);color:var(--p);font-size:.73rem}.panel-title{margin:0;color:#344054;font-size:.82rem;font-weight:850}.panel-help{margin-top:2px;color:#98A2B3;font-size:.61rem}
+            .pill{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;background:#F2F4F7;color:#475467;font-size:.61rem;font-weight:800}
+            .link-all{display:inline-flex;align-items:center;gap:6px;color:var(--p);font-size:.68rem;font-weight:800;text-decoration:none}.link-all:hover{color:var(--pd);text-decoration:underline}
+            .wrap{width:100%;overflow-x:auto}.tbl{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.tbl th{padding:9px 8px;border-bottom:1px solid #E7EBF0;background:#fff;color:#667085;font-size:.59rem;font-weight:850;text-transform:uppercase;white-space:nowrap;text-align:left}.tbl td{padding:9px 8px;border-bottom:1px solid #F0F2F4;color:#344054;font-size:.68rem;vertical-align:middle}.tbl tr:last-child td{border-bottom:0}.tbl tbody tr:hover{background:#FAFCFD}.main{font-weight:750}.sub{margin-top:3px;color:#98A2B3;font-size:.59rem;line-height:1.35}
+            .val{display:inline-flex;gap:5px;align-items:center;padding:4px 7px;border-radius:999px;font-size:.6rem;font-weight:800;white-space:nowrap}.val.ok{background:var(--okb);color:var(--ok)}.val.warn{background:var(--wb);color:var(--w)}.val.err{background:var(--eb);color:var(--e)}.val.info{background:var(--ps);color:var(--p)}
+            .rowbtn{min-height:30px;padding:5px 8px;border:1px solid #DCE2E8;border-radius:7px;background:#fff;color:#475467;font-size:.62rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}.rowbtn:hover{border-color:var(--p);color:var(--p);background:var(--ps)}
+            .empty{padding:34px 18px;text-align:center;color:#98A2B3;font-size:.7rem}
+            @@media(max-width:720px){.prog-head{flex-direction:column}.head-actions{width:100%}.head-actions .btn{width:100%}.panel-head{flex-wrap:wrap}}
+        </style>
+    }
+
+    <div class="prog-page">
+        <div class="prog-head">
+            <div>
+                <div class="prog-eye"><i class="fa-solid fa-flask-vial"></i>Coordinación · Programación dosis</div>
+                <h1 class="prog-title">Bandeja de pedidos de dosis no comerciales</h1>
+                <p class="prog-sub">Consulta los pedidos pendientes de atención y revisa el historial de pedidos entregados al cliente.</p>
+            </div>
+            <div class="head-actions">
+                <a asp-controller="Menu" asp-action="Index" class="btn btn-sec"><i class="fa-solid fa-arrow-left"></i>Regresar</a>
+                <a href="@Url.Action("NuevoPedidoDosis", "Coordinacion")" class="btn btn-main"><i class="fa-solid fa-plus"></i>Agregar nuevo pedido</a>
+            </div>
+        </div>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-left">
+                    <span class="panel-icon"><i class="fa-solid fa-inbox"></i></span>
+                    <div><h2 class="panel-title">Pedidos en proceso</h2><div class="panel-help">Pedidos que requieren atención de Coordinación.</div></div>
+                </div>
+                <span id="cuentaPendientes" class="pill">0 pedidos</span>
+            </div>
+            <div class="wrap">
+                <table class="tbl">
+                    <thead><tr><th>#Referencia</th><th>Fecha de solicitud</th><th>Fecha de producción</th><th>Fecha de entrega</th><th>Cliente</th><th>Ruta</th><th>Estatus</th><th>Acción</th></tr></thead>
+                    <tbody id="tbodyPendientes"></tbody>
+                </table>
+            </div>
+            <div id="emptyPendientes" class="empty" style="display:none"><i class="fa-regular fa-folder-open"></i><br />No hay pedidos en proceso.</div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-left">
+                    <span class="panel-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    <div><h2 class="panel-title">Historial</h2><div class="panel-help">Últimos pedidos entregados al cliente.</div></div>
+                </div>
+                <a href="@Url.Action("HistorialDosis", "Coordinacion")" class="link-all">Ver todo<i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="wrap">
+                <table class="tbl">
+                    <thead><tr><th>#Referencia</th><th>Fecha de solicitud</th><th>Fecha de producción</th><th>Fecha de entrega</th><th>Cliente</th><th>Ruta</th><th>Estatus</th><th>Acción</th></tr></thead>
+                    <tbody id="tbodyHistorial"></tbody>
+                </table>
+            </div>
+            <div id="emptyHistorial" class="empty" style="display:none"><i class="fa-regular fa-folder-open"></i><br />Aún no hay pedidos en el historial.</div>
+        </section>
+    </div>
+
+    @section Scripts {
+        <script>
+            (() => {
+                const urls = {
+                    atender: '@Url.Action("AtenderPedidoDosis", "Coordinacion")',
+                    detalle: '@Url.Action("DetallePedidoDosis", "Coordinacion")'
+                };
+
+                // Reemplaza estos arreglos con los datos reales del servidor, por ejemplo:
+                // const pendientes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pendientes));
+                const pendientes = [
+                    { id: 1, referencia: '001', fechaSolicitud: '2026-10-13', fechaProduccion: '2026-10-21', fechaEntrega: '2026-10-22', cliente: 'XXXX', ruta: 'Voladas', estatus: 'Cotización pendiente' }
+                ];
+                const historial = [
+                    { id: 1, referencia: '001', fechaSolicitud: '2026-10-13', fechaProduccion: '2026-10-21', fechaEntrega: '2026-10-21', cliente: 'XXXX', ruta: 'Voladas', estatus: 'Entregado al cliente' }
+                ];
+
+                const esc = v => String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+                const fecha = v => { if (!v) return '—'; const p = String(v).substring(0,10).split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0].slice(-2)}` : String(v); };
+                const clase = e => /entregado/i.test(e) ? 'ok' : /pendiente/i.test(e) ? 'warn' : /cancel|rechaz/i.test(e) ? 'err' : 'info';
+                const icono = c => c === 'ok' ? 'fa-check' : c === 'warn' ? 'fa-hourglass-half' : c === 'err' ? 'fa-xmark' : 'fa-circle-info';
+
+                function filas(lista, esHistorial) {
+                    return lista.map(r => {
+                        const c = clase(r.estatus);
+                        const href = (esHistorial ? urls.detalle : urls.atender) + '?id=' + encodeURIComponent(r.id);
+                        const accion = esHistorial
+                            ? `<a class="rowbtn" href="${href}"><i class="fa-solid fa-eye"></i>Ver detalle</a>`
+                            : `<a class="rowbtn" href="${href}"><i class="fa-solid fa-pen-to-square"></i>Atender</a>`;
+                        return `<tr>
+                            <td><div class="main">${esc(r.referencia)}</div></td>
+                            <td>${fecha(r.fechaSolicitud)}</td><td>${fecha(r.fechaProduccion)}</td><td>${fecha(r.fechaEntrega)}</td>
+                            <td>${esc(r.cliente)}</td><td>${esc(r.ruta)}</td>
+                            <td><span class="val ${c}"><i class="fa-solid ${icono(c)}"></i>${esc(r.estatus)}</span></td>
+                            <td>${accion}</td></tr>`;
+                    }).join('');
+                }
+
+                function render() {
+                    document.getElementById('tbodyPendientes').innerHTML = filas(pendientes, false);
+                    document.getElementById('tbodyHistorial').innerHTML = filas(historial, true);
+                    document.getElementById('emptyPendientes').style.display = pendientes.length ? 'none' : 'block';
+                    document.getElementById('emptyHistorial').style.display = historial.length ? 'none' : 'block';
+                    document.getElementById('cuentaPendientes').textContent = `${pendientes.length} ${pendientes.length === 1 ? 'pedido' : 'pedidos'}`;
+                }
+                render();
+            })();
+        </script>
+    }

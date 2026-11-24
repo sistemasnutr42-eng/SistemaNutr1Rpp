@@ -1,0 +1,710 @@
+﻿@model SistemaNutri.Models.BandejaAlmacenVm
+
+@{
+    ViewData["Title"] = "Bandeja Almacén";
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+}
+
+<div class="container-fluid mt-4 almacen-page">
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger shadow-sm">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            @TempData["Error"]
+        </div>
+    }
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success shadow-sm">
+            <i class="fas fa-check-circle mr-2"></i>
+            @TempData["Mensaje"]
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4 almacen-header">
+        <div>
+            <h2 class="fw-bold mb-1">Bandeja de Almacén</h2>
+            <small class="text-muted">
+                Registra recepciones completas o parciales por artículo.
+            </small>
+        </div>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left mr-1"></i>
+            Volver
+        </a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+            <div class="card metric-card metric-pending h-100">
+                <div class="card-body">
+                    <div class="metric-icon">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div>
+                        <h6>PEDIDOS PENDIENTES</h6>
+                        <h3>@Model.TotalPendientesRecepcion</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card metric-card metric-partial h-100">
+                <div class="card-body">
+                    <div class="metric-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <div>
+                        <h6>RECEPCIONES PARCIALES</h6>
+                        <h3>@Model.TotalRecepcionesParciales</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="mb-1 fw-bold text-primary">Órdenes enviadas a proveedor</h6>
+                <small class="text-muted">
+                    Cada recepción genera su propia evidencia e historial.
+                </small>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle tabla-almacen">
+                    <thead>
+                        <tr>
+                            <th>Pedido</th>
+                            <th>Proveedor / O.C.</th>
+                            <th>Solicitante</th>
+                            <th>Entrega estimada</th>
+                            <th>Avance</th>
+                            <th>Estatus</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.PendientesRecepcion.Any())
+                        {
+                            foreach (var item in Model.PendientesRecepcion)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong class="d-block text-dark">@item.Folio</strong>
+                                        <small class="text-muted">@item.Empresa</small>
+                                    </td>
+
+                                    <td>
+                                        <strong class="d-block">@item.Proveedor</strong>
+                                        <small class="text-muted">O.C. @item.NumeroOC</small>
+                                    </td>
+
+                                    <td>
+                                        <strong class="d-block">@item.Solicitante</strong>
+                                        <small class="text-muted">@item.Departamento</small>
+                                    </td>
+
+                                    <td>
+                                        <span class="d-block">
+                                            @(item.FechaEstimadaEntrega.HasValue
+                                                ? item.FechaEstimadaEntrega.Value.ToString("dd/MM/yyyy")
+                                                : "Sin fecha")
+                                        </span>
+                                        <small class="text-muted">
+                                            @item.DiasDesdeEnvioProveedor día(s) desde el envío
+                                        </small>
+                                    </td>
+
+                                    <td style="min-width:190px;">
+                                        <div class="d-flex justify-content-between small mb-1">
+                                            <span>@item.TotalRecibido.ToString("0.##") recibidos</span>
+                                            <span>@item.TotalSolicitado.ToString("0.##") solicitados</span>
+                                        </div>
+
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar @(item.PorcentajeRecibido > 0 ? "bg-warning" : "bg-primary")"
+                                                 role="progressbar"
+                                                 style="width:@Math.Min(item.PorcentajeRecibido, 100)%"
+                                                 aria-valuenow="@item.PorcentajeRecibido"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+
+                                        <small class="text-muted d-block mt-1">
+                                            Pendiente: @item.TotalPendiente.ToString("0.##")
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        @if (item.EstatusID == 13 || item.TotalRecibido > 0)
+                                        {
+                                            <span class="status-pill status-partial">
+                                                <i class="fas fa-adjust mr-1"></i>
+                                                Parcial
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-pill status-pending">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                Pendiente
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td class="text-center acciones-tabla">
+                                        <button type="button"
+                                                class="btn btn-sm btn-success"
+
+                                                data-bs-target="#modalRecepcion@item.SolicitudID">
+                                            <i class="fas fa-box-open mr-1"></i>
+                                            Registrar recepción
+                                        </button>
+
+                                        <a asp-action="Detalle"
+                                           asp-route-id="@item.SolicitudID"
+                                           asp-route-returnUrl="@Url.Action("BandejaAlmacen", "Compras")"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye mr-1"></i>
+                                            Ver
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="empty-state">
+                                        <i class="fas fa-check-circle"></i>
+                                        <h5 class="mt-3 mb-1">No hay mercancía pendiente</h5>
+                                        <p class="text-muted mb-0">
+                                            Todos los pedidos enviados a almacén están completos.
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.PendientesRecepcion.Any())
+{
+    foreach (var item in Model.PendientesRecepcion)
+    {
+        <div class="modal fade modal-recepcion"
+             id="modalRecepcion@item.SolicitudID"
+             tabindex="-1"
+             aria-hidden="true">
+
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+
+                    <form asp-action="RegistrarRecepcionAlmacen"
+                          method="post"
+                          enctype="multipart/form-data"
+                          class="form-recepcion-parcial"
+                          data-solicitud="@item.SolicitudID">
+
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="solicitudId" value="@item.SolicitudID" />
+
+                        <div class="modal-header">
+                            <div>
+                                <h5 class="modal-title mb-1">
+                                    Recepción de @item.Folio
+                                </h5>
+                                <small class="text-muted">
+                                    @item.Proveedor · O.C. @item.NumeroOC
+                                </small>
+                            </div>
+
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Cerrar">
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="recepcion-resumen mb-4">
+                                <div>
+                                    <span>Solicitado</span>
+                                    <strong>@item.TotalSolicitado.ToString("0.##")</strong>
+                                </div>
+                                <div>
+                                    <span>Recibido</span>
+                                    <strong>@item.TotalRecibido.ToString("0.##")</strong>
+                                </div>
+                                <div>
+                                    <span>Pendiente</span>
+                                    <strong>@item.TotalPendiente.ToString("0.##")</strong>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <div>
+                                    <h6 class="font-weight-bold mb-1">Artículos del pedido</h6>
+                                    <small class="text-muted">
+                                        Captura únicamente lo que llegó en esta recepción.
+                                    </small>
+                                </div>
+
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-success btn-recibir-todo"
+                                        data-form="@item.SolicitudID">
+                                    <i class="fas fa-check-double mr-1"></i>
+                                    Recibir todo lo pendiente
+                                </button>
+                            </div>
+
+                            <div class="table-responsive mb-4">
+                                <table class="table tabla-partidas-recepcion">
+                                    <thead>
+                                        <tr>
+                                            <th>Artículo</th>
+                                            <th class="text-center">Solicitado</th>
+                                            <th class="text-center">Recibido</th>
+                                            <th class="text-center">Pendiente</th>
+                                            <th style="min-width:170px;">Recibir ahora</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < item.Materiales.Count; i++)
+                                        {
+                                            var material = item.Materiales[i];
+                                            var pendiente = material.CantidadPendienteAlmacen;
+
+                                            <tr class="@(pendiente <= 0 ? "partida-completa" : "")">
+                                                <td>
+                                                    <input type="hidden"
+                                                           name="materiales[@i].DetalleID"
+                                                           value="@material.DetalleID" />
+
+                                                    <strong class="d-block">@material.Nombre</strong>
+                                                    <small class="text-muted">
+                                                        @(string.IsNullOrWhiteSpace(material.Descripcion)
+                                                            ? material.UnidadMedida
+                                                            : material.Descripcion)
+                                                    </small>
+                                                </td>
+                                                <td class="text-center">@material.Cantidad.ToString("0.##")</td>
+                                                <td class="text-center">@material.CantidadRecibidaAlmacen.ToString("0.##")</td>
+                                                <td class="text-center">
+                                                    @if (pendiente <= 0)
+                                                    {
+                                                        <span class="badge badge-success">Completo</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <strong class="text-warning">@pendiente.ToString("0.##")</strong>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <input type="number"
+                                                           name="materiales[@i].Cantidad"
+                                                           class="form-control cantidad-recepcion"
+                                                           min="0"
+                                                           max="@pendiente.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                           step="0.01"
+                                                           data-pendiente="@pendiente.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                           placeholder="0"
+                                                    @(pendiente <= 0 ? "disabled" : "") />
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-6 mb-3 mb-lg-0">
+                                    <label class="form-label fw-bold">
+                                        Comentarios de recepción
+                                    </label>
+
+                                    <textarea name="comentarios"
+                                              class="form-control"
+                                              rows="4"
+                                              placeholder="Ej. Llegaron dos artículos; uno presenta empaque dañado."></textarea>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <label class="form-label fw-bold">
+                                        Evidencia de esta recepción
+                                    </label>
+
+                                    <div class="upload-box">
+                                        <input type="file"
+                                               name="evidenciaRecepcion"
+                                               class="form-control"
+                                               accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                               required />
+
+                                        <small class="text-muted d-block mt-2">
+                                            Foto, PDF, remisión o documento firmado. La evidencia se asociará únicamente a esta recepción.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save mr-1"></i>
+                                Guardar recepción
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // FIX-SISTEMANUTRI-RECEPCION-MODAL-20261117
+            // Evita que el menu lateral o la estructura del layout oculten el modal.
+            document.querySelectorAll('button[data-bs-target^="#modalRecepcion"]').forEach(function (boton) {
+                boton.addEventListener('click', function (evento) {
+                    evento.preventDefault();
+                    evento.stopPropagation();
+                    const destino = boton.getAttribute('data-bs-target');
+                    const modal = destino ? document.getElementById(destino.substring(1)) : null;
+                    if (!modal) {
+                        window.alert('No se encontro el formulario de recepcion. Actualiza la pagina.');
+                        return;
+                    }
+                    if (!window.bootstrap || !bootstrap.Modal) {
+                        window.alert('No cargo Bootstrap. Actualiza la pagina y revisa los scripts del layout.');
+                        return;
+                    }
+                    // Fuera del layout/sidebar: se presenta sobre toda la pagina.
+                    if (modal.parentElement !== document.body) {
+                        document.body.appendChild(modal);
+                    }
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                });
+            });
+
+
+            document.querySelectorAll('.btn-recibir-todo').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const solicitudId = this.dataset.form;
+                    const form = document.querySelector(
+                        `.form-recepcion-parcial[data-solicitud="${solicitudId}"]`
+                    );
+
+                    if (!form) return;
+
+                    form.querySelectorAll('.cantidad-recepcion:not(:disabled)').forEach(function (input) {
+                        input.value = input.dataset.pendiente || '';
+                    });
+                });
+            });
+        });
+    </script>
+}
+
+<style>
+    body {
+        background: #f5f7fb;
+    }
+
+    .almacen-page h2 {
+        color: #5b21b6;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+
+    .btn {
+        border-radius: 10px;
+        font-weight: 700;
+        transition: 0.2s;
+    }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+    .btn-success {
+        background: #7c3aed !important;
+        border-color: #7c3aed !important;
+        color: #fff !important;
+    }
+
+        .btn-success:hover {
+            background: #6d28d9 !important;
+            border-color: #6d28d9 !important;
+        }
+
+    .btn-outline-success {
+        color: #6d28d9;
+        border-color: #c4b5fd;
+        background: #faf5ff;
+    }
+
+        .btn-outline-success:hover {
+            color: #fff;
+            border-color: #7c3aed;
+            background: #7c3aed;
+        }
+
+    .btn-outline-primary {
+        color: #2563eb;
+        border-color: #bfdbfe;
+        background: #eff6ff;
+    }
+
+        .btn-outline-primary:hover {
+            color: #fff;
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+    .btn-outline-secondary {
+        color: #475569;
+        border-color: #cbd5e1;
+        background: #fff;
+    }
+
+    .card {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 18px !important;
+        overflow: hidden;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07) !important;
+    }
+
+    .metric-card .card-body {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .metric-card h6 {
+        margin-bottom: 0.25rem;
+        font-size: 0.72rem;
+        color: #64748b;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }
+
+    .metric-card h3 {
+        margin-bottom: 0;
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .metric-pending .metric-icon {
+        color: #2563eb;
+        background: #dbeafe;
+    }
+
+    .metric-partial .metric-icon {
+        color: #d97706;
+        background: #fef3c7;
+    }
+
+    .tabla-almacen {
+        border-collapse: separate;
+        border-spacing: 0 0.55rem;
+        margin-bottom: 0;
+    }
+
+        .tabla-almacen thead th,
+        .tabla-partidas-recepcion thead th {
+            background: #f8fafc;
+            color: #334155;
+            border: none;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.45px;
+            font-weight: 800;
+            padding: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .tabla-almacen tbody tr {
+            background: #fff;
+        }
+
+        .tabla-almacen tbody td {
+            padding: 0.9rem;
+            vertical-align: middle;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+            .tabla-almacen tbody td:first-child {
+                border-left: 1px solid #e2e8f0;
+                border-radius: 12px 0 0 12px;
+            }
+
+            .tabla-almacen tbody td:last-child {
+                border-right: 1px solid #e2e8f0;
+                border-radius: 0 12px 12px 0;
+            }
+
+    .progress {
+        height: 8px;
+        border-radius: 999px;
+        background: #e2e8f0;
+    }
+
+    .progress-bar {
+        border-radius: 999px;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.45rem 0.7rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .status-pending {
+        color: #1d4ed8;
+        background: #dbeafe;
+    }
+
+    .status-partial {
+        color: #92400e;
+        background: #fef3c7;
+    }
+
+    .acciones-tabla .btn {
+        margin: 0.15rem;
+        white-space: nowrap;
+    }
+
+    .empty-state i {
+        color: #16a34a;
+        font-size: 2.7rem;
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: 18px;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .recepcion-resumen {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+        .recepcion-resumen > div {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.85rem;
+        }
+
+        .recepcion-resumen span {
+            display: block;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .recepcion-resumen strong {
+            display: block;
+            margin-top: 0.25rem;
+            color: #0f172a;
+            font-size: 1.1rem;
+        }
+
+    .tabla-partidas-recepcion {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 0;
+    }
+
+        .tabla-partidas-recepcion td {
+            vertical-align: middle;
+            color: #334155;
+        }
+
+    .partida-completa {
+        background: #f0fdf4;
+        opacity: 0.85;
+    }
+
+    .upload-box {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        border-color: #cbd5e1;
+    }
+
+        .form-control:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 0.15rem rgba(124, 58, 237, 0.14);
+        }
+
+    @@media (max-width: 768px) {
+        .almacen-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.8rem;
+        }
+
+            .almacen-header .btn {
+                width: 100%;
+            }
+
+        .recepcion-resumen {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

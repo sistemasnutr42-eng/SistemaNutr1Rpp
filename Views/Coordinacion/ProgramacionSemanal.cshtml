@@ -1,0 +1,997 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    ViewData["Title"] = "Programación";
+    var tipoPedidoCodigo = (ViewData["TipoPedidoCodigo"]?.ToString() ?? "DOSIS").Trim().ToUpperInvariant();
+}
+@Html.AntiForgeryToken()
+
+@section Estilos {
+    <style>
+        :root {
+            --p: #084F83;
+            --pd: #062F55;
+            --ps: #EFF6FB;
+            --a: #58A83F;
+            --b: #E4E9EF;
+            --m: #667085;
+            --ok: #347526;
+            --okb: #ECF8E8;
+            --w: #B54708;
+            --wb: #FFF4E5;
+            --e: #B42318;
+            --eb: #FEECEC
+        }
+
+        .prog-page {
+            width: 100%
+        }
+
+        .prog-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 18px
+        }
+
+        .prog-eye {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+            color: var(--a);
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 5px
+        }
+
+        .prog-title {
+            margin: 0;
+            color: var(--pd);
+            font-size: 1.55rem;
+            font-weight: 850
+        }
+
+        .prog-sub {
+            margin: 6px 0 0;
+            max-width: 850px;
+            color: var(--m);
+            font-size: .82rem;
+            line-height: 1.5
+        }
+
+        .btn {
+            min-height: 38px;
+            padding: 8px 13px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font-size: .72rem;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer
+        }
+
+        .btn-main {
+            border: 1px solid var(--p);
+            background: var(--p);
+            color: #fff
+        }
+
+            .btn-main:hover {
+                background: var(--pd);
+                color: #fff
+            }
+
+        .btn-sec {
+            border: 1px solid #DCE2E8;
+            background: #fff;
+            color: #475467
+        }
+
+            .btn-sec:hover {
+                background: #F8FAFC;
+                color: var(--pd)
+            }
+
+        .btn-danger {
+            border: 1px solid #FECACA;
+            background: #fff;
+            color: var(--e)
+        }
+
+            .btn-danger:hover {
+                background: var(--eb)
+            }
+
+        .btn:disabled {
+            opacity: .58;
+            cursor: not-allowed
+        }
+
+        .panel {
+            border: 1px solid var(--b);
+            border-radius: 11px;
+            background: #fff;
+            overflow: hidden;
+            margin-bottom: 16px
+        }
+
+        .panel-head {
+            min-height: 46px;
+            padding: 10px 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #EEF1F4;
+            background: #FBFCFD
+        }
+
+        .panel-left {
+            display: flex;
+            align-items: center;
+            gap: 9px
+        }
+
+        .panel-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ps);
+            color: var(--p);
+            font-size: .73rem
+        }
+
+        .panel-title {
+            margin: 0;
+            color: #344054;
+            font-size: .82rem;
+            font-weight: 850
+        }
+
+        .panel-help {
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .61rem
+        }
+
+        .panel-body {
+            padding: 14px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4,minmax(0,1fr));
+            gap: 11px;
+            align-items: end
+        }
+
+        .span2 {
+            grid-column: span 2
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 5px;
+            color: #475467;
+            font-size: .65rem;
+            font-weight: 800
+        }
+
+        .control {
+            width: 100%;
+            min-height: 38px;
+            border: 1px solid #DCE2E8;
+            border-radius: 8px;
+            background: #fff;
+            color: #344054;
+            padding: 8px 10px;
+            outline: none;
+            font-size: .72rem
+        }
+
+            .control:focus {
+                border-color: #0B6FAF;
+                box-shadow: 0 0 0 3px rgba(11,111,175,.07)
+            }
+
+            .control:disabled {
+                background: #F8FAFC;
+                color: #98A2B3
+            }
+
+        .note {
+            margin-top: 4px;
+            color: #98A2B3;
+            font-size: .6rem;
+            line-height: 1.35
+        }
+
+        .filebox {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            min-height: 38px;
+            border: 1px dashed #B8C5D1;
+            border-radius: 8px;
+            padding: 7px 9px;
+            background: #FBFCFD
+        }
+
+            .filebox i {
+                color: var(--p)
+            }
+
+            .filebox input {
+                width: 100%;
+                font-size: .69rem;
+                color: #475467
+            }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px
+        }
+
+        .msg {
+            display: none;
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            font-size: .7rem;
+            font-weight: 700
+        }
+
+            .msg.error {
+                display: block;
+                border: 1px solid #FECACA;
+                background: #FEF2F2;
+                color: var(--e)
+            }
+
+            .msg.ok {
+                display: block;
+                border: 1px solid #ABEFC6;
+                background: #ECFDF3;
+                color: #067647
+            }
+
+            .msg.info {
+                display: block;
+                border: 1px solid #B9DCF2;
+                background: #EFF8FF;
+                color: #175CD3
+            }
+
+        .preview {
+            display: none
+        }
+
+            .preview.show {
+                display: block
+            }
+
+        .summary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 10px 13px;
+            border-bottom: 1px solid #EEF1F4
+        }
+
+        .sum {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            color: #667085;
+            font-size: .66rem
+        }
+
+            .sum strong {
+                color: #344054;
+                font-weight: 850
+            }
+
+            .sum.ok strong {
+                color: var(--ok)
+            }
+
+            .sum.warn strong {
+                color: var(--w)
+            }
+
+            .sum.err strong {
+                color: var(--e)
+            }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 7px;
+            border-radius: 999px;
+            background: #F2F4F7;
+            color: #475467;
+            font-size: .61rem;
+            font-weight: 800
+        }
+
+        .toolbar {
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            border-bottom: 1px solid #EEF1F4;
+            background: #FBFCFD
+        }
+
+        .search {
+            position: relative;
+            width: min(340px,100%)
+        }
+
+            .search i {
+                position: absolute;
+                left: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #98A2B3;
+                font-size: .68rem
+            }
+
+            .search input {
+                width: 100%;
+                height: 34px;
+                border: 1px solid #DCE2E8;
+                border-radius: 8px;
+                padding: 0 10px 0 30px;
+                font-size: .68rem
+            }
+
+        .filter {
+            height: 34px;
+            border: 1px solid #DCE2E8;
+            border-radius: 8px;
+            background: #fff;
+            color: #475467;
+            padding: 0 9px;
+            font-size: .67rem
+        }
+
+        .wrap {
+            width: 100%;
+            overflow-x: auto
+        }
+
+        .tbl {
+            width: 100%;
+            min-width: 1280px;
+            border-collapse: separate;
+            border-spacing: 0
+        }
+
+            .tbl th {
+                padding: 9px 8px;
+                border-bottom: 1px solid #E7EBF0;
+                background: #fff;
+                color: #667085;
+                font-size: .59rem;
+                font-weight: 850;
+                text-transform: uppercase;
+                white-space: nowrap
+            }
+
+            .tbl td {
+                padding: 9px 8px;
+                border-bottom: 1px solid #F0F2F4;
+                color: #344054;
+                font-size: .68rem;
+                vertical-align: top
+            }
+
+            .tbl tr:last-child td {
+                border-bottom: 0
+            }
+
+            .tbl tbody tr:hover {
+                background: #FAFCFD
+            }
+
+        .main {
+            font-weight: 750
+        }
+
+        .sub {
+            margin-top: 3px;
+            color: #98A2B3;
+            font-size: .59rem;
+            line-height: 1.35
+        }
+
+        .val {
+            display: inline-flex;
+            gap: 5px;
+            align-items: center;
+            padding: 4px 7px;
+            border-radius: 999px;
+            font-size: .6rem;
+            font-weight: 800;
+            white-space: nowrap
+        }
+
+            .val.ok {
+                background: var(--okb);
+                color: var(--ok)
+            }
+
+            .val.warn {
+                background: var(--wb);
+                color: var(--w)
+            }
+
+            .val.err {
+                background: var(--eb);
+                color: var(--e)
+            }
+
+        .rowbtn {
+            min-height: 30px;
+            padding: 5px 8px;
+            border: 1px solid #DCE2E8;
+            border-radius: 7px;
+            background: #fff;
+            color: #475467;
+            font-size: .62rem;
+            font-weight: 800;
+            cursor: pointer
+        }
+
+            .rowbtn:hover {
+                border-color: var(--p);
+                color: var(--p);
+                background: var(--ps)
+            }
+
+        .empty {
+            padding: 34px 18px;
+            text-align: center;
+            color: #98A2B3;
+            font-size: .7rem
+        }
+
+        .foot {
+            padding: 12px 13px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            border-top: 1px solid #EEF1F4;
+            background: #FBFCFD
+        }
+
+        .foot-text {
+            color: #98A2B3;
+            font-size: .62rem
+        }
+
+        .foot-actions {
+            display: flex;
+            gap: 8px
+        }
+
+        .modal-mask {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            background: rgba(16,24,40,.48);
+            padding: 18px;
+            align-items: center;
+            justify-content: center
+        }
+
+            .modal-mask.open {
+                display: flex
+            }
+
+        .modal-box {
+            width: min(560px,100%);
+            max-height: 90vh;
+            overflow: auto;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(16,24,40,.25)
+        }
+
+        .modal-head {
+            padding: 13px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #EEF1F4
+        }
+
+        .modal-title {
+            margin: 0;
+            color: #344054;
+            font-size: .85rem;
+            font-weight: 850
+        }
+
+        .modal-close {
+            width: 31px;
+            height: 31px;
+            border: 0;
+            border-radius: 7px;
+            background: #F2F4F7;
+            color: #667085
+        }
+
+        .modal-body {
+            padding: 15px
+        }
+
+        .modal-info {
+            margin-bottom: 12px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            background: #F8FAFC;
+            color: #667085;
+            font-size: .66rem;
+            line-height: 1.45
+        }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+
+        .modal-field label {
+            display: block;
+            margin-bottom: 5px;
+            color: #475467;
+            font-size: .64rem;
+            font-weight: 800
+        }
+
+        .modal-field.full {
+            grid-column: 1/-1
+        }
+
+        .modal-actions {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid #EEF1F4;
+            background: #FBFCFD
+        }
+
+        .weeks-sel {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px
+        }
+
+            .weeks-sel .control {
+                flex: 1;
+                min-height: 34px
+            }
+
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(5,minmax(0,1fr));
+            gap: 8px
+        }
+
+        .week {
+            border: 1px solid #DCE2E8;
+            border-radius: 8px;
+            background: #fff;
+            padding: 9px 8px;
+            text-align: center;
+            cursor: pointer;
+            line-height: 1.35;
+            font-size: .64rem;
+            color: #475467
+        }
+
+            .week b {
+                display: block;
+                margin-bottom: 2px;
+                color: #344054;
+                font-size: .72rem
+            }
+
+            .week:hover {
+                border-color: var(--p);
+                background: var(--ps)
+            }
+
+            .week.sel {
+                border-color: var(--p);
+                background: var(--p);
+                color: #fff
+            }
+
+                .week.sel b {
+                    color: #fff
+                }
+
+            .week.hoy:not(.sel) {
+                border-color: var(--a)
+            }
+
+        @@media(max-width:1000px) {
+            .grid {
+                grid-template-columns: repeat(2,minmax(0,1fr))
+            }
+
+            .weeks-grid {
+                grid-template-columns: repeat(3,minmax(0,1fr))
+            }
+        }
+
+        @@media(max-width:720px) {
+            .weeks-grid {
+                grid-template-columns: repeat(2,minmax(0,1fr))
+            }
+
+            .prog-head {
+                flex-direction: column
+            }
+
+            .grid {
+                grid-template-columns: 1fr
+            }
+
+            .span2 {
+                grid-column: auto
+            }
+
+            .toolbar, .foot, .foot-actions, .actions {
+                flex-direction: column
+            }
+
+            .search {
+                width: 100%
+            }
+
+            .modal-grid {
+                grid-template-columns: 1fr
+            }
+
+            .modal-field.full {
+                grid-column: auto
+            }
+
+            .btn {
+                width: 100%
+            }
+        }
+    </style>
+}
+
+<div class="prog-page">
+    <div class="prog-head">
+        <div>
+            <div class="prog-eye"><i class="fa-solid fa-calendar-days"></i>Coordinación · Programación</div>
+            <h1 class="prog-title">Programación</h1>
+            <p class="prog-sub">Carga el Excel utilizado actualmente por Coordinación, selecciona el periodo, revisa la relación contra los pedidos y confirma únicamente cuando la importación esté validada.</p>
+        </div>
+        <a asp-controller="Menu" asp-action="Index" class="btn btn-sec"><i class="fa-solid fa-arrow-left"></i>Regresar</a>
+    </div>
+
+    <div id="msg" class="msg"></div>
+
+    <section class="panel">
+        <div class="panel-head">
+            <div class="panel-left">
+                <span class="panel-icon"><i class="fa-solid fa-file-excel"></i></span>
+                <div><h2 class="panel-title">Importar programación</h2><div class="panel-help">Temporalmente, el Excel continúa siendo la fuente de captura.</div></div>
+            </div>
+        </div>
+        <div class="panel-body">
+            <form id="formImportacion" enctype="multipart/form-data">
+                <div class="grid">
+                    <div class="field">
+                        <label>Tipo de programación</label>
+                        <select id="tipoPedidoCodigo" name="tipoPedidoCodigo" class="control">
+                            <option value="DOSIS" selected="@(tipoPedidoCodigo == "DOSIS" || string.IsNullOrEmpty(tipoPedidoCodigo))">Dosis</option>
+                            <option value="HEMBRAS" selected="@(tipoPedidoCodigo == "HEMBRAS")">Hembras</option>
+                            <option value="SEMENTALES" selected="@(tipoPedidoCodigo == "SEMENTALES")">Sementales</option>
+                            <option value="RASTRO" selected="@(tipoPedidoCodigo == "RASTRO")">Rastro</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Periodicidad</label>
+                        <select id="periodicidad" name="periodicidad" class="control">
+                            <option value="SEMANAL">Semanal</option>
+                            <option value="MENSUAL">Mensual</option>
+                            <option value="SEMESTRAL">Semestral</option>
+                        </select>
+                    </div>
+                    <div class="field" id="campoAnio">
+                        <label>Año</label>
+                        <select id="anioSelect" class="control" aria-label="Año"></select>
+                    </div>
+                    <div class="field" id="campoMes">
+                        <label>Mes</label>
+                        <select id="mesSelect" class="control" aria-label="Mes"></select>
+                    </div>
+                    <div class="field" id="campoFechaInicio"><label>Fecha inicial</label><input id="fechaInicio" name="fechaInicio" type="date" class="control" required /></div>
+                    <div class="field" id="campoFechaFin"><label>Fecha final </label><input id="fechaFin" name="fechaFin" type="date" class="control" required /></div>
+                    <div class="field" id="semanaField" style="grid-column:1/-1">
+                        <label>Semana</label>
+                        <div id="weeksGrid" class="weeks-grid"></div>
+                        <div class="note" id="semanaLabel">Selecciona una semana</div>
+                        <div class="note">Semanas de domingo a sábado; cada semana pertenece al mes en que termina (4 o 5 por mes).</div>
+                    </div>
+                    <div class="field span2">
+                        <label>Archivo Excel</label>
+                        <div class="filebox"><i class="fa-solid fa-paperclip"></i><input id="archivo" name="archivo" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /></div>
+                        <div class="note">Sólo .xlsx · máximo 25 MB.</div>
+                    </div>
+                    <div class="field span2">
+                        <label>Lectura</label>
+                        <div class="note" style="margin:0;padding:9px 10px;min-height:38px;display:flex;align-items:center;border:1px solid var(--b);border-radius:8px;background:#FBFCFD">Se recorren las hojas compatibles y sólo se toman entregas comprendidas dentro del rango seleccionado.</div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button type="button" id="btnReset" class="btn btn-sec"><i class="fa-solid fa-rotate-left"></i>Restablecer</button>
+                    <button type="submit" id="btnAnalizar" class="btn btn-main"><i class="fa-solid fa-magnifying-glass"></i>Analizar archivo</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section id="preview" class="panel preview">
+        <div class="panel-head">
+            <div class="panel-left">
+                <span class="panel-icon"><i class="fa-solid fa-list-check"></i></span>
+                <div><h2 class="panel-title">Vista previa</h2><div class="panel-help">Revisa los vínculos antes de confirmar la programación.</div></div>
+            </div>
+            <span id="estatus" class="pill">Sin analizar</span>
+        </div>
+        <div class="summary">
+            <div class="sum"><span>Total</span><strong id="sTotal">0</strong></div>
+            <div class="sum ok"><span>Correctas</span><strong id="sOk">0</strong></div>
+            <div class="sum warn"><span>Advertencias</span><strong id="sWarn">0</strong></div>
+            <div class="sum err"><span>Errores</span><strong id="sErr">0</strong></div>
+            <div class="sum"><span>Archivo</span><strong id="sFile">—</strong></div>
+            <div class="sum"><span>Periodo</span><strong id="sPeriod">—</strong></div>
+        </div>
+        <div class="toolbar">
+            <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="buscar" placeholder="Buscar cliente, línea, pedido o mensaje..." /></div>
+            <select id="filtro" class="filter"><option value="TODOS">Todos</option><option value="ERROR">Sólo errores</option><option value="ADVERTENCIA">Sólo advertencias</option><option value="CORRECTO">Sólo correctos</option></select>
+        </div>
+        <div class="wrap">
+            <table class="tbl">
+                <thead><tr><th>Estado</th><th>Excel</th><th>Cliente</th><th>Producción</th><th>Entrega</th><th>Línea</th><th>Cantidad</th><th>Pedido</th><th>Saldo</th><th>Ruta</th><th>Validación</th><th>Acción</th></tr></thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+        <div id="empty" class="empty" style="display:none"><i class="fa-regular fa-folder-open"></i><br />No hay filas que coincidan con el filtro.</div>
+        <div class="foot">
+            <div id="footText" class="foot-text">Analiza un archivo para comenzar.</div>
+            <div class="foot-actions">
+                <button type="button" id="btnCancelar" class="btn btn-danger" disabled><i class="fa-solid fa-xmark"></i>Cancelar importación</button>
+                <button type="button" id="btnConfirmar" class="btn btn-main" disabled><i class="fa-solid fa-check"></i>Confirmar programación</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div id="modalVinculo" class="modal-mask">
+    <div class="modal-box">
+        <div class="modal-head"><h3 class="modal-title">Resolver vínculo</h3><button class="modal-close js-close-v"><i class="fa-solid fa-xmark"></i></button></div>
+        <div class="modal-body">
+            <div id="vInfo" class="modal-info"></div>
+            <input type="hidden" id="vImportacionDetalleId" />
+            <div class="modal-grid">
+                <div class="modal-field"><label>Cliente ID</label><input id="vClienteId" type="number" min="1" class="control" placeholder="Opcional" /></div>
+                <div class="modal-field"><label>Línea genética ID</label><input id="vLineaId" type="number" min="1" class="control" placeholder="Opcional" /></div>
+                <div class="modal-field"><label>Pedido detalle ID</label><input id="vPedidoDetalleId" type="number" min="1" class="control" placeholder="Ej. 125" /></div>
+                <div class="modal-field"><label>Ruta ID</label><input id="vRutaId" type="number" min="1" class="control" placeholder="Opcional" /></div>
+                <div class="modal-field full"><div class="note">Puedes indicar únicamente PedidoDetalleID si cliente y línea ya fueron reconocidos. Después de guardar, SQL vuelve a validar toda la importación.</div></div>
+            </div>
+        </div>
+        <div class="modal-actions"><button type="button" class="btn btn-sec js-close-v">Cancelar</button><button type="button" id="btnGuardarV" class="btn btn-main"><i class="fa-solid fa-check"></i>Guardar vínculo</button></div>
+    </div>
+</div>
+
+<div id="modalCancelar" class="modal-mask">
+    <div class="modal-box">
+        <div class="modal-head"><h3 class="modal-title">Cancelar importación</h3><button class="modal-close js-close-c"><i class="fa-solid fa-xmark"></i></button></div>
+        <div class="modal-body"><div class="modal-field"><label>Motivo</label><textarea id="motivoCancelar" class="control" maxlength="1000" style="min-height:90px;resize:vertical" placeholder="Motivo de la cancelación..."></textarea></div></div>
+        <div class="modal-actions"><button type="button" class="btn btn-sec js-close-c">Regresar</button><button type="button" id="btnConfirmarC" class="btn btn-danger"><i class="fa-solid fa-xmark"></i>Cancelar importación</button></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const urls = {
+                analizar: '@Url.Action("AnalizarProgramacionExcel", "Coordinacion")',
+                preview: '@Url.Action("ObtenerVistaPreviaImportacion", "Coordinacion")',
+                vincular: '@Url.Action("VincularFilaImportacion", "Coordinacion")',
+                confirmar: '@Url.Action("ConfirmarImportacionProgramacion", "Coordinacion")',
+                cancelar: '@Url.Action("CancelarImportacionProgramacion", "Coordinacion")'
+            };
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const form = document.getElementById('formImportacion'), periodicidad = document.getElementById('periodicidad'), fechaInicio = document.getElementById('fechaInicio'), fechaFin = document.getElementById('fechaFin'), archivo = document.getElementById('archivo'), preview = document.getElementById('preview'), tbody = document.getElementById('tbody'), buscar = document.getElementById('buscar'), filtro = document.getElementById('filtro'), msg = document.getElementById('msg'), btnAnalizar = document.getElementById('btnAnalizar'), btnConfirmar = document.getElementById('btnConfirmar'), btnCancelar = document.getElementById('btnCancelar'), modalV = document.getElementById('modalVinculo'), modalC = document.getElementById('modalCancelar');
+            let importacionId = 0, resumenActual = {}, filasActuales = [];
+
+            const get = (o, ...ks) => { if (!o) return null; for (const k of ks) { if (Object.prototype.hasOwnProperty.call(o, k)) return o[k]; const r = Object.keys(o).find(x => x.toLowerCase() === k.toLowerCase()); if (r) return o[r]; } return null; };
+            const num = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+            const nullable = v => { if (v === '' || v == null) return null; const n = Number(v); return Number.isInteger(n) && n > 0 ? n : null; };
+            const esc = v => String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#039;");
+            const qty = v => Number.isFinite(Number(v)) ? Number(v).toLocaleString('es-MX', { maximumFractionDigits: 3 }) : '—';
+            const fecha = v => { if (!v) return '—'; const p = String(v).substring(0, 10).split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : String(v); };
+            const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            /* ===== Selector de semanas (domingo → sábado): Año · Mes · Semanas ===== */
+            const DIAS_SEMANA = 7;
+            const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const semanaField = document.getElementById('semanaField'), semanaLabel = document.getElementById('semanaLabel'), weeksGrid = document.getElementById('weeksGrid'), anioSelect = document.getElementById('anioSelect'), mesSelect = document.getElementById('mesSelect'), campoAnio = document.getElementById('campoAnio'), campoMes = document.getElementById('campoMes'), campoFechaInicio = document.getElementById('campoFechaInicio'), campoFechaFin = document.getElementById('campoFechaFin');
+            let semanaSel = null;
+
+            const inicioSemana = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - x.getDay()); return x; };   // domingo
+            // Semana 1 = la que contiene el 1 de enero; el año lo define el sábado con el que termina (igual que el backend)
+            const numeroSemana = (ini, sab) => Math.round((ini - inicioSemana(new Date(sab.getFullYear(), 0, 1))) / 604800000) + 1;
+            // Semanas cuyo sábado cae dentro del mes (siempre 4 o 5)
+            const semanasDelMes = (y, m) => {
+                const lista = []; let ini = inicioSemana(new Date(y, m, 1));
+                for (; ;) { const fin = new Date(ini); fin.setDate(fin.getDate() + DIAS_SEMANA - 1); if (fin.getMonth() !== m || fin.getFullYear() !== y) break; lista.push({ n: numeroSemana(ini, fin), ini: new Date(ini), fin }); ini.setDate(ini.getDate() + 7); }
+                return lista;
+            };
+            const corta = d => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }).replace('.', '');
+            const deIso = s => { const p = s.split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])); };
+
+            function llenarSelectores() {
+                const y = new Date().getFullYear();
+                anioSelect.innerHTML = Array.from({ length: 7 }, (_, i) => y - 2 + i).map(a => `<option value="${a}">${a}</option>`).join('');
+                mesSelect.innerHTML = MESES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+            }
+            function renderSemanas() {
+                const hoy = iso(inicioSemana(new Date()));
+                weeksGrid.innerHTML = semanasDelMes(Number(anioSelect.value), Number(mesSelect.value)).map(w => {
+                    const i = iso(w.ini);
+                    return `<button type="button" class="week${i === semanaSel ? ' sel' : ''}${i === hoy ? ' hoy' : ''}" data-n="${w.n}" data-ini="${i}" data-fin="${iso(w.fin)}"><b>Semana ${w.n}</b>${corta(w.ini)} – ${corta(w.fin)}</button>`;
+                }).join('');
+            }
+            function elegirSemana(ini, fin, n) {
+                semanaSel = ini; fechaInicio.value = ini; fechaFin.value = fin;
+                const a = deIso(ini), b = deIso(fin);
+                semanaLabel.textContent = `Seleccionada: Semana ${n} · ${corta(a)} – ${corta(b)} ${b.getFullYear()}`;
+                renderSemanas();
+            }
+            function modoPeriodo() {
+                const p = periodicidad.value, semanal = p === 'SEMANAL', mensual = p === 'MENSUAL';
+                campoAnio.style.display = campoMes.style.display = (semanal || mensual) ? '' : 'none';   // Año y Mes: semanal y mensual
+                semanaField.style.display = semanal ? '' : 'none';                                   // semanas: sólo semanal
+                campoFechaInicio.style.display = campoFechaFin.style.display = (semanal || mensual) ? 'none' : '';   // fechas: sólo semestral
+            }
+            function aplicarMes() {
+                const y = Number(anioSelect.value), m = Number(mesSelect.value);
+                fechaInicio.value = iso(new Date(y, m, 1)); fechaFin.value = iso(new Date(y, m + 1, 0));
+            }
+            function cambioAnioMes() { periodicidad.value === 'MENSUAL' ? aplicarMes() : renderSemanas(); }
+
+            weeksGrid.addEventListener('click', e => { const b = e.target.closest('.week'); if (b) elegirSemana(b.dataset.ini, b.dataset.fin, b.dataset.n); });
+            anioSelect.addEventListener('change', cambioAnioMes);
+            mesSelect.addEventListener('change', cambioAnioMes);
+
+            function sugerirPeriodo() {
+                const h = new Date(), p = periodicidad.value;
+                modoPeriodo();
+                if (p === 'SEMANAL') {
+                    const i = inicioSemana(h), f = new Date(i); f.setDate(f.getDate() + DIAS_SEMANA - 1);
+                    if (!anioSelect.options.length) llenarSelectores();
+                    anioSelect.value = String(f.getFullYear());   // el año y el mes los define el sábado
+                    mesSelect.value = String(f.getMonth());
+                    elegirSemana(iso(i), iso(f), numeroSemana(i, f));
+                }
+                else if (p === 'MENSUAL') {
+                    if (!anioSelect.options.length) llenarSelectores();
+                    anioSelect.value = String(h.getFullYear()); mesSelect.value = String(h.getMonth());
+                    aplicarMes();
+                }
+                else { const s = h.getMonth() < 6; fechaInicio.value = iso(new Date(h.getFullYear(), s ? 0 : 6, 1)); fechaFin.value = iso(new Date(h.getFullYear(), s ? 6 : 12, 0)); }
+            }
+            /* ===== Fin selector de semanas ===== */
+
+            function mensaje(t, tipo = 'error') { msg.className = `msg ${tipo}`; msg.textContent = t; msg.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            function limpiarMensaje() { msg.className = 'msg'; msg.textContent = ''; }
+            function estado(r) { const ok = Boolean(get(r, 'EsValido', 'esValido')), w = Boolean(get(r, 'TieneAdvertencia', 'tieneAdvertencia')); return !ok ? 'ERROR' : w ? 'ADVERTENCIA' : 'CORRECTO'; }
+            function renderResumen(r) {
+                resumenActual = r || {};
+                const total = num(get(r, 'TotalFilas', 'totalFilas')), ok = num(get(r, 'FilasCorrectas', 'filasCorrectas')), warn = num(get(r, 'FilasAdvertencia', 'filasAdvertencia')), err = num(get(r, 'FilasError', 'filasError'));
+                document.getElementById('sTotal').textContent = total; document.getElementById('sOk').textContent = ok; document.getElementById('sWarn').textContent = warn; document.getElementById('sErr').textContent = err;
+                document.getElementById('sFile').textContent = get(r, 'NombreArchivo', 'nombreArchivo') || archivo.files?.[0]?.name || '—';
+                document.getElementById('sPeriod').textContent = `${fechaInicio.value || '—'} a ${fechaFin.value || '—'}`;
+                document.getElementById('estatus').textContent = get(r, 'Estatus', 'estatus') || get(r, 'EstatusCodigo', 'estatusCodigo') || 'Analizado';
+                const puede = Boolean(get(r, 'PuedeConfirmar', 'puedeConfirmar')) && err === 0;
+                btnConfirmar.disabled = !puede; btnCancelar.disabled = !importacionId;
+                document.getElementById('footText').textContent = puede ? 'La importación está lista para confirmarse.' : err > 0 ? `Corrige ${err} ${err === 1 ? 'error' : 'errores'} antes de confirmar.` : 'Revisa la vista previa antes de confirmar.';
+            }
+            function render() {
+                const q = (buscar.value || '').trim().toLowerCase(), f = filtro.value;
+                const rows = filasActuales.filter(r => { const e = estado(r); if (f !== 'TODOS' && e !== f) return false; if (!q) return true; return [get(r, 'ClienteTexto'), get(r, 'Cliente'), get(r, 'LineaTexto'), get(r, 'LineaCodigo'), get(r, 'LineaGenetica'), get(r, 'PedidoFolio'), get(r, 'Ruta'), get(r, 'MensajeValidacion')].join(' ').toLowerCase().includes(q); });
+                tbody.innerHTML = rows.map(r => {
+                    const e = estado(r), cl = e === 'CORRECTO' ? 'ok' : e === 'ADVERTENCIA' ? 'warn' : 'err', ic = e === 'CORRECTO' ? 'fa-check' : e === 'ADVERTENCIA' ? 'fa-triangle-exclamation' : 'fa-xmark', id = num(get(r, 'ImportacionDetalleID')), cliente = get(r, 'Cliente') || get(r, 'ClienteTexto') || '—', linea = get(r, 'LineaCodigo') || get(r, 'LineaGenetica') || get(r, 'LineaTexto') || '—', folio = get(r, 'PedidoFolio'), pd = get(r, 'PedidoDetalleID'), ren = get(r, 'PedidoRenglon'), mensajeV = get(r, 'MensajeValidacion') || (e === 'CORRECTO' ? 'Fila válida.' : 'Requiere revisión.');
+                    return `<tr>
+                                <td><span class="val ${cl}"><i class="fa-solid ${ic}"></i>${e === 'CORRECTO' ? 'Correcto' : e === 'ADVERTENCIA' ? 'Advertencia' : 'Error'}</span></td>
+                                <td><div class="main">${esc(get(r, 'Celda') || '—')}</div><div class="sub">Hoja ${esc(get(r, 'NumeroHoja') ?? '—')} · fila ${esc(get(r, 'NumeroFila') ?? '—')}</div></td>
+                                <td>${esc(cliente)}</td><td>${fecha(get(r, 'FechaProduccion'))}</td><td>${fecha(get(r, 'FechaEntrega'))}</td><td>${esc(linea)}</td><td>${qty(get(r, 'Cantidad'))}</td>
+                                <td>${folio ? `<div class="main">${esc(folio)}</div><div class="sub">Detalle ${esc(pd ?? '—')} · Renglón ${esc(ren ?? '—')}</div>` : '<span class="sub">Sin vínculo</span>'}</td>
+                                <td>${qty(get(r, 'SaldoPedido'))}</td><td>${esc(get(r, 'Ruta') || '—')}</td><td style="min-width:210px">${esc(mensajeV)}</td>
+                                <td>${e !== 'CORRECTO' ? `<button type="button" class="rowbtn js-resolver" data-id="${id}"><i class="fa-solid fa-link"></i>Resolver</button>` : '—'}</td></tr>`;
+                }).join('');
+                document.getElementById('empty').style.display = rows.length ? 'none' : 'block';
+                document.querySelectorAll('.js-resolver').forEach(b => b.addEventListener('click', () => abrirVinculo(b.dataset.id)));
+            }
+            function mostrar(r, filas) { preview.classList.add('show'); filasActuales = Array.isArray(filas) ? filas : []; renderResumen(r); render(); preview.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+            function abrirVinculo(id) {
+                const r = filasActuales.find(x => num(get(x, 'ImportacionDetalleID')) === num(id)); if (!r) return;
+                document.getElementById('vImportacionDetalleId').value = id; document.getElementById('vClienteId').value = get(r, 'ClienteID') || ''; document.getElementById('vLineaId').value = get(r, 'LineaGeneticaID') || ''; document.getElementById('vPedidoDetalleId').value = get(r, 'PedidoDetalleID') || ''; document.getElementById('vRutaId').value = get(r, 'RutaID') || '';
+                document.getElementById('vInfo').innerHTML = `<strong>${esc(get(r, 'Cliente') || get(r, 'ClienteTexto') || '—')}</strong> · ${esc(get(r, 'LineaGenetica') || get(r, 'LineaTexto') || '—')} · ${qty(get(r, 'Cantidad'))}<br>${esc(get(r, 'MensajeValidacion') || '')}`;
+                modalV.classList.add('open'); document.body.style.overflow = 'hidden';
+            }
+            function cerrar(m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+
+            form.addEventListener('submit', async e => {
+                e.preventDefault(); limpiarMensaje();
+                if (!archivo.files?.length) return mensaje('Selecciona un archivo Excel.');
+                if (!fechaInicio.value || !fechaFin.value) return mensaje('Selecciona el rango de fechas.');
+                if (fechaFin.value < fechaInicio.value) return mensaje('La fecha final no puede ser anterior a la inicial.');
+                const fd = new FormData(form); fd.append('__RequestVerificationToken', token);
+                btnAnalizar.disabled = true; btnAnalizar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Analizando...';
+                try {
+                    const res = await fetch(urls.analizar, { method: 'POST', body: fd, credentials: 'same-origin' }); let data = null; try { data = await res.json(); } catch { }
+                    if (!res.ok || !data?.ok) throw new Error(data?.mensaje || `No fue posible analizar el archivo (${res.status}).`);
+                    importacionId = Number(data.importacionId || 0); mostrar(data.resumen, data.filas); mensaje(data.mensaje || 'Archivo analizado correctamente.', 'ok');
+                } catch (ex) { mensaje(ex?.message || 'No fue posible analizar el archivo.'); }
+                finally { btnAnalizar.disabled = false; btnAnalizar.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i>Analizar archivo'; }
+            });
+
+            document.getElementById('btnGuardarV').addEventListener('click', async () => {
+                const detalleId = nullable(document.getElementById('vImportacionDetalleId').value); if (!importacionId || !detalleId) return;
+                const fd = new FormData(); fd.append('__RequestVerificationToken', token); fd.append('importacionId', importacionId); fd.append('importacionDetalleId', detalleId);
+                const vals = [['clienteId', 'vClienteId'], ['lineaGeneticaId', 'vLineaId'], ['pedidoDetalleId', 'vPedidoDetalleId'], ['rutaId', 'vRutaId']];
+                vals.forEach(([k, id]) => { const v = nullable(document.getElementById(id).value); if (v) fd.append(k, v); });
+                try { const res = await fetch(urls.vincular, { method: 'POST', body: fd, credentials: 'same-origin' }); const data = await res.json(); if (!res.ok || !data?.ok) throw new Error(data?.mensaje || 'No fue posible guardar el vínculo.'); cerrar(modalV); mostrar(data.resumen, data.filas); mensaje(data.mensaje || 'Fila vinculada correctamente.', 'ok'); }
+                catch (ex) { alert(ex?.message || 'No fue posible guardar el vínculo.'); }
+            });
+
+            btnConfirmar.addEventListener('click', async () => {
+                if (!importacionId || btnConfirmar.disabled) return; if (!confirm('¿Confirmar esta programación?')) return;
+                const fd = new FormData(); fd.append('__RequestVerificationToken', token); fd.append('importacionId', importacionId); btnConfirmar.disabled = true;
+                try { const res = await fetch(urls.confirmar, { method: 'POST', body: fd, credentials: 'same-origin' }); const data = await res.json(); if (!res.ok || !data?.ok) throw new Error(data?.mensaje || 'No fue posible confirmar la programación.'); mensaje(data.mensaje || 'Programación confirmada correctamente.', 'ok'); document.getElementById('estatus').textContent = 'Aplicado'; btnCancelar.disabled = true; document.getElementById('footText').textContent = 'La programación ya fue aplicada.'; }
+                catch (ex) { mensaje(ex?.message || 'No fue posible confirmar la programación.'); renderResumen(resumenActual); }
+            });
+
+            btnCancelar.addEventListener('click', () => { document.getElementById('motivoCancelar').value = ''; modalC.classList.add('open'); document.body.style.overflow = 'hidden'; });
+            document.getElementById('btnConfirmarC').addEventListener('click', async () => {
+                const fd = new FormData(); fd.append('__RequestVerificationToken', token); fd.append('importacionId', importacionId); const mot = document.getElementById('motivoCancelar').value.trim(); if (mot) fd.append('motivo', mot);
+                try { const res = await fetch(urls.cancelar, { method: 'POST', body: fd, credentials: 'same-origin' }); const data = await res.json(); if (!res.ok || !data?.ok) throw new Error(data?.mensaje || 'No fue posible cancelar la importación.'); cerrar(modalC); mensaje(data.mensaje || 'Importación cancelada.', 'ok'); document.getElementById('estatus').textContent = 'Cancelado'; btnConfirmar.disabled = true; btnCancelar.disabled = true; document.getElementById('footText').textContent = 'Esta importación fue cancelada.'; }
+                catch (ex) { alert(ex?.message || 'No fue posible cancelar la importación.'); }
+            });
+
+            document.getElementById('btnReset').addEventListener('click', () => { form.reset(); importacionId = 0; filasActuales = []; preview.classList.remove('show'); tbody.innerHTML = ''; limpiarMensaje(); sugerirPeriodo(); });
+            periodicidad.addEventListener('change', sugerirPeriodo); buscar.addEventListener('input', render); filtro.addEventListener('change', render);
+            document.querySelectorAll('.js-close-v').forEach(x => x.addEventListener('click', () => cerrar(modalV))); document.querySelectorAll('.js-close-c').forEach(x => x.addEventListener('click', () => cerrar(modalC)));
+            modalV.addEventListener('click', e => { if (e.target === modalV) cerrar(modalV) }); modalC.addEventListener('click', e => { if (e.target === modalC) cerrar(modalC) });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (modalV.classList.contains('open')) cerrar(modalV); if (modalC.classList.contains('open')) cerrar(modalC); } });
+            sugerirPeriodo();
+        })();
+    </script>
+}

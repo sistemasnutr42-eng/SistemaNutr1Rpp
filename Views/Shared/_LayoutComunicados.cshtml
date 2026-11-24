@@ -1,0 +1,375 @@
+﻿@using System.Security.Claims
+@using System.Text.Json
+@{
+    Layout = null;
+    ViewData["Title"] ??= "Intranet - NS Group";
+
+    var username = Context.Session.GetString("Username") ?? "Invitado";
+    var nombreMostrar = Context.Session.GetString("NombreMostrar") ?? username;
+    var nombreEmpresa = Context.Session.GetString("EmpresaNombre") ?? "NS Group";
+    var empresaId = Context.Session.GetString("EmpresaID")
+        ?? Context.Session.GetString("EmpresaId")
+        ?? "default";
+
+    var usuarioId = Context.Session.GetInt32("UsuarioID")?.ToString()
+        ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+        ?? "";
+
+    var rolNombre = User.Identity?.IsAuthenticated == true
+        ? (User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? Context.Session.GetString("Rol") ?? "Colaborador")
+        : (Context.Session.GetString("Rol") ?? "Colaborador");
+
+    var correoUsuario = Context.Session.GetString("Correo")
+        ?? Context.Session.GetString("Email")
+        ?? Context.Session.GetString("CorreoUsuario")
+        ?? "";
+
+    var telefonoUsuario = Context.Session.GetString("Telefono")
+        ?? Context.Session.GetString("TelefonoUsuario")
+        ?? "";
+
+    var descripcionRol = Context.Session.GetString("DescripcionRol")
+        ?? Context.Session.GetString("DescripcionDelRol")
+        ?? Context.Session.GetString("RolDescripcion")
+        ?? Context.Session.GetString("DescripcionRolUsuario")
+        ?? "";
+
+    var inicialUsuario = !string.IsNullOrWhiteSpace(nombreMostrar)
+        ? nombreMostrar.Trim().Substring(0, 1).ToUpper()
+        : "U";
+
+    // Foto vigente del colaborador. MenuController la refresca desde Persona.FotoRuta.
+    var fotoPerfil = Context.Session.GetString("FotoRuta") ?? "";
+
+    // Datos laborales vigentes del colaborador.
+    var puestoUsuario = Context.Session.GetString("Puesto") ?? "";
+    var departamentoUsuario = Context.Session.GetString("Departamento") ?? "";
+
+    var cssFile = empresaId switch
+    {
+        "1" => "LoginNutriservicios.css",
+        "2" => "LoginNS_Equipo.css",
+        "3" => "LoginBSP.css",
+        "4" => "LoginHypor.css",
+        _ => "site.css"
+    };
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="~/css/overlay.css" asp-append-version="true" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="@(Url.Content($"~/css/{cssFile}"))" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/stylesLayoutComunicados.css" asp-append-version="true" />
+
+    <style>
+        .perfil-modal-header {
+            background: linear-gradient(135deg, #071142 0%, #12395f 62%, #5d3442 100%);
+            color: #ffffff;
+            border-bottom: 0;
+            padding: 1rem 1.25rem;
+        }
+
+        .layout-user-avatar {
+            width: 34px;
+            height: 34px;
+            flex: 0 0 34px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            color: #273371;
+            font-size: .82rem;
+            font-weight: 900;
+            border: 2px solid rgba(255,255,255,.72);
+            box-shadow: 0 5px 14px rgba(0,0,0,.14);
+        }
+
+        .layout-user-avatar img,
+        .perfil-modal-avatar img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .perfil-modal-avatar {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2563eb, #0ea5e9);
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 900;
+            border: 4px solid #ffffff;
+            box-shadow: 0 14px 30px rgba(37, 99, 235, .25);
+        }
+
+        .perfil-info-box {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 1rem 1.15rem;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+        }
+
+        .perfil-info-item {
+            margin-bottom: 1rem;
+        }
+
+        .perfil-info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .perfil-info-label {
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            color: #334155;
+            font-weight: 800;
+            margin-bottom: .22rem;
+        }
+
+        .perfil-info-label i {
+            color: #475569;
+            width: 16px;
+            text-align: center;
+        }
+
+        .perfil-info-value {
+            margin: 0;
+            padding-left: 1.55rem;
+            color: #111827;
+            font-weight: 500;
+            word-break: break-word;
+        }
+    </style>
+
+    @RenderSection("Estilos", required: false)
+</head>
+<body class="empresa-@empresaId">
+    @await Html.PartialAsync("_Overlay")
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand nombre-empresa" asp-controller="Menu" asp-action="Index">
+                <i class="fas fa-building me-1"></i>@nombreEmpresa
+            </a>
+
+            <div class="d-flex align-items-center">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
+                        aria-controls="navbarMain" aria-expanded="false" aria-label="Menú">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse justify-content-end" id="navbarMain">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Menu" asp-action="Index">
+                                <i class="fas fa-home me-1"></i>Inicio
+                            </a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDrop" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+
+                                    <span class="layout-user-avatar" aria-hidden="true">
+                                        @if (!string.IsNullOrWhiteSpace(fotoPerfil))
+                                        {
+                                            <img src="@Url.Content(fotoPerfil)"
+                                                 alt=""
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                                            <span style="display:none;">@inicialUsuario</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@inicialUsuario</span>
+                                        }
+                                    </span>
+
+                                    <span>@username</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDrop">
+                                    <li>
+                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalMiPerfilLayout">
+                                            <i class="fas fa-user me-2"></i>Mi Perfil
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Configuracion" asp-action="Index">
+                                            <i class="fas fa-cog me-2"></i>Configuración
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form asp-controller="Menu" asp-action="Logout" method="post" class="px-3">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-link dropdown-item p-0">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Login" asp-action="Login">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Ingresar
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido -->
+    <main role="main" class="container py-3">
+        @RenderBody()
+    </main>
+
+    <!-- MODAL MI PERFIL: se llena desde sesión/claims, sin redirigir ni consultar otra ruta -->
+    <div class="modal fade" id="modalMiPerfilLayout" tabindex="-1" aria-labelledby="modalMiPerfilLayoutLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header perfil-modal-header">
+                    <h5 class="modal-title fw-bold" id="modalMiPerfilLayoutLabel">
+                        <i class="fas fa-user-circle me-2"></i> Mi Perfil
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body p-4 bg-light">
+                    <div class="text-center mb-3">
+                        <div class="perfil-modal-avatar mb-2">
+                            @if (!string.IsNullOrWhiteSpace(fotoPerfil))
+                            {
+                                <img src="@Url.Content(fotoPerfil)"
+                                     alt="Foto de @nombreMostrar"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                                <span style="display:none;">@inicialUsuario</span>
+                            }
+                            else
+                            {
+                                <span>@inicialUsuario</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="perfil-info-box">
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-user"></i>
+                                <span>Nombre:</span>
+                            </div>
+                            <p class="perfil-info-value">@nombreMostrar</p>
+                        </div>
+
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-id-badge"></i>
+                                <span>Usuario:</span>
+                            </div>
+                            <p class="perfil-info-value">@username</p>
+                        </div>
+
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-envelope"></i>
+                                <span>Correo:</span>
+                            </div>
+                            <p class="perfil-info-value">@(string.IsNullOrWhiteSpace(correoUsuario) ? "N/A" : correoUsuario)</p>
+                        </div>
+
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-phone"></i>
+                                <span>Teléfono:</span>
+                            </div>
+                            <p class="perfil-info-value">@(string.IsNullOrWhiteSpace(telefonoUsuario) ? "N/A" : telefonoUsuario)</p>
+                        </div>
+
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-building"></i>
+                                <span>Departamento:</span>
+                            </div>
+                            <p class="perfil-info-value">@(string.IsNullOrWhiteSpace(departamentoUsuario) ? "N/A" : departamentoUsuario)</p>
+                        </div>
+
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-briefcase"></i>
+                                <span>Puesto:</span>
+                            </div>
+                            <p class="perfil-info-value">@(string.IsNullOrWhiteSpace(puestoUsuario) ? "N/A" : puestoUsuario)</p>
+                        </div>
+
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-user-tag"></i>
+                                <span>Rol:</span>
+                            </div>
+                            <p class="perfil-info-value">@rolNombre</p>
+                        </div>
+
+                        <div class="perfil-info-item">
+                            <div class="perfil-info-label">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Descripción del Rol:</span>
+                            </div>
+                            <p class="perfil-info-value">@(string.IsNullOrWhiteSpace(descripcionRol) ? "N/A" : descripcionRol)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary rounded px-4" data-bs-dismiss="modal">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+            crossorigin="anonymous"></script>
+
+    @RenderSection("Scripts", required: false)
+    <script src="~/js/overlay.js" asp-append-version="true"></script>
+</body>
+</html>

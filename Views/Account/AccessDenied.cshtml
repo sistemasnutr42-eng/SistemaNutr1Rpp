@@ -1,0 +1,14 @@
+@{
+    ViewData["Title"] = "Acceso restringido";
+    Layout = "_LayoutComunicados";
+}
+@section Estilos { <link rel="stylesheet" href="~/css/compras-presentacion.css" asp-append-version="true" /> }
+<div class="compras-modern cn-access-wrapper">
+    <div class="cn-access-card">
+        <span class="cn-access-icon"><i class="fas fa-lock"></i></span>
+        <p class="cn-section-kicker">PERMISOS DE USUARIO</p>
+        <h1>Esta sección requiere autorización</h1>
+        <p>Tu cuenta puede consultar sus solicitudes, pero esta bandeja está reservada al departamento responsable. Solicita al administrador que asigne el perfil adecuado en NUTRI_TEST.</p>
+        <div class="cn-access-actions"><a href="/Compras/Index" class="cn-main-btn">Volver a Compras</a><a href="/Menu/Index" class="cn-plain-link">Menú principal</a></div>
+    </div>
+</div>

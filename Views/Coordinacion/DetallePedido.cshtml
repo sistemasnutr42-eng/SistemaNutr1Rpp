@@ -1,0 +1,1600 @@
+﻿@using System
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@model SistemaNutri.Models.CoordinacionPedidoDetallePaginaVm
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+
+    var pedido = Model?.Pedido ?? new SistemaNutri.Models.CoordinacionPedidoEncabezadoVm();
+    var detalles = Model?.Detalles ?? new List<SistemaNutri.Models.CoordinacionPedidoDetalleRenglonVm>();
+    var programacion = Model?.Programacion ?? new List<SistemaNutri.Models.CoordinacionPedidoProgramacionVm>();
+    var solicitudesCambio = Model?.SolicitudesCambio ?? new List<SistemaNutri.Models.CoordinacionSolicitudCambioVm>();
+    var historial = Model?.Historial ?? new List<SistemaNutri.Models.CoordinacionPedidoHistorialVm>();
+
+    var tipoCodigo = (pedido.TipoPedidoCodigo ?? string.Empty).Trim().ToUpperInvariant();
+    var estatusCodigo = (pedido.EstatusCodigo ?? string.Empty).Trim().ToUpperInvariant();
+    var esFinal = estatusCodigo == "CERRADO" || estatusCodigo == "CANCELADO";
+
+    string AccionVolver() => tipoCodigo switch
+    {
+        "DOSIS" => "PedidosDosis",
+        "HEMBRAS" => "PedidosHembras",
+        "SEMENTALES" => "PedidosSementales",
+        "RASTRO" => "PedidosRastro",
+        _ => "Pedidos"
+    };
+
+    string TipoIcono() => tipoCodigo switch
+    {
+        "DOSIS" => "fa-solid fa-flask-vial",
+        "HEMBRAS" => "fa-solid fa-venus",
+        "SEMENTALES" => "fa-solid fa-mars",
+        "RASTRO" => "fa-solid fa-truck-fast",
+        _ => "fa-solid fa-box"
+    };
+
+    string EstatusClase(string? codigo) => (codigo ?? string.Empty).Trim().ToUpperInvariant() switch
+    {
+        "BORRADOR" => "estado-borrador",
+        "RECIBIDO" => "estado-recibido",
+        "PENDIENTE_VALIDACION" => "estado-pendiente",
+        "PENDIENTE_PROGRAMAR" => "estado-pendiente",
+        "PROGRAMADO" => "estado-programado",
+        "EN_PROCESO" => "estado-proceso",
+        "ATENDIDO" => "estado-atendido",
+        "CERRADO" => "estado-cerrado",
+        "CANCELADO" => "estado-cancelado",
+        _ => "estado-general"
+    };
+
+    string PrioridadClase(string? codigo) => (codigo ?? string.Empty).Trim().ToUpperInvariant() switch
+    {
+        "URGENTE" => "prioridad-urgente",
+        "ALTA" => "prioridad-alta",
+        "BAJA" => "prioridad-baja",
+        _ => "prioridad-normal"
+    };
+
+    string FormatoCantidad(decimal valor)
+    {
+        return valor == decimal.Truncate(valor)
+            ? valor.ToString("N0", CultureInfo.GetCultureInfo("es-MX"))
+            : valor.ToString("N3", CultureInfo.GetCultureInfo("es-MX")).TrimEnd('0').TrimEnd('.');
+    }
+
+    string FormatoNullable(decimal? valor, string sufijo = "")
+    {
+        if (!valor.HasValue) return "—";
+        return $"{FormatoCantidad(valor.Value)}{sufijo}";
+    }
+
+    string DireccionDestino()
+    {
+        if (pedido.ClienteUbicacionID.HasValue)
+        {
+            return string.Join(", ", new[] { pedido.DireccionCliente, pedido.MunicipioCliente, pedido.EstadoCliente }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+        if (pedido.CentroDestinoID.HasValue)
+        {
+            return string.Join(", ", new[] { pedido.DireccionCentro, pedido.MunicipioCentro, pedido.EstadoCentro }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+        return string.Empty;
+    }
+
+    string TextoImportacion(bool? valor) => !valor.HasValue ? "—" : valor.Value ? "Sí" : "No";
+
+    string EstadoSolicitudClase(string? codigo) => (codigo ?? string.Empty).Trim().ToUpperInvariant() switch
+    {
+        "SOLICITADO" => "solicitud-solicitado",
+        "EN_REVISION" => "solicitud-revision",
+        "AUTORIZADO" => "solicitud-autorizado",
+        "RECHAZADO" => "solicitud-rechazado",
+        "APLICADO" => "solicitud-aplicado",
+        "CANCELADO" => "solicitud-cancelado",
+        _ => "solicitud-general"
+    };
+
+    ViewData["Title"] = $"Pedido {pedido.Folio}";
+}
+
+@Html.AntiForgeryToken()
+
+@section Estilos {
+    <style>
+        :root {
+            --coord-primary: #084F83;
+            --coord-primary-dark: #062F55;
+            --coord-primary-soft: #EFF6FB;
+            --coord-accent: #58A83F;
+            --coord-border: #E4E9EF;
+            --coord-text: #17212B;
+            --coord-muted: #667085;
+        }
+
+        .detalle-page {
+            width: 100%
+        }
+
+        .detalle-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 14px
+        }
+
+        .detalle-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 5px;
+            color: var(--coord-accent);
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em
+        }
+
+        .detalle-title-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            flex-wrap: wrap
+        }
+
+        .detalle-title {
+            margin: 0;
+            color: var(--coord-primary-dark);
+            font-size: 1.55rem;
+            font-weight: 850;
+            letter-spacing: -.02em
+        }
+
+        .detalle-subtitle {
+            margin: 6px 0 0;
+            color: var(--coord-muted);
+            font-size: .8rem;
+            line-height: 1.45
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .btn-main, .btn-secondary, .btn-danger {
+            min-height: 38px;
+            padding: 8px 13px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            text-decoration: none;
+            font-size: .72rem;
+            font-weight: 800;
+            cursor: pointer
+        }
+
+        .btn-main {
+            border: 1px solid var(--coord-primary);
+            background: var(--coord-primary);
+            color: #fff
+        }
+
+            .btn-main:hover {
+                background: var(--coord-primary-dark);
+                color: #fff
+            }
+
+        .btn-secondary {
+            border: 1px solid #DCE2E8;
+            background: #fff;
+            color: #475467
+        }
+
+            .btn-secondary:hover {
+                background: #F8FAFC;
+                color: var(--coord-primary-dark)
+            }
+
+        .btn-danger {
+            border: 1px solid #FECACA;
+            background: #fff;
+            color: #B42318
+        }
+
+        .status-badge, .priority-badge, .late-badge, .small-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 999px;
+            white-space: nowrap;
+            font-size: .62rem;
+            font-weight: 800
+        }
+
+        .status-badge, .priority-badge {
+            padding: 5px 8px
+        }
+
+        .late-badge {
+            padding: 5px 8px;
+            background: #FEECEC;
+            color: #B42318
+        }
+
+        .small-badge {
+            padding: 4px 7px;
+            background: #F2F4F7;
+            color: #475467
+        }
+
+        .estado-borrador, .estado-general {
+            background: #F2F4F7;
+            color: #475467
+        }
+
+        .estado-recibido {
+            background: #EAF5FC;
+            color: #0B6FAF
+        }
+
+        .estado-pendiente {
+            background: #FFF4E5;
+            color: #B54708
+        }
+
+        .estado-programado {
+            background: #EEF4FF;
+            color: #3538CD
+        }
+
+        .estado-proceso {
+            background: #F4F0FF;
+            color: #6941C6
+        }
+
+        .estado-atendido, .estado-cerrado {
+            background: #ECF8E8;
+            color: #347526
+        }
+
+        .estado-cancelado {
+            background: #FEECEC;
+            color: #B42318
+        }
+
+        .prioridad-urgente {
+            background: #FEECEC;
+            color: #B42318
+        }
+
+        .prioridad-alta {
+            background: #FFF4E5;
+            color: #B54708
+        }
+
+        .prioridad-normal {
+            background: #F2F4F7;
+            color: #475467
+        }
+
+        .prioridad-baja {
+            background: #ECF8E8;
+            color: #347526
+        }
+
+        .meta-strip {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            padding: 10px 0;
+            border-top: 1px solid var(--coord-border);
+            border-bottom: 1px solid var(--coord-border)
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #667085;
+            font-size: .68rem
+        }
+
+            .meta-item i {
+                color: #98A2B3
+            }
+
+            .meta-item strong {
+                color: #344054;
+                font-weight: 800
+            }
+
+        .detail-section {
+            margin-bottom: 16px;
+            border: 1px solid var(--coord-border);
+            border-radius: 11px;
+            background: #fff;
+            overflow: hidden
+        }
+
+        .section-head {
+            min-height: 46px;
+            padding: 10px 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #EEF1F4;
+            background: #FBFCFD
+        }
+
+        .section-head-left {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 0
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--coord-primary-soft);
+            color: var(--coord-primary);
+            font-size: .73rem
+        }
+
+        .section-title {
+            margin: 0;
+            color: #344054;
+            font-size: .82rem;
+            font-weight: 850
+        }
+
+        .section-help {
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .61rem
+        }
+
+        .section-count {
+            min-width: 27px;
+            min-height: 25px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #F2F4F7;
+            color: #475467;
+            font-size: .63rem;
+            font-weight: 850
+        }
+
+        .section-body {
+            padding: 14px
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4,minmax(0,1fr));
+            gap: 0;
+            border-top: 1px solid #EEF1F4;
+            border-left: 1px solid #EEF1F4
+        }
+
+        .info-item {
+            min-height: 69px;
+            padding: 10px 11px;
+            border-right: 1px solid #EEF1F4;
+            border-bottom: 1px solid #EEF1F4
+        }
+
+            .info-item.span-2 {
+                grid-column: span 2
+            }
+
+            .info-item.span-4 {
+                grid-column: 1/-1
+            }
+
+        .info-label {
+            margin-bottom: 4px;
+            color: #98A2B3;
+            font-size: .6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .025em
+        }
+
+        .info-value {
+            color: #344054;
+            font-size: .72rem;
+            font-weight: 750;
+            line-height: 1.4;
+            overflow-wrap: anywhere
+        }
+
+        .info-sub {
+            margin-top: 3px;
+            color: #98A2B3;
+            font-size: .62rem;
+            line-height: 1.35
+        }
+
+        .alert-late {
+            margin-top: 12px;
+            padding: 9px 11px;
+            border: 1px solid #FECACA;
+            border-radius: 8px;
+            background: #FEF2F2;
+            color: #B42318;
+            font-size: .7rem;
+            line-height: 1.45
+        }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto
+        }
+
+        .detail-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0
+        }
+
+            .detail-table thead th {
+                padding: 9px 9px;
+                border-bottom: 1px solid #E7EBF0;
+                background: #FBFCFD;
+                color: #667085;
+                font-size: .6rem;
+                font-weight: 850;
+                text-transform: uppercase;
+                letter-spacing: .02em;
+                white-space: nowrap
+            }
+
+            .detail-table tbody td {
+                padding: 10px 9px;
+                border-bottom: 1px solid #F0F2F4;
+                color: #344054;
+                font-size: .7rem;
+                vertical-align: top
+            }
+
+            .detail-table tbody tr:last-child td {
+                border-bottom: 0
+            }
+
+            .detail-table.dosis {
+                min-width: 980px
+            }
+
+            .detail-table.hembras {
+                min-width: 1300px
+            }
+
+            .detail-table.sementales {
+                min-width: 1250px
+            }
+
+            .detail-table.rastro {
+                min-width: 1050px
+            }
+
+            .detail-table.general {
+                min-width: 950px
+            }
+
+            .detail-table.programacion {
+                min-width: 1180px
+            }
+
+            .detail-table.cambios {
+                min-width: 1000px
+            }
+
+        .cell-main {
+            color: #344054;
+            font-weight: 750
+        }
+
+        .cell-sub {
+            margin-top: 3px;
+            color: #98A2B3;
+            font-size: .61rem;
+            line-height: 1.35
+        }
+
+        .text-wrap {
+            white-space: normal;
+            min-width: 170px;
+            max-width: 300px
+        }
+
+        .program-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 7px;
+            border-radius: 999px;
+            background: #EEF4FF;
+            color: #3538CD;
+            font-size: .61rem;
+            font-weight: 800
+        }
+
+        .solicitud-solicitado {
+            background: #EAF5FC;
+            color: #0B6FAF
+        }
+
+        .solicitud-revision {
+            background: #FFF4E5;
+            color: #B54708
+        }
+
+        .solicitud-autorizado, .solicitud-aplicado {
+            background: #ECF8E8;
+            color: #347526
+        }
+
+        .solicitud-rechazado, .solicitud-cancelado {
+            background: #FEECEC;
+            color: #B42318
+        }
+
+        .solicitud-general {
+            background: #F2F4F7;
+            color: #475467
+        }
+
+        .empty-section {
+            padding: 28px 16px;
+            text-align: center;
+            color: #98A2B3;
+            font-size: .7rem
+        }
+
+            .empty-section i {
+                display: block;
+                margin-bottom: 7px;
+                font-size: 1.05rem
+            }
+
+        .history-list {
+            position: relative
+        }
+
+        .history-item {
+            position: relative;
+            display: grid;
+            grid-template-columns: 145px 18px 1fr;
+            gap: 10px;
+            padding: 0 0 15px
+        }
+
+            .history-item:last-child {
+                padding-bottom: 0
+            }
+
+        .history-date {
+            padding-top: 1px;
+            color: #667085;
+            font-size: .63rem;
+            text-align: right
+        }
+
+        .history-dot-wrap {
+            position: relative;
+            display: flex;
+            justify-content: center
+        }
+
+        .history-dot {
+            position: relative;
+            z-index: 2;
+            width: 9px;
+            height: 9px;
+            margin-top: 4px;
+            border-radius: 50%;
+            background: var(--coord-primary)
+        }
+
+        .history-dot-wrap:after {
+            content: "";
+            position: absolute;
+            top: 13px;
+            bottom: -7px;
+            width: 1px;
+            background: #E4E7EC
+        }
+
+        .history-item:last-child .history-dot-wrap:after {
+            display: none
+        }
+
+        .history-event {
+            color: #344054;
+            font-size: .7rem;
+            font-weight: 800
+        }
+
+        .history-text {
+            margin-top: 3px;
+            color: #667085;
+            font-size: .65rem;
+            line-height: 1.4
+        }
+
+        .history-user {
+            margin-top: 4px;
+            color: #98A2B3;
+            font-size: .61rem
+        }
+
+        details.json-details {
+            margin-top: 6px
+        }
+
+            details.json-details summary {
+                cursor: pointer;
+                color: var(--coord-primary);
+                font-size: .62rem;
+                font-weight: 750
+            }
+
+        .json-box {
+            margin-top: 5px;
+            padding: 7px 8px;
+            border: 1px solid #E4E7EC;
+            border-radius: 7px;
+            background: #F8FAFC;
+            color: #475467;
+            font-size: .61rem;
+            line-height: 1.45;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere
+        }
+
+        .modal-backdrop-custom {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1055;
+            background: rgba(16,24,40,.48);
+            padding: 18px;
+            align-items: center;
+            justify-content: center
+        }
+
+            .modal-backdrop-custom.open {
+                display: flex
+            }
+
+        .modal-box-custom {
+            width: min(520px,100%);
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(16,24,40,.22);
+            overflow: hidden
+        }
+
+        .modal-head-custom {
+            padding: 13px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #EEF1F4
+        }
+
+        .modal-title-custom {
+            margin: 0;
+            color: #344054;
+            font-size: .86rem;
+            font-weight: 850
+        }
+
+        .modal-close {
+            width: 31px;
+            height: 31px;
+            border: 0;
+            border-radius: 7px;
+            background: #F2F4F7;
+            color: #667085
+        }
+
+        .modal-body-custom {
+            padding: 15px
+        }
+
+        .modal-field {
+            margin-bottom: 12px
+        }
+
+            .modal-field:last-child {
+                margin-bottom: 0
+            }
+
+            .modal-field label {
+                display: block;
+                margin-bottom: 5px;
+                color: #475467;
+                font-size: .65rem;
+                font-weight: 800
+            }
+
+        .modal-control {
+            width: 100%;
+            min-height: 38px;
+            border: 1px solid #DCE2E8;
+            border-radius: 8px;
+            padding: 8px 10px;
+            outline: none;
+            color: #344054;
+            font-size: .72rem
+        }
+
+        textarea.modal-control {
+            min-height: 90px;
+            resize: vertical
+        }
+
+        .modal-control:focus {
+            border-color: #0B6FAF;
+            box-shadow: 0 0 0 3px rgba(11,111,175,.07)
+        }
+
+        .modal-actions {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid #EEF1F4;
+            background: #FBFCFD
+        }
+
+        .page-message {
+            display: none;
+            margin-bottom: 12px;
+            padding: 9px 11px;
+            border-radius: 8px;
+            font-size: .7rem;
+            font-weight: 700
+        }
+
+            .page-message.error {
+                display: block;
+                border: 1px solid #FECACA;
+                background: #FEF2F2;
+                color: #B42318
+            }
+
+        @@media(max-width:1000px) {
+            .info-grid {
+                grid-template-columns: repeat(2,minmax(0,1fr))
+            }
+
+            .info-item.span-4 {
+                grid-column: 1/-1
+            }
+        }
+
+        @@media(max-width:720px) {
+            .detalle-header {
+                flex-direction: column
+            }
+
+            .header-actions {
+                width: 100%
+            }
+
+            .btn-main, .btn-secondary, .btn-danger {
+                flex: 1
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr
+            }
+
+            .info-item.span-2, .info-item.span-4 {
+                grid-column: auto
+            }
+
+            .history-item {
+                grid-template-columns: 1fr
+            }
+
+            .history-date {
+                text-align: left
+            }
+
+            .history-dot-wrap {
+                display: none
+            }
+        }
+    </style>
+}
+
+<div class="detalle-page">
+    <div class="detalle-header">
+        <div>
+            <div class="detalle-eyebrow">
+                <i class="@TipoIcono()"></i>
+                Coordinación · @pedido.TipoPedido
+            </div>
+            <div class="detalle-title-row">
+                <h1 class="detalle-title">@pedido.Folio</h1>
+                <span class="status-badge @EstatusClase(pedido.EstatusCodigo)">
+                    @if (!string.IsNullOrWhiteSpace(pedido.ColorHex))
+                    {
+                        <span style="width:6px;height:6px;border-radius:50%;background:@pedido.ColorHex;display:inline-block;"></span>
+                    }
+                    @pedido.Estatus
+                </span>
+                <span class="priority-badge @PrioridadClase(pedido.PrioridadCodigo)">@pedido.Prioridad</span>
+                @if (pedido.FueraDeTiempo)
+                {
+                    <span class="late-badge"><i class="fa-regular fa-clock"></i>Fuera de tiempo</span>
+                }
+            </div>
+            <p class="detalle-subtitle">
+                @(string.IsNullOrWhiteSpace(pedido.Cliente) ? "Pedido interno" : pedido.Cliente)
+                @if (!string.IsNullOrWhiteSpace(pedido.Destino))
+                {
+                    <text> · @pedido.Destino</text>
+                }
+            </p>
+        </div>
+
+        <div class="header-actions">
+
+            <a asp-controller="Coordinacion"
+               asp-action="@AccionVolver()"
+               class="btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i>
+                Regresar
+            </a>
+
+            @if (tipoCodigo == "RASTRO" && !esFinal)
+            {
+                <a asp-controller="Coordinacion"
+                   asp-action="TabuladorPrecioCerdo"
+                   asp-route-pedidoId="@pedido.PedidoID"
+                   class="btn-main">
+                    <i class="fa-solid fa-calculator"></i>
+                    Cotizar
+                </a>
+            }
+
+            @if (!esFinal)
+            {
+                <button type="button"
+                        id="btnAbrirEstatus"
+                        class="btn-main">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                    Cambiar estatus
+                </button>
+            }
+
+        </div>
+    </div>
+
+    <div id="pageMessage" class="page-message"></div>
+
+    <div class="meta-strip">
+        <div class="meta-item"><i class="fa-regular fa-calendar"></i><span>Solicitud <strong>@pedido.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</strong></span></div>
+        <div class="meta-item"><i class="fa-regular fa-calendar-check"></i><span>Requerida <strong>@(pedido.FechaRequerida?.ToString("dd/MM/yyyy") ?? "Sin definir")</strong></span></div>
+        <div class="meta-item"><i class="fa-solid fa-arrow-right-to-bracket"></i><span>Origen <strong>@pedido.Origen</strong></span></div>
+        <div class="meta-item"><i class="fa-solid fa-building"></i><span>Empresa <strong>@pedido.Empresa</strong></span></div>
+        @if (!string.IsNullOrWhiteSpace(pedido.ReferenciaExterna))
+        {
+            <div class="meta-item"><i class="fa-solid fa-hashtag"></i><span>Referencia <strong>@pedido.ReferenciaExterna</strong></span></div>
+        }
+    </div>
+
+    <section class="detail-section">
+        <div class="section-head">
+            <div class="section-head-left">
+                <span class="section-icon"><i class="fa-solid fa-file-lines"></i></span>
+                <div>
+                    <h2 class="section-title">Datos generales</h2>
+                    <div class="section-help">Información de origen, cliente y destino del pedido.</div>
+                </div>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Tipo de pedido</div>
+                    <div class="info-value">@pedido.TipoPedido</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Cliente</div>
+                    <div class="info-value">@(string.IsNullOrWhiteSpace(pedido.Cliente) ? "—" : pedido.Cliente)</div>
+                    @if (!string.IsNullOrWhiteSpace(pedido.RazonSocial) && !string.Equals(pedido.RazonSocial, pedido.Cliente, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <div class="info-sub">@pedido.RazonSocial</div>
+                    }
+                    @if (pedido.EsBioHypor == true)
+                    {
+                        <div class="info-sub">Cliente BioHypor</div>
+                    }
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Destino</div>
+                    <div class="info-value">@(string.IsNullOrWhiteSpace(pedido.Destino) ? "—" : pedido.Destino)</div>
+                    @if (!string.IsNullOrWhiteSpace(DireccionDestino()))
+                    {
+                        <div class="info-sub">@DireccionDestino()</div>
+                    }
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Solicitante</div>
+                    <div class="info-value">@(pedido.UsuarioSolicitanteID.HasValue ? $"Usuario #{pedido.UsuarioSolicitanteID}" : "—")</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Fecha de solicitud</div>
+                    <div class="info-value">@pedido.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Fecha requerida</div>
+                    <div class="info-value">@(pedido.FechaRequerida?.ToString("dd/MM/yyyy") ?? "—")</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Prioridad</div>
+                    <div class="info-value">@pedido.Prioridad</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Origen</div>
+                    <div class="info-value">@pedido.Origen</div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(pedido.Observaciones))
+                {
+                    <div class="info-item span-4">
+                        <div class="info-label">Observaciones</div>
+                        <div class="info-value">@pedido.Observaciones</div>
+                    </div>
+                }
+            </div>
+
+            @if (pedido.FueraDeTiempo)
+            {
+                <div class="alert-late">
+                    <strong><i class="fa-regular fa-clock"></i> Pedido fuera de tiempo.</strong>
+                    @(string.IsNullOrWhiteSpace(pedido.MotivoFueraDeTiempo) ? "No se capturó motivo." : pedido.MotivoFueraDeTiempo)
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="detail-section">
+        <div class="section-head">
+            <div class="section-head-left">
+                <span class="section-icon"><i class="@TipoIcono()"></i></span>
+                <div>
+                    <h2 class="section-title">Detalle de @pedido.TipoPedido.ToLowerInvariant()</h2>
+                    <div class="section-help">Partidas solicitadas en este pedido.</div>
+                </div>
+            </div>
+            <span class="section-count">@detalles.Count</span>
+        </div>
+
+        @if (detalles.Count == 0)
+        {
+            <div class="empty-section">
+                <i class="fa-regular fa-folder-open"></i>
+                El pedido no tiene partidas activas.
+            </div>
+        }
+        else if (tipoCodigo == "DOSIS")
+        {
+            <div class="table-wrap">
+                <table class="detail-table dosis">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Producto</th>
+                            <th>Línea genética</th>
+                            <th>Cantidad</th>
+                            <th>Unidad</th>
+                            <th>Producción solicitada</th>
+                            <th>Especificaciones</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in detalles.OrderBy(x => x.Renglon))
+                        {
+                            <tr>
+                                <td><span class="small-badge">@d.Renglon</span></td>
+                                <td><div class="cell-main">@d.Producto</div></td>
+                                <td>@(string.IsNullOrWhiteSpace(d.LineaGenetica) ? "—" : d.LineaGenetica)</td>
+                                <td><div class="cell-main">@FormatoCantidad(d.CantidadSolicitada)</div></td>
+                                <td>@(string.IsNullOrWhiteSpace(d.UnidadMedidaSnapshot) ? "—" : d.UnidadMedidaSnapshot)</td>
+                                <td>@(d.FechaProduccionSolicitada?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.EspecificacionesDosis) ? "—" : d.EspecificacionesDosis)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.Observaciones) ? "—" : d.Observaciones)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (tipoCodigo == "HEMBRAS")
+        {
+            <div class="table-wrap">
+                <table class="detail-table hembras">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Producto</th>
+                            <th>Tipo hembra</th>
+                            <th>Línea genética</th>
+                            <th>Cantidad</th>
+                            <th>Peso mín.</th>
+                            <th>Peso máx.</th>
+                            <th>Proyecto</th>
+                            <th>Características</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in detalles.OrderBy(x => x.Renglon))
+                        {
+                            <tr>
+                                <td><span class="small-badge">@d.Renglon</span></td>
+                                <td><div class="cell-main">@d.Producto</div></td>
+                                <td>@(string.IsNullOrWhiteSpace(d.TipoHembra) ? "—" : d.TipoHembra)</td>
+                                <td>@(string.IsNullOrWhiteSpace(d.LineaGenetica) ? "—" : d.LineaGenetica)</td>
+                                <td><div class="cell-main">@FormatoCantidad(d.CantidadSolicitada)</div></td>
+                                <td>@FormatoNullable(d.PesoMinimoKg, " kg")</td>
+                                <td>@FormatoNullable(d.PesoMaximoKg, " kg")</td>
+                                <td>@(string.IsNullOrWhiteSpace(d.ReferenciaProyecto) ? "—" : d.ReferenciaProyecto)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.CaracteristicasHembras) ? "—" : d.CaracteristicasHembras)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.Observaciones) ? "—" : d.Observaciones)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (tipoCodigo == "SEMENTALES")
+        {
+            <div class="table-wrap">
+                <table class="detail-table sementales">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Producto</th>
+                            <th>Línea genética</th>
+                            <th>Cantidad</th>
+                            <th>Importación</th>
+                            <th>País de origen</th>
+                            <th>Ref. importación</th>
+                            <th>Características</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in detalles.OrderBy(x => x.Renglon))
+                        {
+                            <tr>
+                                <td><span class="small-badge">@d.Renglon</span></td>
+                                <td><div class="cell-main">@d.Producto</div></td>
+                                <td>@(string.IsNullOrWhiteSpace(d.LineaGenetica) ? "—" : d.LineaGenetica)</td>
+                                <td><div class="cell-main">@FormatoCantidad(d.CantidadSolicitada)</div></td>
+                                <td>@TextoImportacion(d.EsImportacion)</td>
+                                <td>@(string.IsNullOrWhiteSpace(d.PaisOrigen) ? "—" : d.PaisOrigen)</td>
+                                <td>@(string.IsNullOrWhiteSpace(d.ReferenciaImportacion) ? "—" : d.ReferenciaImportacion)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.CaracteristicasSemental) ? "—" : d.CaracteristicasSemental)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.Observaciones) ? "—" : d.Observaciones)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (tipoCodigo == "RASTRO")
+        {
+            <div class="table-wrap">
+                <table class="detail-table rastro">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Producto</th>
+                            <th>Cantidad animales</th>
+                            <th>Kg solicitados</th>
+                            <th>Peso objetivo</th>
+                            <th>Especificaciones</th>
+                            <th>Observaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in detalles.OrderBy(x => x.Renglon))
+                        {
+                            <tr>
+                                <td><span class="small-badge">@d.Renglon</span></td>
+                                <td><div class="cell-main">@d.Producto</div></td>
+                                <td><div class="cell-main">@FormatoCantidad(d.CantidadSolicitada)</div></td>
+                                <td>@FormatoNullable(d.KilogramosSolicitados, " kg")</td>
+                                <td>@FormatoNullable(d.PesoPromedioObjetivoKg, " kg")</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.EspecificacionesRastro) ? "—" : d.EspecificacionesRastro)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.Observaciones) ? "—" : d.Observaciones)</td>
+                                <td>
+                                    @if (!esFinal)
+                                    {
+                                        <a asp-controller="Coordinacion"
+                                           asp-action="TabuladorPrecioCerdo"
+                                           asp-route-pedidoId="@pedido.PedidoID"
+                                           asp-route-pedidoDetalleId="@d.PedidoDetalleID"
+                                           class="btn-secondary">
+                                            <i class="fa-solid fa-calculator"></i>
+                                            Cotizar
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="detail-table general">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Producto</th>
+                            <th>Línea</th>
+                            <th>Cantidad</th>
+                            <th>Unidad</th>
+                            <th>Especificaciones</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in detalles.OrderBy(x => x.Renglon))
+                        {
+                            <tr>
+                                <td><span class="small-badge">@d.Renglon</span></td>
+                                <td>@d.Producto</td>
+                                <td>@(string.IsNullOrWhiteSpace(d.LineaGenetica) ? "—" : d.LineaGenetica)</td>
+                                <td>@FormatoCantidad(d.CantidadSolicitada)</td>
+                                <td>@(string.IsNullOrWhiteSpace(d.UnidadMedidaSnapshot) ? "—" : d.UnidadMedidaSnapshot)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.Especificaciones) ? "—" : d.Especificaciones)</td>
+                                <td class="text-wrap">@(string.IsNullOrWhiteSpace(d.Observaciones) ? "—" : d.Observaciones)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="detail-section">
+        <div class="section-head">
+            <div class="section-head-left">
+                <span class="section-icon"><i class="fa-solid fa-calendar-days"></i></span>
+                <div>
+                    <h2 class="section-title">Programación</h2>
+                    <div class="section-help">Fechas, ruta y cantidades programadas para las partidas del pedido.</div>
+                </div>
+            </div>
+            <span class="section-count">@programacion.Count</span>
+        </div>
+
+        @if (programacion.Count == 0)
+        {
+            <div class="empty-section">
+                <i class="fa-regular fa-calendar"></i>
+                El pedido todavía no tiene programación registrada.
+            </div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="detail-table programacion">
+                    <thead>
+                        <tr>
+                            <th>Programación</th>
+                            <th>Partida</th>
+                            <th>Origen</th>
+                            <th>Producción</th>
+                            <th>Entrega</th>
+                            <th>Cantidad</th>
+                            <th>Ruta</th>
+                            <th>Secuencia</th>
+                            <th>Remisión</th>
+                            <th>Estatus</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in programacion)
+                        {
+                            var renglon = detalles.FirstOrDefault(x => x.PedidoDetalleID == p.PedidoDetalleID)?.Renglon;
+                            <tr>
+                                <td>
+                                    <div class="cell-main">#@p.ProgramacionID</div>
+                                    <div class="cell-sub">@p.Anio · Semana @(p.Semana?.ToString() ?? "—") · V@p.Version</div>
+                                </td>
+                                <td>@(renglon.HasValue ? $"Renglón {renglon.Value}" : $"Detalle #{p.PedidoDetalleID}")</td>
+                                <td>@(string.IsNullOrWhiteSpace(p.CentroOrigen) ? "—" : p.CentroOrigen)</td>
+                                <td>@(p.FechaProduccion?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td>
+                                    <div class="cell-main">@p.FechaEntregaProgramada.ToString("dd/MM/yyyy")</div>
+                                    @if (p.HoraEntregaProgramada.HasValue)
+                                    {
+                                        <div class="cell-sub">@p.HoraEntregaProgramada.Value.ToString(@"hh\:mm")</div>
+                                    }
+                                </td>
+                                <td>@FormatoCantidad(p.CantidadProgramada)</td>
+                                <td>
+                                    <div class="cell-main">@(string.IsNullOrWhiteSpace(p.Ruta) ? "—" : p.Ruta)</div>
+                                    @if (p.FechaRuta.HasValue)
+                                    {
+                                        <div class="cell-sub">@p.FechaRuta.Value.ToString("dd/MM/yyyy") @(p.HoraSalidaProgramada.HasValue? p.HoraSalidaProgramada.Value.ToString(@"hh\:mm") : "")</div>
+                                    }
+                                </td>
+                                <td>@(p.SecuenciaEntrega?.ToString() ?? "—")</td>
+                                <td>@(string.IsNullOrWhiteSpace(p.ReferenciaRemision) ? "—" : p.ReferenciaRemision)</td>
+                                <td>
+                                    <span class="program-status">@p.EstatusDetalle</span>
+                                    <div class="cell-sub">@p.EstatusProgramacion</div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="detail-section">
+        <div class="section-head">
+            <div class="section-head-left">
+                <span class="section-icon"><i class="fa-solid fa-rotate"></i></span>
+                <div>
+                    <h2 class="section-title">Solicitudes de cambio</h2>
+                    <div class="section-help">Cambios, reprogramaciones o cancelaciones registradas sobre el pedido.</div>
+                </div>
+            </div>
+            <span class="section-count">@solicitudesCambio.Count</span>
+        </div>
+
+        @if (solicitudesCambio.Count == 0)
+        {
+            <div class="empty-section">
+                <i class="fa-solid fa-check"></i>
+                No existen solicitudes de cambio registradas.
+            </div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="detail-table cambios">
+                    <thead>
+                        <tr>
+                            <th>Folio cambio</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Motivo</th>
+                            <th>Estatus</th>
+                            <th>Fuera de tiempo</th>
+                            <th>Resolución</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in solicitudesCambio)
+                        {
+                            <tr>
+                                <td>#@c.SolicitudCambioID</td>
+                                <td>@c.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@c.TipoCambio</td>
+                                <td class="text-wrap">@c.Motivo</td>
+                                <td><span class="small-badge @EstadoSolicitudClase(c.EstatusCodigo)">@c.Estatus</span></td>
+                                <td>@(c.EsFueraDeTiempo ? "Sí" : "No")</td>
+                                <td class="text-wrap">
+                                    @if (c.FechaResolucion.HasValue)
+                                    {
+                                        <div class="cell-main">@c.FechaResolucion.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                        @if (!string.IsNullOrWhiteSpace(c.ObservacionesResolucion))
+                                        {
+                                            <div class="cell-sub">@c.ObservacionesResolucion</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(c.DatosAnteriores) || !string.IsNullOrWhiteSpace(c.DatosNuevos))
+                                    {
+                                        <details class="json-details">
+                                            <summary>Ver cambios</summary>
+                                            @if (!string.IsNullOrWhiteSpace(c.DatosAnteriores))
+                                            {
+                                                <div class="cell-sub">Anterior</div>
+                                                <div class="json-box">@c.DatosAnteriores</div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(c.DatosNuevos))
+                                            {
+                                                <div class="cell-sub" style="margin-top:6px;">Nuevo</div>
+                                                <div class="json-box">@c.DatosNuevos</div>
+                                            }
+                                        </details>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="detail-section">
+        <div class="section-head">
+            <div class="section-head-left">
+                <span class="section-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                <div>
+                    <h2 class="section-title">Historial</h2>
+                    <div class="section-help">Trazabilidad de creación y cambios de estatus del pedido.</div>
+                </div>
+            </div>
+            <span class="section-count">@historial.Count</span>
+        </div>
+        <div class="section-body">
+            @if (historial.Count == 0)
+            {
+                <div class="empty-section">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    No hay movimientos registrados.
+                </div>
+            }
+            else
+            {
+                <div class="history-list">
+                    @foreach (var h in historial.OrderByDescending(x => x.FechaEvento))
+                    {
+                        <div class="history-item">
+                            <div class="history-date">
+                                @h.FechaEvento.ToString("dd/MM/yyyy")<br />
+                                @h.FechaEvento.ToString("HH:mm")
+                            </div>
+                            <div class="history-dot-wrap"><span class="history-dot"></span></div>
+                            <div>
+                                <div class="history-event">@h.Evento</div>
+                                @if (!string.IsNullOrWhiteSpace(h.EstatusAnterior) || !string.IsNullOrWhiteSpace(h.EstatusNuevo))
+                                {
+                                    <div class="history-text">
+                                        @(string.IsNullOrWhiteSpace(h.EstatusAnterior) ? "Inicio" : h.EstatusAnterior)
+                                        <i class="fa-solid fa-arrow-right" style="font-size:.55rem;margin:0 4px;"></i>
+                                        @(string.IsNullOrWhiteSpace(h.EstatusNuevo) ? "—" : h.EstatusNuevo)
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(h.Observaciones))
+                                {
+                                    <div class="history-text">@h.Observaciones</div>
+                                }
+                            <div class="history-user">
+                                @(string.IsNullOrWhiteSpace(h.UsuarioNombreSnapshot)
+                                                            ? h.UsuarioID.HasValue ? $"Usuario #{h.UsuarioID}" : "Sistema"
+                                                            : h.UsuarioNombreSnapshot)
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(h.DatosAdicionales))
+                                {
+                                    <details class="json-details">
+                                        <summary>Datos adicionales</summary>
+                                        <div class="json-box">@h.DatosAdicionales</div>
+                                    </details>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+</div>
+
+@if (!esFinal)
+{
+    <div id="modalEstatus" class="modal-backdrop-custom" aria-hidden="true">
+        <div class="modal-box-custom" role="dialog" aria-modal="true" aria-labelledby="modalEstatusTitulo">
+            <div class="modal-head-custom">
+                <h3 id="modalEstatusTitulo" class="modal-title-custom">Cambiar estatus del pedido</h3>
+                <button type="button" id="btnCerrarModal" class="modal-close" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="modal-field">
+                    <label for="NuevoEstatusCodigo">Nuevo estatus</label>
+                    <select id="NuevoEstatusCodigo" class="modal-control">
+                        <option value="">Selecciona...</option>
+                        @if (estatusCodigo != "BORRADOR")
+                        {
+                            <option value="BORRADOR">Borrador</option>
+                        }
+                        @if (estatusCodigo != "RECIBIDO")
+                        {
+                            <option value="RECIBIDO">Recibido</option>
+                        }
+                        @if (estatusCodigo != "PENDIENTE_VALIDACION")
+                        {
+                            <option value="PENDIENTE_VALIDACION">Pendiente de validación</option>
+                        }
+                        @if (estatusCodigo != "PENDIENTE_PROGRAMAR")
+                        {
+                            <option value="PENDIENTE_PROGRAMAR">Pendiente de programar</option>
+                        }
+                        @if (estatusCodigo != "PROGRAMADO")
+                        {
+                            <option value="PROGRAMADO">Programado</option>
+                        }
+                        @if (estatusCodigo != "EN_PROCESO")
+                        {
+                            <option value="EN_PROCESO">En proceso</option>
+                        }
+                        @if (estatusCodigo != "ATENDIDO")
+                        {
+                            <option value="ATENDIDO">Atendido</option>
+                        }
+                        @if (estatusCodigo != "CERRADO")
+                        {
+                            <option value="CERRADO">Cerrado</option>
+                        }
+                        @if (estatusCodigo != "CANCELADO")
+                        {
+                            <option value="CANCELADO">Cancelado</option>
+                        }
+                    </select>
+                    <div class="field-note" style="margin-top:5px;color:#98A2B3;font-size:.61rem;">
+                        El cambio quedará registrado en el historial del pedido.
+                    </div>
+                </div>
+                <div class="modal-field">
+                    <label for="ObservacionesEstatus">Observaciones</label>
+                    <textarea id="ObservacionesEstatus" maxlength="1000" class="modal-control" placeholder="Motivo o comentario del cambio..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="btnCancelarModal" class="btn-secondary">Cancelar</button>
+                <button type="button" id="btnGuardarEstatus" class="btn-main">
+                    <i class="fa-solid fa-check"></i>
+                    Guardar cambio
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (() => {
+            const pedidoId = @pedido.PedidoID;
+            const cambiarEstatusUrl = '@Url.Action("CambiarEstatus", "Coordinacion")';
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const modal = document.getElementById('modalEstatus');
+            const btnAbrir = document.getElementById('btnAbrirEstatus');
+            const btnCerrar = document.getElementById('btnCerrarModal');
+            const btnCancelar = document.getElementById('btnCancelarModal');
+            const btnGuardar = document.getElementById('btnGuardarEstatus');
+            const estatusSelect = document.getElementById('NuevoEstatusCodigo');
+            const observaciones = document.getElementById('ObservacionesEstatus');
+            const pageMessage = document.getElementById('pageMessage');
+
+            function abrirModal() {
+                if (!modal) return;
+                modal.classList.add('open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                setTimeout(() => estatusSelect?.focus(), 20);
+            }
+
+            function cerrarModal() {
+                if (!modal) return;
+                modal.classList.remove('open');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            function mostrarError(texto) {
+                if (!pageMessage) return;
+                pageMessage.className = 'page-message error';
+                pageMessage.textContent = texto;
+                pageMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function bloquear(bloqueado) {
+                if (!btnGuardar) return;
+                btnGuardar.disabled = bloqueado;
+                btnGuardar.innerHTML = bloqueado
+                    ? '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...'
+                    : '<i class="fa-solid fa-check"></i> Guardar cambio';
+            }
+
+            async function cambiarEstatus() {
+                const nuevoEstatusCodigo = estatusSelect?.value || '';
+                if (!nuevoEstatusCodigo) {
+                    alert('Selecciona el nuevo estatus.');
+                    estatusSelect?.focus();
+                    return;
+                }
+
+                bloquear(true);
+
+                try {
+                    const response = await fetch(cambiarEstatusUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({
+                            pedidoID: pedidoId,
+                            nuevoEstatusCodigo: nuevoEstatusCodigo,
+                            observaciones: observaciones?.value?.trim() || null
+                        })
+                    });
+
+                    let data = null;
+                    try { data = await response.json(); } catch { }
+
+                    if (!response.ok || !data?.ok) {
+                        throw new Error(data?.mensaje || `No fue posible cambiar el estatus (${response.status}).`);
+                    }
+
+                    window.location.reload();
+                } catch (error) {
+                    cerrarModal();
+                    mostrarError(error?.message || 'No fue posible cambiar el estatus del pedido.');
+                    bloquear(false);
+                }
+            }
+
+            btnAbrir?.addEventListener('click', abrirModal);
+            btnCerrar?.addEventListener('click', cerrarModal);
+            btnCancelar?.addEventListener('click', cerrarModal);
+            btnGuardar?.addEventListener('click', cambiarEstatus);
+
+            modal?.addEventListener('click', event => {
+                if (event.target === modal) cerrarModal();
+            });
+
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && modal?.classList.contains('open')) cerrarModal();
+            });
+        })();
+    </script>
+}

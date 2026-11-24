@@ -1,0 +1,1465 @@
+﻿@using System
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@using System.Text.Json
+@model SistemaNutri.Models.CoordinacionPrecioMercadoCerdoPaginaVm
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+    ViewData["Title"] = "Histórico de precio del cerdo";
+
+    var precioActual = Model?.PrecioActual;
+
+    var resumen = Model?.Resumen
+        ?? new SistemaNutri.Models.CoordinacionPrecioMercadoCerdoResumenVm
+        {
+            Anio = DateTime.Today.Year
+        };
+
+    var filtros = Model?.Filtros
+        ?? new SistemaNutri.Models.CoordinacionPrecioMercadoCerdoFiltroVm
+        {
+            Anio = DateTime.Today.Year
+        };
+
+    var historico = Model?.Historico
+        ?? new List<SistemaNutri.Models.CoordinacionPrecioMercadoCerdoHistoricoVm>();
+
+    var anios = Model?.AniosDisponibles
+        ?? new List<int>();
+
+    var datosGrafica = historico
+        .OrderBy(x => x.Fecha)
+        .Select(x => new
+        {
+            fecha = x.Fecha.ToString("yyyy-MM-dd"),
+            etiqueta = x.Fecha.ToString("dd/MM/yyyy"),
+            precio = x.PrecioKg
+        })
+        .ToList();
+
+    var jsonGrafica = JsonSerializer.Serialize(datosGrafica);
+
+    var variacionAnual = resumen.VariacionAnual;
+    var variacionAnualPorcentaje = resumen.VariacionAnualPorcentaje;
+
+    string ClaseVariacion(decimal? valor)
+    {
+        if (!valor.HasValue || valor.Value == 0)
+            return "neutral";
+
+        return valor.Value > 0
+            ? "positive"
+            : "negative";
+    }
+
+    string IconoVariacion(decimal? valor)
+    {
+        if (!valor.HasValue || valor.Value == 0)
+            return "fa-minus";
+
+        return valor.Value > 0
+            ? "fa-arrow-trend-up"
+            : "fa-arrow-trend-down";
+    }
+
+    string TextoMes(int? mes)
+    {
+        if (!mes.HasValue)
+            return "Todos los meses";
+
+        var nombre = CultureInfo
+            .GetCultureInfo("es-MX")
+            .DateTimeFormat
+            .GetMonthName(mes.Value);
+
+        return CultureInfo
+            .GetCultureInfo("es-MX")
+            .TextInfo
+            .ToTitleCase(nombre);
+    }
+}
+
+@section Styles {
+    <style>
+        :root {
+            --coord-blue: #00588f;
+            --coord-blue-dark: #003c68;
+            --coord-blue-soft: #eef7fc;
+            --coord-green: #278a44;
+            --coord-green-soft: #edf8f0;
+            --coord-red: #b82d2d;
+            --coord-red-soft: #fff0f0;
+            --coord-orange: #c97806;
+            --coord-orange-soft: #fff7e8;
+            --coord-border: #dfe7ef;
+            --coord-text: #263a4e;
+            --coord-muted: #7e8c9d;
+            --coord-bg: #f4f7fa;
+            --coord-card: #fff;
+        }
+
+        .history-page {
+            min-height: calc(100vh - 60px);
+            padding: 28px 38px 46px;
+            background: var(--coord-bg);
+            color: var(--coord-text);
+        }
+
+        .history-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .history-eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 7px;
+            color: var(--coord-green);
+            text-transform: uppercase;
+            letter-spacing: .055em;
+            font-size: .86rem;
+            font-weight: 800;
+        }
+
+        .history-title {
+            margin: 0;
+            color: #082f54;
+            font-size: 2rem;
+            font-weight: 850;
+            line-height: 1.1;
+        }
+
+        .history-subtitle {
+            margin: 9px 0 0;
+            max-width: 780px;
+            color: #6b7b8e;
+            font-size: .96rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            min-height: 46px;
+            padding: 0 17px;
+            border-radius: 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font-weight: 800;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            transition: .16s ease;
+        }
+
+        .btn-primary {
+            background: var(--coord-blue);
+            color: #fff;
+        }
+
+            .btn-primary:hover {
+                background: var(--coord-blue-dark);
+                color: #fff;
+            }
+
+        .btn-secondary {
+            background: #fff;
+            border-color: #d8e1ea;
+            color: #52657a;
+        }
+
+            .btn-secondary:hover {
+                background: #f9fbfc;
+                color: #27455f;
+            }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: #fff;
+            border: 1px solid var(--coord-border);
+            border-radius: 15px;
+            padding: 17px 18px;
+            min-width: 0;
+        }
+
+        .summary-label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 7px;
+            color: #748399;
+            font-size: .8rem;
+            font-weight: 750;
+        }
+
+        .summary-value {
+            color: #123b5f;
+            font-size: 1.48rem;
+            font-weight: 850;
+            line-height: 1.1;
+        }
+
+            .summary-value.positive {
+                color: #278342;
+            }
+
+            .summary-value.negative {
+                color: #bc3030;
+            }
+
+            .summary-value.neutral {
+                color: #596a7c;
+            }
+
+        .summary-note {
+            margin-top: 6px;
+            color: #95a1b0;
+            font-size: .74rem;
+        }
+
+        .panel {
+            background: #fff;
+            border: 1px solid var(--coord-border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            min-height: 70px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--coord-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .panel-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-icon {
+            width: 41px;
+            height: 41px;
+            border-radius: 11px;
+            background: var(--coord-blue-soft);
+            color: var(--coord-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 41px;
+        }
+
+        .panel-title {
+            margin: 0;
+            color: #1d405d;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .panel-subtitle {
+            margin: 3px 0 0;
+            color: #8d9aaa;
+            font-size: .79rem;
+        }
+
+        .filters-form {
+            padding: 18px 20px;
+            display: grid;
+            grid-template-columns: 170px 170px 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .filter-field label {
+            display: block;
+            margin-bottom: 5px;
+            color: #596a7d;
+            font-size: .76rem;
+            font-weight: 750;
+        }
+
+        .filter-control {
+            width: 100%;
+            height: 43px;
+            padding: 0 11px;
+            border: 1px solid #d7e0e9;
+            border-radius: 10px;
+            background: #fff;
+            color: #33485d;
+            outline: none;
+        }
+
+            .filter-control:focus {
+                border-color: #72acd0;
+                box-shadow: 0 0 0 3px rgba(0, 88, 143, .07);
+            }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-filter,
+        .btn-clear {
+            min-height: 43px;
+            padding: 0 14px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            text-decoration: none;
+            border: 1px solid transparent;
+            font-size: .81rem;
+            font-weight: 750;
+            white-space: nowrap;
+        }
+
+        .btn-filter {
+            border: 0;
+            background: var(--coord-blue);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .btn-clear {
+            background: #fff;
+            color: #607085;
+            border-color: #d7e0e9;
+        }
+
+        .period-info {
+            padding: 12px 20px;
+            border-top: 1px solid #eef2f5;
+            background: #fafcfd;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            color: #78889a;
+            font-size: .79rem;
+        }
+
+            .period-info strong {
+                color: #3e5266;
+            }
+
+        .chart-body {
+            padding: 20px;
+        }
+
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 370px;
+            min-height: 370px;
+        }
+
+        #historyPriceChart {
+            display: block;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .chart-tooltip {
+            display: none;
+            position: absolute;
+            z-index: 5;
+            transform: translate(-50%, -115%);
+            border-radius: 8px;
+            padding: 7px 9px;
+            pointer-events: none;
+            white-space: nowrap;
+            background: #173650;
+            color: #fff;
+            font-size: .75rem;
+        }
+
+        .chart-empty {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+            color: #93a0af;
+        }
+
+            .chart-empty i {
+                color: #bdc5cf;
+                font-size: 2rem;
+            }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .history-table {
+            width: 100%;
+            min-width: 1100px;
+            border-collapse: collapse;
+        }
+
+            .history-table th {
+                padding: 12px 13px;
+                text-align: left;
+                background: #f7f9fb;
+                color: #69798c;
+                border-bottom: 1px solid #dde6ee;
+                font-size: .7rem;
+                text-transform: uppercase;
+                letter-spacing: .035em;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+
+            .history-table td {
+                padding: 13px;
+                border-bottom: 1px solid #edf1f5;
+                color: #42556a;
+                font-size: .82rem;
+                vertical-align: middle;
+            }
+
+            .history-table tbody tr:hover {
+                background: #fbfcfd;
+            }
+
+            .history-table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+
+        .date-main {
+            color: #1c405f;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .price-main {
+            color: #123d61;
+            font-size: .9rem;
+            font-weight: 850;
+            white-space: nowrap;
+        }
+
+        .variation-badge {
+            min-height: 26px;
+            padding: 0 8px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .73rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+            .variation-badge.positive {
+                background: var(--coord-green-soft);
+                color: var(--coord-green);
+            }
+
+            .variation-badge.negative {
+                background: var(--coord-red-soft);
+                color: var(--coord-red);
+            }
+
+            .variation-badge.neutral {
+                background: #f0f3f6;
+                color: #67778a;
+            }
+
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 7px;
+            background: #edf6fb;
+            color: #326987;
+            font-size: .71rem;
+            font-weight: 750;
+            white-space: nowrap;
+        }
+
+        .observation-cell {
+            max-width: 290px;
+            color: #728094 !important;
+        }
+
+        .empty-state {
+            padding: 55px 20px;
+            text-align: center;
+            color: #8d9bab;
+        }
+
+            .empty-state i {
+                margin-bottom: 10px;
+                color: #bac3cd;
+                font-size: 2.2rem;
+            }
+
+            .empty-state h3 {
+                margin: 0 0 5px;
+                color: #56687a;
+                font-size: 1rem;
+            }
+
+            .empty-state p {
+                margin: 0;
+                font-size: .82rem;
+            }
+
+        .table-footer {
+            padding: 13px 18px;
+            border-top: 1px solid #e5ebf1;
+            background: #fbfcfd;
+            color: #8190a2;
+            font-size: .77rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        @@media (max-width: 1350px) {
+            .summary-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .filters-form {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+
+            .filter-actions {
+                grid-column: 1 / -1;
+                justify-content: flex-end;
+            }
+        }
+
+        @@media (max-width: 900px) {
+            .history-header {
+                flex-direction: column;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+                .header-actions a {
+                    flex: 1;
+                }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .filters-form {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .filter-actions {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @@media (max-width: 620px) {
+            .history-page {
+                padding: 20px 15px 40px;
+            }
+
+            .history-title {
+                font-size: 1.5rem;
+            }
+
+            .summary-grid,
+            .filters-form {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-actions {
+                grid-column: auto;
+                flex-direction: column-reverse;
+            }
+
+            .btn-filter,
+            .btn-clear {
+                width: 100%;
+            }
+
+            .header-actions {
+                flex-direction: column;
+            }
+
+            .table-footer,
+            .period-info {
+                flex-direction: column;
+            }
+        }
+    </style>
+}
+
+<div class="history-page">
+
+    <div class="history-header">
+
+        <div>
+            <div class="history-eyebrow">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                Coordinación · Rastro · Precios
+            </div>
+
+            <h1 class="history-title">
+                Histórico de precio del cerdo
+            </h1>
+
+            <p class="history-subtitle">
+                Consulta la evolución diaria del precio de mercado,
+                compara meses y años y conserva la trazabilidad de las
+                referencias utilizadas por Coordinación.
+            </p>
+        </div>
+
+        <div class="header-actions">
+
+            <a asp-controller="Coordinacion"
+               asp-action="PedidosRastro"
+               class="btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i>
+                Rastro
+            </a>
+
+            <a asp-controller="Coordinacion"
+               asp-action="PrecioMercadoCerdo"
+               class="btn-primary">
+                <i class="fa-solid fa-peso-hanging"></i>
+                Precio del día
+            </a>
+
+        </div>
+
+    </div>
+
+    <section class="summary-grid">
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                <i class="fa-solid fa-calendar-day"></i>
+                Último precio
+            </div>
+
+            <div class="summary-value">
+                @(precioActual?.PrecioKg.ToString("C2") ?? "—")
+            </div>
+
+            <div class="summary-note">
+                @(precioActual != null
+                    ? precioActual.Fecha.ToString("dd/MM/yyyy")
+                    : "Sin registros")
+            </div>
+
+        </div>
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                <i class="fa-solid fa-arrow-down"></i>
+                Mínimo @resumen.Anio
+            </div>
+
+            <div class="summary-value">
+                @(resumen.PrecioMinimo?.ToString("C2") ?? "—")
+            </div>
+
+            <div class="summary-note">
+                Menor precio registrado
+            </div>
+
+        </div>
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                <i class="fa-solid fa-arrow-up"></i>
+                Máximo @resumen.Anio
+            </div>
+
+            <div class="summary-value">
+                @(resumen.PrecioMaximo?.ToString("C2") ?? "—")
+            </div>
+
+            <div class="summary-note">
+                Mayor precio registrado
+            </div>
+
+        </div>
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                <i class="fa-solid fa-chart-simple"></i>
+                Promedio @resumen.Anio
+            </div>
+
+            <div class="summary-value">
+                @(resumen.PrecioPromedio?.ToString("C2") ?? "—")
+            </div>
+
+            <div class="summary-note">
+                @resumen.DiasCapturados días registrados
+            </div>
+
+        </div>
+
+        <div class="summary-card">
+
+            <div class="summary-label">
+                <i class="fa-solid @IconoVariacion(variacionAnual)"></i>
+                Variación anual
+            </div>
+
+            <div class="summary-value @ClaseVariacion(variacionAnual)">
+                @if (variacionAnual.HasValue)
+                {
+                    <text>
+                        @(variacionAnual.Value > 0 ? "+" : "")
+                        @variacionAnual.Value.ToString("C2")
+                    </text>
+                }
+                else
+                {
+                    <text>—</text>
+                }
+            </div>
+
+            <div class="summary-note">
+                @if (variacionAnualPorcentaje.HasValue)
+                {
+                    <text>
+                        @(variacionAnualPorcentaje.Value > 0 ? "+" : "")
+                        @variacionAnualPorcentaje.Value.ToString("N2")%
+                        vs. inicio del año
+                    </text>
+                }
+                else
+                {
+                    <text>Sin referencia suficiente</text>
+                }
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div class="panel-title-wrap">
+
+                <div class="panel-icon">
+                    <i class="fa-solid fa-filter"></i>
+                </div>
+
+                <div>
+                    <h2 class="panel-title">
+                        Periodo de consulta
+                    </h2>
+
+                    <p class="panel-subtitle">
+                        Selecciona un año completo, un mes o un rango específico.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <form method="get"
+              asp-controller="Coordinacion"
+              asp-action="HistoricoPrecioMercadoCerdo"
+              class="filters-form">
+
+            <div class="filter-field">
+
+                <label for="Anio">
+                    Año
+                </label>
+
+                <select id="Anio"
+                        name="Anio"
+                        class="filter-control">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                    @foreach (var anio in anios)
+                    {
+                        if (filtros.Anio == anio)
+                        {
+                            <option value="@anio" selected>
+                                @anio
+                            </option>
+                        }
+                        else
+                        {
+                            <option value="@anio">
+                                @anio
+                            </option>
+                        }
+                    }
+
+                </select>
+
+            </div>
+
+            <div class="filter-field">
+
+                <label for="Mes">
+                    Mes
+                </label>
+
+                <select id="Mes"
+                        name="Mes"
+                        class="filter-control">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                    @for (var mes = 1; mes <= 12; mes++)
+                    {
+                        var nombre = CultureInfo
+                            .GetCultureInfo("es-MX")
+                            .DateTimeFormat
+                            .GetMonthName(mes);
+
+                        nombre = CultureInfo
+                            .GetCultureInfo("es-MX")
+                            .TextInfo
+                            .ToTitleCase(nombre);
+
+                        if (filtros.Mes == mes)
+                        {
+                            <option value="@mes" selected>
+                                @nombre
+                            </option>
+                        }
+                        else
+                        {
+                            <option value="@mes">
+                                @nombre
+                            </option>
+                        }
+                    }
+
+                </select>
+
+            </div>
+
+            <div class="filter-field">
+
+                <label for="FechaDesde">
+                    Desde
+                </label>
+
+                <input id="FechaDesde"
+                       name="FechaDesde"
+                       type="date"
+                       class="filter-control"
+                       value="@filtros.FechaDesde?.ToString("yyyy-MM-dd")" />
+
+            </div>
+
+            <div class="filter-field">
+
+                <label for="FechaHasta">
+                    Hasta
+                </label>
+
+                <input id="FechaHasta"
+                       name="FechaHasta"
+                       type="date"
+                       class="filter-control"
+                       value="@filtros.FechaHasta?.ToString("yyyy-MM-dd")" />
+
+            </div>
+
+            <div class="filter-actions">
+
+                <a asp-controller="Coordinacion"
+                   asp-action="HistoricoPrecioMercadoCerdo"
+                   class="btn-clear">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Limpiar
+                </a>
+
+                <button type="submit"
+                        class="btn-filter">
+                    <i class="fa-solid fa-filter"></i>
+                    Aplicar
+                </button>
+
+            </div>
+
+        </form>
+
+        <div class="period-info">
+
+            <span>
+                Periodo:
+                <strong>
+                    @(filtros.Anio?.ToString() ?? "Todos los años")
+                    ·
+                    @TextoMes(filtros.Mes)
+                </strong>
+            </span>
+
+            <span>
+                Registros encontrados:
+                <strong>@historico.Count</strong>
+            </span>
+
+        </div>
+
+    </section>
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div class="panel-title-wrap">
+
+                <div class="panel-icon">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+
+                <div>
+                    <h2 class="panel-title">
+                        Evolución del precio
+                    </h2>
+
+                    <p class="panel-subtitle">
+                        Tendencia diaria del periodo seleccionado.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="chart-body">
+
+            <div id="chartContainer"
+                 class="chart-wrap">
+
+                <div id="chartTooltip"
+                     class="chart-tooltip">
+                </div>
+
+                <svg id="historyPriceChart"
+                     viewBox="0 0 1000 340"
+                     preserveAspectRatio="none"
+                     role="img"
+                     aria-label="Gráfica histórica del precio del cerdo">
+                </svg>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div class="panel-title-wrap">
+
+                <div class="panel-icon">
+                    <i class="fa-solid fa-table-list"></i>
+                </div>
+
+                <div>
+                    <h2 class="panel-title">
+                        Histórico diario
+                    </h2>
+
+                    <p class="panel-subtitle">
+                        Registro completo de precios capturados por fecha.
+                    </p>
+                </div>
+
+            </div>
+
+            <strong style="font-size:.8rem;color:#64768a;">
+                @historico.Count registro@(historico.Count == 1 ? "" : "s")
+            </strong>
+
+        </div>
+
+        @if (historico.Count == 0)
+        {
+            <div class="empty-state">
+
+                <i class="fa-solid fa-calendar-xmark"></i>
+
+                <h3>
+                    No hay precios para este periodo
+                </h3>
+
+                <p>
+                    Cambia los filtros o registra nuevos precios desde la pantalla del precio diario.
+                </p>
+
+            </div>
+        }
+        else
+        {
+            <div class="table-wrap">
+
+                <table class="history-table">
+
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Día</th>
+                            <th>Precio/kg</th>
+                            <th>Anterior</th>
+                            <th>Variación</th>
+                            <th>%</th>
+                            <th>Fuente</th>
+                            <th>Persona consultada</th>
+                            <th>Observaciones</th>
+                            <th>Capturado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var item in historico.OrderByDescending(x => x.Fecha))
+                        {
+                            var claseVariacion =
+                                ClaseVariacion(item.VariacionPrecio);
+
+                            <tr>
+
+                                <td class="date-main">
+                                    @item.Fecha.ToString("dd/MM/yyyy")
+                                </td>
+
+                                <td>
+                                    @item.DiaSemana
+                                </td>
+
+                                <td class="price-main">
+                                    @item.PrecioKg.ToString("C2")
+                                </td>
+
+                                <td>
+                                    @(item.PrecioAnterior?.ToString("C2") ?? "—")
+                                </td>
+
+                                <td>
+                                    <span class="variation-badge @claseVariacion">
+
+                                        <i class="fa-solid @IconoVariacion(item.VariacionPrecio)"></i>
+
+                                        @if (item.VariacionPrecio.HasValue)
+                                        {
+                                            <text>
+                                                @(item.VariacionPrecio.Value > 0 ? "+" : "")
+                                                @item.VariacionPrecio.Value.ToString("C2")
+                                            </text>
+                                        }
+                                        else
+                                        {
+                                            <text>—</text>
+                                        }
+
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (item.VariacionPorcentaje.HasValue)
+                                    {
+                                        <span class="@claseVariacion"
+                                              style="font-weight:800;">
+                                            @(item.VariacionPorcentaje.Value > 0 ? "+" : "")
+                                            @item.VariacionPorcentaje.Value.ToString("N2")%
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="source-badge">
+                                        <i class="fa-solid fa-phone"></i>
+                                        @(string.IsNullOrWhiteSpace(item.FuenteCodigo)
+                                            ? "LLAMADA"
+                                            : item.FuenteCodigo)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(item.ContactoReferencia)
+                                        ? "—"
+                                        : item.ContactoReferencia)
+                                </td>
+
+                                <td class="observation-cell">
+                                    @(string.IsNullOrWhiteSpace(item.Observaciones)
+                                        ? "—"
+                                        : item.Observaciones)
+                                </td>
+
+                                <td>
+                                    <div>
+                                        @item.FechaCaptura.ToString("dd/MM/yyyy")
+                                    </div>
+
+                                    <small style="color:#97a3b1;">
+                                        @item.FechaCaptura.ToString("HH:mm")
+                                    </small>
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="table-footer">
+
+                <span>
+                    Total de días con precio capturado:
+                    <strong>@historico.Count</strong>
+                </span>
+
+                @if (historico.Count > 0)
+                {
+                    <span>
+                        Desde
+                        <strong>
+                            @historico.Min(x => x.Fecha).ToString("dd/MM/yyyy")
+                        </strong>
+                        hasta
+                        <strong>
+                            @historico.Max(x => x.Fecha).ToString("dd/MM/yyyy")
+                        </strong>
+                    </span>
+                }
+
+            </div>
+        }
+
+    </section>
+
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            "use strict";
+
+            const datosGrafica = @Html.Raw(jsonGrafica);
+
+            function dibujarGrafica() {
+                const svg =
+                    document.getElementById("historyPriceChart");
+
+                const container =
+                    document.getElementById("chartContainer");
+
+                const tooltip =
+                    document.getElementById("chartTooltip");
+
+                if (!svg || !container)
+                    return;
+
+                svg.innerHTML = "";
+
+                if (!Array.isArray(datosGrafica) ||
+                    datosGrafica.length === 0) {
+
+                    svg.style.display = "none";
+
+                    const empty =
+                        document.createElement("div");
+
+                    empty.className = "chart-empty";
+
+                    empty.innerHTML = `
+                            <i class="fa-solid fa-chart-line"></i>
+                            <strong>No hay información para graficar</strong>
+                            <span>Cambia los filtros o registra precios para este periodo.</span>
+                        `;
+
+                    container.appendChild(empty);
+
+                    return;
+                }
+
+                const width = 1000;
+                const height = 340;
+
+                const left = 62;
+                const right = 28;
+                const top = 22;
+                const bottom = 48;
+
+                const chartWidth =
+                    width - left - right;
+
+                const chartHeight =
+                    height - top - bottom;
+
+                const valores =
+                    datosGrafica
+                        .map(x => Number(x.precio))
+                        .filter(x => Number.isFinite(x));
+
+                if (valores.length === 0)
+                    return;
+
+                let min =
+                    Math.min(...valores);
+
+                let max =
+                    Math.max(...valores);
+
+                if (min === max) {
+                    min -= 1;
+                    max += 1;
+                }
+
+                const margen =
+                    Math.max((max - min) * .14, .50);
+
+                min -= margen;
+                max += margen;
+
+                const ns =
+                    "http://www.w3.org/2000/svg";
+
+                function crearElemento(nombre, atributos = {}) {
+                    const elemento =
+                        document.createElementNS(ns, nombre);
+
+                    Object.entries(atributos)
+                        .forEach(([key, value]) => {
+                            elemento.setAttribute(key, value);
+                        });
+
+                    return elemento;
+                }
+
+                function xPos(index) {
+                    if (datosGrafica.length === 1)
+                        return left + chartWidth / 2;
+
+                    return left +
+                        (index / (datosGrafica.length - 1)) *
+                        chartWidth;
+                }
+
+                function yPos(valor) {
+                    return top +
+                        ((max - valor) / (max - min)) *
+                        chartHeight;
+                }
+
+                for (let i = 0; i <= 5; i++) {
+                    const y =
+                        top + (chartHeight / 5) * i;
+
+                    const valor =
+                        max - ((max - min) / 5) * i;
+
+                    const line =
+                        crearElemento("line", {
+                            x1: left,
+                            x2: width - right,
+                            y1: y,
+                            y2: y,
+                            stroke: "#e9eef3",
+                            "stroke-width": "1"
+                        });
+
+                    svg.appendChild(line);
+
+                    const label =
+                        crearElemento("text", {
+                            x: left - 10,
+                            y: y + 4,
+                            "text-anchor": "end",
+                            fill: "#8694a5",
+                            "font-size": "11"
+                        });
+
+                    label.textContent =
+                        "$" + valor.toFixed(2);
+
+                    svg.appendChild(label);
+                }
+
+                const puntos =
+                    datosGrafica.map((item, index) => ({
+                        x: xPos(index),
+                        y: yPos(Number(item.precio)),
+                        item
+                    }));
+
+                const pathData =
+                    puntos
+                        .map((p, index) =>
+                            `${index === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+                        .join(" ");
+
+                const areaData =
+                    `${pathData}
+                         L ${puntos[puntos.length - 1].x} ${top + chartHeight}
+                         L ${puntos[0].x} ${top + chartHeight}
+                         Z`;
+
+                const area =
+                    crearElemento("path", {
+                        d: areaData,
+                        fill: "rgba(0,88,143,.07)",
+                        stroke: "none"
+                    });
+
+                svg.appendChild(area);
+
+                const linea =
+                    crearElemento("path", {
+                        d: pathData,
+                        fill: "none",
+                        stroke: "#00588f",
+                        "stroke-width": "3",
+                        "stroke-linecap": "round",
+                        "stroke-linejoin": "round"
+                    });
+
+                svg.appendChild(linea);
+
+                const maxEtiquetas = 10;
+
+                const salto =
+                    Math.max(
+                        1,
+                        Math.ceil(
+                            datosGrafica.length /
+                            maxEtiquetas));
+
+                puntos.forEach((p, index) => {
+
+                    const circle =
+                        crearElemento("circle", {
+                            cx: p.x,
+                            cy: p.y,
+                            r: "4.3",
+                            fill: "#ffffff",
+                            stroke: "#00588f",
+                            "stroke-width": "2.4",
+                            style: "cursor:pointer"
+                        });
+
+                    circle.addEventListener(
+                        "mouseenter",
+                        event => {
+
+                            if (!tooltip)
+                                return;
+
+                            tooltip.innerHTML =
+                                `<strong>${p.item.etiqueta}</strong> · $${Number(p.item.precio).toFixed(2)}/kg`;
+
+                            tooltip.style.display =
+                                "block";
+
+                            const containerRect =
+                                container.getBoundingClientRect();
+
+                            const circleRect =
+                                event.target.getBoundingClientRect();
+
+                            tooltip.style.left =
+                                `${circleRect.left -
+                                containerRect.left +
+                                circleRect.width / 2}px`;
+
+                            tooltip.style.top =
+                                `${circleRect.top -
+                                containerRect.top}px`;
+                        });
+
+                    circle.addEventListener(
+                        "mouseleave",
+                        () => {
+                            if (tooltip)
+                                tooltip.style.display = "none";
+                        });
+
+                    svg.appendChild(circle);
+
+                    if (index % salto === 0 ||
+                        index === puntos.length - 1) {
+
+                        const label =
+                            crearElemento("text", {
+                                x: p.x,
+                                y: height - 17,
+                                "text-anchor": "middle",
+                                fill: "#8795a6",
+                                "font-size": "10"
+                            });
+
+                        const partes =
+                            p.item.etiqueta.split("/");
+
+                        label.textContent =
+                            partes.length >= 2
+                                ? `${partes[0]}/${partes[1]}`
+                                : p.item.etiqueta;
+
+                        svg.appendChild(label);
+                    }
+                });
+            }
+
+            dibujarGrafica();
+
+        })();
+    </script>
+}

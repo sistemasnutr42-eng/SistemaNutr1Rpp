@@ -1,0 +1,159 @@
+@model SistemaNutri.Models.AlmDashboardVm
+@using System.Globalization
+@{
+    var links = new[] {
+        new { Key="Index",Title="Centro", Icon="fa-solid fa-house" },
+        new { Key="Inventario",Title="Inventario", Icon="fa-solid fa-boxes-stacked" },
+        new { Key="Movimientos",Title="Movimientos", Icon="fa-solid fa-right-left" },
+        new { Key="Recepciones",Title="Recepciones", Icon="fa-solid fa-truck-ramp-box" },
+        new { Key="Bsp",Title="BSP", Icon="fa-solid fa-dna" },
+        new { Key="Dosis",Title="Dosis", Icon="fa-solid fa-vials" },
+        new { Key="Alimento",Title="Alimento", Icon="fa-solid fa-wheat-awn" },
+        new { Key="Animales",Title="Animales", Icon="fa-solid fa-paw" },
+        new { Key="Referencias",Title="Historico Excel", Icon="fa-solid fa-file-excel" },
+        new { Key="Indicadores",Title="Indicadores", Icon="fa-solid fa-chart-line" }
+    };
+    bool stockSection = Model.Seccion is "Inventario" or "Movimientos" or "Recepciones";
+    bool historicalSection = Model.Seccion is "Bsp" or "Dosis" or "Alimento" or "Animales" or "Referencias";
+    var maxTipo = Math.Max(1, Model.Resumen.Any() ? Model.Resumen.Max(x=>x.Registros) : 1);
+}
+<div class="alm-page">
+  <section class="alm-hero">
+    <div class="alm-hero-content">
+      <span class="alm-kicker"><i class="fa-solid fa-layer-group"></i> NS GROUP <span class="alm-dot"></span> CENTRO OPERATIVO</span>
+      <h1>@Model.Titulo</h1>
+      <p>@Model.Subtitulo</p>
+      <div class="alm-tags"><span><i class="fa-solid fa-circle-check"></i> Trazabilidad</span><span><i class="fa-solid fa-shield-halved"></i> Acceso controlado</span><span><i class="fa-solid fa-clock-rotate-left"></i> Fuentes verificables</span></div>
+    </div>
+    <div class="alm-hero-right"><div class="alm-hero-symbol"><i class="fa-solid fa-warehouse"></i></div><span>ALMACENES</span><strong>BSP / GPN / NUTRI</strong></div>
+  </section>
+
+  <nav class="alm-subnav" aria-label="Secciones del modulo de almacen">
+    @foreach(var l in links) {
+      <a class="@(Model.Seccion==l.Key?"alm-nav-active":"")" href="@Url.Action(l.Key,"AlmacenIntegral")"><i class="@l.Icon"></i><span>@l.Title</span></a>
+    }
+  </nav>
+
+  <div class="alm-kpis">
+    <div class="alm-kpi"><span class="alm-kpi-icon blue"><i class="fa-solid fa-building"></i></span><div><small>Ubicaciones</small><strong>@Model.CantidadSedes.ToString("N0")</strong><span>Sedes en el catalogo</span></div></div>
+    <div class="alm-kpi"><span class="alm-kpi-icon teal"><i class="fa-solid fa-box"></i></span><div><small>Articulos</small><strong>@Model.CantidadArticulos.ToString("N0")</strong><span>Catalogo importado</span></div></div>
+    <div class="alm-kpi"><span class="alm-kpi-icon violet"><i class="fa-solid fa-file-excel"></i></span><div><small>Observaciones historicas</small><strong>@Model.CantidadReferencias.ToString("N0")</strong><span>Desde los 5 Excel</span></div></div>
+    <div class="alm-kpi"><span class="alm-kpi-icon amber"><i class="fa-solid fa-arrow-right-arrow-left"></i></span><div><small>Movimientos registrados</small><strong>@Model.CantidadMovimientos.ToString("N0")</strong><span>Solo inventario operativo</span></div></div>
+  </div>
+
+  @if(Model.Seccion=="Index") {
+    <div class="alm-section-head"><div><span>ESPACIOS DE TRABAJO</span><h2>Gestiona todos tus almacenes</h2></div><div class="alm-small-label">Selecciona un proceso para comenzar</div></div>
+    <div class="alm-card-grid">
+      <a href="@Url.Action("Bsp","AlmacenIntegral")" class="alm-route-card"><span class="alm-route-icon aqua"><i class="fa-solid fa-dna"></i></span><div><h3>BSP</h3><p>Sementales, cuarentena, materias primas y consumo de Tlaxcala.</p></div><span class="alm-arrow"><i class="fa-solid fa-arrow-up-right-from-square"></i></span></a>
+      <a href="@Url.Action("Inventario","AlmacenIntegral")" class="alm-route-card"><span class="alm-route-icon purple"><i class="fa-solid fa-boxes-stacked"></i></span><div><h3>GPN</h3><p>Chihuahua Sitios 1 y 2, almacen general y planta de alimento.</p></div><span class="alm-arrow"><i class="fa-solid fa-arrow-up-right-from-square"></i></span></a>
+      <a href="@Url.Action("Recepciones","AlmacenIntegral")" class="alm-route-card"><span class="alm-route-icon orange"><i class="fa-solid fa-truck-ramp-box"></i></span><div><h3>Nutriservicios</h3><p>Recepciones de compra, entrada de materiales y evidencia documental.</p></div><span class="alm-arrow"><i class="fa-solid fa-arrow-up-right-from-square"></i></span></a>
+      <a href="@Url.Action("Dosis","AlmacenIntegral")" class="alm-route-card"><span class="alm-route-icon blue"><i class="fa-solid fa-vials"></i></span><div><h3>Entregas de dosis</h3><p>Remisiones y geneticas historicas con referencia a los Excel.</p></div><span class="alm-arrow"><i class="fa-solid fa-arrow-up-right-from-square"></i></span></a>
+      <a href="@Url.Action("Alimento","AlmacenIntegral")" class="alm-route-card"><span class="alm-route-icon green"><i class="fa-solid fa-wheat-awn"></i></span><div><h3>Alimento</h3><p>Dietas, consumo, entradas y saldos registrados por fecha.</p></div><span class="alm-arrow"><i class="fa-solid fa-arrow-up-right-from-square"></i></span></a>
+      <a href="@Url.Action("Animales","AlmacenIntegral")" class="alm-route-card"><span class="alm-route-icon rose"><i class="fa-solid fa-paw"></i></span><div><h3>Animales y produccion</h3><p>Inventario, mortalidad y reportes por semana de granja.</p></div><span class="alm-arrow"><i class="fa-solid fa-arrow-up-right-from-square"></i></span></a>
+    </div>
+  }
+
+  @if(Model.Seccion is "Index" or "Indicadores") {
+    <div class="alm-grid-two">
+      <section class="alm-panel"><div class="alm-panel-header"><div><span>DATOS IMPORTADOS</span><h2>Cobertura por origen</h2></div><i class="fa-solid fa-chart-column"></i></div>
+      @if(Model.Resumen.Count==0) { <div class="alm-empty"><i class="fa-regular fa-folder-open"></i><p>Ejecuta el SQL 03 para cargar las referencias historicas.</p></div> }
+      @foreach(var t in Model.Resumen) {var width=Math.Max(3,(int)Math.Round(t.Registros*100.0/maxTipo));
+        <div class="alm-chart-row"><div class="alm-chart-label"><span>@t.Tipo.Replace('_',' ')</span><b>@t.Registros.ToString("N0")</b></div><div class="alm-chart-track"><div style="width:@width%"></div></div></div>
+      }
+      <div class="alm-chart-foot">Cantidades de registros, no suma de unidades distintas.</div>
+      </section>
+      <section class="alm-panel"><div class="alm-panel-header"><div><span>ALMACENES</span><h2>Sedes y unidades</h2></div><i class="fa-solid fa-location-dot"></i></div>
+      @foreach(var group in Model.Sedes.GroupBy(x=>x.Grupo)) {
+       <div class="alm-site-group"><div class="alm-group-title">@group.Key <span>@group.Count() ubicaciones</span></div><div class="alm-chips">@foreach(var site in group){<span><i class="fa-solid fa-circle"></i> @site.Nombre</span>}</div></div>
+      }
+      </section>
+    </div>
+  }
+
+  @if(Model.Seccion=="Inventario") {
+    <div class="alm-info"><i class="fa-solid fa-circle-info"></i><div><strong>Existencia operativa vs. inventario historico</strong><p>Los saldos del Excel son un corte historico. El saldo operativo inicia en 0 hasta registrar una entrada o ajuste validado. No se mezclan.</p></div></div>
+    <section class="alm-panel"><div class="alm-panel-header"><div><span>CATALOGO DE PRODUCTOS</span><h2>Inventario por articulo</h2></div><a class="alm-btn" href="@Url.Action("Movimientos","AlmacenIntegral")"><i class="fa-solid fa-plus"></i> Registrar movimiento</a></div>
+    <form class="alm-filters" method="get" action="@Url.Action("Inventario","AlmacenIntegral")"><input name="buscar" placeholder="Buscar codigo o articulo" value="@Model.Buscar"/><select name="sedeId"><option value="">Todas las sedes</option>@foreach(var site in Model.Sedes){<option value="@site.SedeID" selected="@(Model.SedeFiltro==site.SedeID)">@site.Grupo / @site.Nombre</option>}</select><button class="alm-btn" type="submit">Filtrar</button></form>
+    <div class="alm-table-wrap"><table class="alm-table"><thead><tr><th>Codigo</th><th>Articulo</th><th>Categoria</th><th>Unidad</th><th>Saldo operativo</th><th>Referencia Excel</th></tr></thead><tbody>
+    @foreach(var p in Model.Articulos){<tr><td><b class="alm-code">@p.Codigo</b></td><td>@p.Descripcion</td><td><span class="alm-pill neutral">@p.Categoria</span></td><td>@p.Unidad</td><td class="alm-num"><strong>@p.Existencia.ToString("N3")</strong></td><td class="alm-num">@(p.InventarioHistorico.HasValue?p.InventarioHistorico.Value.ToString("N3"):"Sin dato")</td></tr>}
+    </tbody></table></div>
+    </section>
+  }
+
+  @if(Model.Seccion is "Movimientos" or "Recepciones") {
+    <div class="alm-grid-two action-top">
+      <section class="alm-panel"><div class="alm-panel-header"><div><span>OPERACION</span><h2>@(Model.Seccion=="Recepciones"?"Registrar recepcion":"Registrar entrada, salida o traslado")</h2></div><i class="fa-solid fa-clipboard-check"></i></div>
+      @if(!Model.PuedeRegistrar){<div class="alm-info">Tu usuario tiene acceso de lectura. Solicita permiso operativo para registrar.</div>}
+      else {
+        <form method="post" enctype="multipart/form-data" action="@Url.Action("RegistrarMovimiento","AlmacenIntegral")" class="alm-form">
+          @Html.AntiForgeryToken()
+          <input type="hidden" name="OperacionID" value="@Model.ProximaOperacion" />
+          <div class="alm-form-grid"><label>Operacion<select name="Tipo" id="almType" required>
+           @if(Model.Seccion=="Recepciones"){<option value="ENTRADA">Recepcion / Entrada</option>}
+           else {<option value="ENTRADA">Entrada</option><option value="SALIDA">Salida</option><option value="TRANSFERENCIA">Transferencia</option><option value="AJUSTE_ENTRADA">Ajuste positivo</option><option value="AJUSTE_SALIDA">Ajuste negativo</option>}
+          </select></label>
+          <label>Almacen de origen / receptor<select name="SedeID" required><option value="">Selecciona un almacen</option>@foreach(var site in Model.Sedes){<option value="@site.SedeID">@site.Grupo - @site.Nombre</option>}</select></label></div>
+          <label>Articulo<select name="ArticuloID" required><option value="">Selecciona un producto</option>@foreach(var p in Model.Articulos){<option value="@p.ArticuloID">@p.Codigo - @p.Descripcion (@p.Unidad)</option>}</select></label>
+          <div class="alm-form-grid"><label>Cantidad positiva<input type="number" min="0.001" max="100000000" step="0.001" name="Cantidad" required placeholder="0.000" /></label><label>Referencia / O.C. / folio<input name="Referencia" maxlength="90" required placeholder="OC-2026-001 o DEMO-01" /></label></div>
+          @if(Model.Seccion!="Recepciones"){
+            <label id="almDestination" class="alm-hidden">Almacen destino (transferencia)<select name="DestinoSedeID"><option value="">Selecciona destino</option>@foreach(var site in Model.Sedes){<option value="@site.SedeID">@site.Grupo - @site.Nombre</option>}</select></label>
+          }
+          <label>Observaciones<textarea name="Observaciones" maxlength="400" rows="2" placeholder="Detalle de la operacion"></textarea></label>
+          <label>Evidencia (opcional)<input type="file" name="Evidencia" accept=".pdf,.png,.jpg,.jpeg"/><small>PDF o imagen, maximo 10 MB. Se almacena fuera de la carpeta publica.</small></label>
+          <button type="submit" class="alm-btn primary"><i class="fa-solid fa-floppy-disk"></i> Guardar registro</button>
+          <p class="alm-form-hint"><i class="fa-solid fa-lock"></i> Operacion unica con control de saldo y auditoria. No se permite stock negativo.</p>
+        </form>
+      }
+      </section>
+      <section class="alm-panel"><div class="alm-panel-header"><div><span>CONTROL</span><h2>@(Model.Seccion=="Recepciones"?"Compras y comprobantes":"Politicas de inventario")</h2></div><i class="fa-solid fa-shield-halved"></i></div>
+       <div class="alm-check-list"><div><i class="fa-solid fa-circle-check"></i><p><b>Entradas documentadas</b><br/>Cada recepcion registra producto, responsable y referencia.</p></div><div><i class="fa-solid fa-circle-check"></i><p><b>Movimiento auditable</b><br/>Fecha, usuario y cantidad quedan guardados.</p></div><div><i class="fa-solid fa-circle-check"></i><p><b>Sin saldos negativos</b><br/>La base rechaza salidas superiores al saldo disponible.</p></div></div>
+       @if(Model.Seccion=="Recepciones") {<a class="alm-foreign-link" href="/Compras/BandejaAlmacen"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ir a Bandeja de Almacen de Compras</a><p class="alm-muted">El registro de compras mantiene su flujo propio. Para evitar doble conteo, la entrada operativa de este modulo se registra por documento confirmado.</p>}
+      </section>
+    </div>
+  }
+
+  @if(Model.Seccion is "Index" or "Movimientos" or "Recepciones" or "Indicadores") {
+    <section class="alm-panel"><div class="alm-panel-header"><div><span>TRAZABILIDAD EN VIVO</span><h2>@(Model.Seccion=="Recepciones"?"Ultimas recepciones":"Ultimos movimientos")</h2></div><a class="alm-light-link" href="@Url.Action("Movimientos","AlmacenIntegral")">Ver movimientos <i class="fa-solid fa-arrow-right"></i></a></div>
+    @if(Model.Movimientos.Count==0){<div class="alm-empty"><i class="fa-regular fa-clipboard"></i><h3>Sin movimientos operativos</h3><p>Las referencias del Excel no se registraron como movimientos reales.</p></div>}
+    else {<div class="alm-table-wrap"><table class="alm-table"><thead><tr><th>Fecha UTC</th><th>Sede</th><th>Producto</th><th>Operacion</th><th>Cantidad</th><th>Referencia</th><th>Usuario</th></tr></thead><tbody>@foreach(var m in Model.Movimientos.Take(Model.Seccion=="Index"?8:80)){<tr><td>@m.FechaUTC.ToString("dd/MM/yyyy HH:mm")</td><td>@m.Sede</td><td>@m.Producto <small class="alm-table-sub">@m.Codigo</small></td><td><span class="alm-pill @(m.Tipo.Contains("SALIDA")?"danger":"success")">@m.Tipo.Replace('_',' ')</span></td><td class="alm-num">@m.Cantidad.ToString("N3") @m.Unidad</td><td>@m.Referencia</td><td>@m.Usuario</td></tr>}</tbody></table></div>}
+    </section>
+  }
+
+  @if(Model.Seccion is "Recepciones" or "Movimientos") {
+    <section class="alm-panel"><div class="alm-panel-header"><div><span>DOCUMENTACION</span><h2>Evidencias adjuntas</h2></div><i class="fa-solid fa-file-shield"></i></div>
+    @if(Model.Evidencias.Count==0){<div class="alm-empty"><i class="fa-regular fa-file-lines"></i><p>No se han subido comprobantes a las operaciones de este modulo.</p></div>}
+    else{<div class="alm-table-wrap"><table class="alm-table"><thead><tr><th>Referencia</th><th>Archivo</th><th>Fecha UTC</th><th>Responsable</th><th>Accion</th></tr></thead><tbody>@foreach(var ev in Model.Evidencias){<tr><td>@ev.Referencia</td><td>@ev.NombreOriginal</td><td>@ev.FechaUTC.ToString("dd/MM/yyyy HH:mm")</td><td>@ev.Usuario</td><td><a class="alm-btn secondary" href="@Url.Action("Evidencia","AlmacenIntegral",new {id=ev.EvidenciaID})"><i class="fa-solid fa-download"></i> Ver</a></td></tr>}</tbody></table></div>}
+    </section>
+  }
+
+  @if(historicalSection || Model.Seccion=="Index") {
+    <section class="alm-panel">
+    <div class="alm-panel-header"><div><span>EXCEL ORIGINAL</span><h2>@(Model.Seccion=="Index"?"Vista previa del archivo historico": "Detalle de referencias")</h2></div><a class="alm-btn secondary" href="@Url.Action("ExportarCsv","AlmacenIntegral",new { tipo=Model.TipoFiltro })"><i class="fa-solid fa-download"></i> Exportar CSV</a></div>
+    @if(Model.Seccion!="Index") {
+      <form class="alm-filters" method="get" action="@Url.Action(Model.Seccion,"AlmacenIntegral")"><input type="search" name="buscar" value="@Model.Buscar" placeholder="Buscar cliente, remision, articulo o codigo" />
+      @if(Model.Seccion=="Referencias"){<select name="tipo"><option value="">Todos los tipos</option>@foreach(var t in Model.Resumen){<option value="@t.Tipo" selected="@(Model.TipoFiltro==t.Tipo)">@t.Tipo</option>}</select>}
+      <button class="alm-btn" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button></form>
+    }
+    <div class="alm-reference-note"><i class="fa-solid fa-circle-info"></i> Datos importados de archivos Excel. Son referencias historicas, no saldos operativos actuales.</div>
+    @if(Model.Referencias.Count==0){<div class="alm-empty"><i class="fa-solid fa-file-excel"></i><h3>Sin referencias cargadas</h3><p>Ejecuta 03_IMPORTAR_REFERENCIAS_5_EXCEL.sql y verifica los resultados.</p></div>}
+    else {<div class="alm-table-wrap"><table class="alm-table"><thead><tr><th>Fecha</th><th>Origen / ubicacion</th><th>Codigo y concepto</th><th>Tipo</th><th>Cantidad</th><th>Entradas</th><th>Salidas</th><th>Saldo</th><th>Fuente</th></tr></thead><tbody>
+    @foreach(var r in Model.Referencias.Take(Model.Seccion=="Index"?7:180)){<tr><td>@(r.Fecha.HasValue?r.Fecha.Value.ToString("dd/MM/yyyy"):"-")</td><td>@r.Ubicacion</td><td><b>@r.Concepto</b><span class="alm-table-sub">@r.Codigo</span><span class="alm-table-sub">@r.Nota</span></td><td><span class="alm-pill neutral">@r.Tipo.Replace('_',' ')</span></td><td class="alm-num">@(r.Cantidad?.ToString("N2")??"-")</td><td class="alm-num">@(r.Entradas?.ToString("N2")??"-")</td><td class="alm-num">@(r.Salidas?.ToString("N2")??"-")</td><td class="alm-num">@(r.Saldo?.ToString("N2")??"-")</td><td class="alm-source"><span>@r.Archivo</span><small>@r.Hoja · fila @r.FilaExcel</small></td></tr>}
+    </tbody></table></div>}
+    </section>
+  }
+  <footer class="alm-footer"><i class="fa-solid fa-shield-halved"></i> Datos del proyecto SistemaNutri - Modo de desarrollo. Los registros historicos conservan su origen; los movimientos operativos requieren autorizacion.</footer>
+</div>
+<script>
+(function(){
+  const select = document.getElementById('almType');
+  const dest = document.getElementById('almDestination');
+  if (!select || !dest) return;
+  const update = () => {
+    const transfer = select.value === 'TRANSFERENCIA';
+    dest.classList.toggle('alm-hidden', !transfer);
+    const ctrl = dest.querySelector('select');
+    if (ctrl) { ctrl.required = transfer; if (!transfer) ctrl.value=''; }
+  };
+  select.addEventListener('change', update); update();
+})();
+</script>

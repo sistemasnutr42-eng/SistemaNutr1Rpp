@@ -1,0 +1,1255 @@
+﻿@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Text.Json
+@model SistemaNutri.Models.CoordinacionCrearPedidoVm
+
+@{
+    Layout = "~/Views/Shared/_LayoutSistema.cshtml";
+
+    var catalogos = Model?.Catalogos ?? new SistemaNutri.Models.CoordinacionCatalogosPedidoVm();
+    var tipoActual = catalogos.TiposPedido.FirstOrDefault(x => x.TipoPedidoID == Model.TipoPedidoID);
+    var tipoCodigo = (ViewData["TipoPedidoCodigo"]?.ToString()
+        ?? tipoActual?.Codigo
+        ?? string.Empty).Trim().ToUpperInvariant();
+    var tipoNombre = (ViewData["TipoPedidoNombre"]?.ToString()
+        ?? tipoActual?.Nombre
+        ?? "Pedido").Trim();
+
+    string AccionVolver() => tipoCodigo switch
+    {
+        "DOSIS" => "PedidosDosis",
+        "HEMBRAS" => "PedidosHembras",
+        "SEMENTALES" => "PedidosSementales",
+        "RASTRO" => "PedidosRastro",
+        _ => "Pedidos"
+    };
+
+    string IconoTipo() => tipoCodigo switch
+    {
+        "DOSIS" => "fa-solid fa-flask-vial",
+        "HEMBRAS" => "fa-solid fa-venus",
+        "SEMENTALES" => "fa-solid fa-mars",
+        "RASTRO" => "fa-solid fa-truck-fast",
+        _ => "fa-solid fa-file-circle-plus"
+    };
+
+    string TextoCantidad() => tipoCodigo switch
+    {
+        "DOSIS" => "Cantidad de dosis",
+        "HEMBRAS" => "Cantidad de hembras",
+        "SEMENTALES" => "Cantidad de sementales",
+        "RASTRO" => "Cantidad de animales",
+        _ => "Cantidad"
+    };
+
+    ViewData["Title"] = $"Nuevo pedido de {tipoNombre.ToLowerInvariant()}";
+
+    var productosJson = JsonSerializer.Serialize(catalogos.Productos.Select(x => new
+    {
+        productoId = x.ProductoID,
+        codigo = x.Codigo,
+        nombre = x.Nombre,
+        descripcion = x.Descripcion,
+        unidadMedida = x.UnidadMedida,
+        requiereLineaGenetica = x.RequiereLineaGenetica
+    }));
+
+    var lineasJson = JsonSerializer.Serialize(catalogos.LineasGeneticas.Select(x => new
+    {
+        lineaGeneticaId = x.LineaGeneticaID,
+        codigo = x.Codigo,
+        nombre = x.Nombre
+    }));
+
+    var tiposHembraJson = JsonSerializer.Serialize(catalogos.TiposHembra.Select(x => new
+    {
+        tipoHembraId = x.TipoHembraID,
+        codigo = x.Codigo,
+        nombre = x.Nombre,
+        descripcion = x.Descripcion
+    }));
+
+    var detallesInicialesJson = JsonSerializer.Serialize((Model.Detalles ?? new List<SistemaNutri.Models.CoordinacionPedidoRenglonCapturaVm>())
+        .Select(x => new
+        {
+            renglon = x.Renglon,
+            productoId = x.ProductoID,
+            lineaGeneticaId = x.LineaGeneticaID,
+            cantidadSolicitada = x.CantidadSolicitada,
+            pesoMinimoKg = x.PesoMinimoKg,
+            pesoMaximoKg = x.PesoMaximoKg,
+            especificaciones = x.Especificaciones,
+            observaciones = x.Observaciones,
+            fechaProduccionSolicitada = x.FechaProduccionSolicitada?.ToString("yyyy-MM-dd"),
+            especificacionesDosis = x.EspecificacionesDosis,
+            tipoHembraId = x.TipoHembraID,
+            referenciaProyecto = x.ReferenciaProyecto,
+            caracteristicasHembras = x.CaracteristicasHembras,
+            esImportacion = x.EsImportacion,
+            paisOrigen = x.PaisOrigen,
+            referenciaImportacion = x.ReferenciaImportacion,
+            caracteristicasSemental = x.CaracteristicasSemental,
+            kilogramosSolicitados = x.KilogramosSolicitados,
+            pesoPromedioObjetivoKg = x.PesoPromedioObjetivoKg,
+            especificacionesRastro = x.EspecificacionesRastro
+        }));
+}
+
+@Html.AntiForgeryToken()
+
+@section Estilos {
+    <style>
+        :root {
+            --coord-primary: #084F83;
+            --coord-primary-dark: #062F55;
+            --coord-primary-soft: #EFF6FB;
+            --coord-accent: #58A83F;
+            --coord-border: #E4E9EF;
+            --coord-text: #17212B;
+            --coord-muted: #667085;
+            --coord-danger: #B42318;
+            --coord-danger-bg: #FEF3F2;
+        }
+
+        .pedido-page {
+            width: 100%;
+        }
+
+        .pedido-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .pedido-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 5px;
+            color: var(--coord-accent);
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        .pedido-title {
+            margin: 0;
+            color: var(--coord-primary-dark);
+            font-size: 1.55rem;
+            font-weight: 850;
+            letter-spacing: -.02em;
+        }
+
+        .pedido-subtitle {
+            margin: 6px 0 0;
+            max-width: 780px;
+            color: var(--coord-muted);
+            font-size: .82rem;
+            line-height: 1.5;
+        }
+
+        .btn-back {
+            min-height: 38px;
+            padding: 8px 13px;
+            border: 1px solid #DCE2E8;
+            border-radius: 9px;
+            background: #fff;
+            color: #475467;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            text-decoration: none;
+            font-size: .74rem;
+            font-weight: 800;
+        }
+
+            .btn-back:hover {
+                background: #F8FAFC;
+                color: var(--coord-primary-dark);
+            }
+
+        .section-block {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--coord-border);
+        }
+
+            .section-block:last-of-type {
+                border-bottom: 0;
+            }
+
+        .section-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .section-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .section-icon {
+            width: 31px;
+            height: 31px;
+            min-width: 31px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--coord-primary-soft);
+            color: var(--coord-primary);
+            font-size: .76rem;
+        }
+
+        .section-title {
+            margin: 0;
+            color: #344054;
+            font-size: .87rem;
+            font-weight: 850;
+        }
+
+        .section-help {
+            margin-top: 2px;
+            color: #98A2B3;
+            font-size: .64rem;
+        }
+
+        .form-shell {
+            padding: 18px;
+            border: 1px solid var(--coord-border);
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(4,minmax(0,1fr));
+            gap: 12px;
+        }
+
+        .field.span-2 {
+            grid-column: span 2;
+        }
+
+        .field.span-3 {
+            grid-column: span 3;
+        }
+
+        .field.span-4 {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            display: block;
+            margin: 0 0 5px;
+            color: #475467;
+            font-size: .66rem;
+            font-weight: 800;
+        }
+
+        .field .required {
+            color: #D92D20;
+        }
+
+        .control {
+            width: 100%;
+            min-height: 38px;
+            border: 1px solid #DCE2E8;
+            border-radius: 8px;
+            background: #fff;
+            color: #344054;
+            padding: 8px 10px;
+            outline: none;
+            font-size: .73rem;
+            transition: .15s ease;
+        }
+
+        select.control {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        textarea.control {
+            min-height: 76px;
+            resize: vertical;
+        }
+
+        .control:focus {
+            border-color: #0B6FAF;
+            box-shadow: 0 0 0 3px rgba(11,111,175,.07);
+        }
+
+        .control:disabled {
+            background: #F8FAFC;
+            color: #98A2B3;
+            cursor: not-allowed;
+        }
+
+        .field-note {
+            margin-top: 4px;
+            color: #98A2B3;
+            font-size: .61rem;
+            line-height: 1.35;
+        }
+
+        .late-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            padding: 9px 10px;
+            border: 1px solid #E4E7EC;
+            border-radius: 8px;
+            background: #FBFCFD;
+        }
+
+            .late-line input {
+                width: 16px;
+                height: 16px;
+                margin-top: 1px;
+            }
+
+            .late-line label {
+                margin: 0;
+                color: #475467;
+                font-size: .7rem;
+                font-weight: 800;
+                cursor: pointer;
+            }
+
+            .late-line small {
+                display: block;
+                margin-top: 2px;
+                color: #98A2B3;
+                font-size: .61rem;
+                font-weight: 500;
+            }
+
+        .details-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .btn-add-row {
+            min-height: 34px;
+            padding: 6px 10px;
+            border: 1px solid #BCD5E6;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--coord-primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .68rem;
+            font-weight: 800;
+        }
+
+            .btn-add-row:hover {
+                background: var(--coord-primary-soft);
+            }
+
+        .details-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--coord-border);
+            border-radius: 10px;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+            .details-table.dosis {
+                min-width: 1050px;
+            }
+
+            .details-table.hembras {
+                min-width: 1460px;
+            }
+
+            .details-table.sementales {
+                min-width: 1370px;
+            }
+
+            .details-table.rastro {
+                min-width: 1120px;
+            }
+
+            .details-table thead th {
+                padding: 9px 8px;
+                border-bottom: 1px solid #E7EBF0;
+                background: #FBFCFD;
+                color: #667085;
+                font-size: .61rem;
+                font-weight: 850;
+                text-transform: uppercase;
+                letter-spacing: .02em;
+                white-space: nowrap;
+            }
+
+            .details-table tbody td {
+                padding: 8px;
+                border-bottom: 1px solid #F0F2F4;
+                background: #fff;
+                vertical-align: top;
+            }
+
+            .details-table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+
+        .detail-control {
+            width: 100%;
+            min-height: 35px;
+            border: 1px solid #DCE2E8;
+            border-radius: 7px;
+            background: #fff;
+            color: #344054;
+            padding: 6px 8px;
+            outline: none;
+            font-size: .69rem;
+        }
+
+        select.detail-control {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        textarea.detail-control {
+            min-height: 58px;
+            resize: vertical;
+        }
+
+        .detail-control:focus {
+            border-color: #0B6FAF;
+            box-shadow: 0 0 0 2px rgba(11,111,175,.06);
+        }
+
+        .row-number {
+            width: 29px;
+            height: 29px;
+            margin: 3px auto 0;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F2F4F7;
+            color: #475467;
+            font-size: .66rem;
+            font-weight: 850;
+        }
+
+        .btn-remove-row {
+            width: 31px;
+            height: 31px;
+            margin: 2px auto 0;
+            border: 1px solid #FECACA;
+            border-radius: 8px;
+            background: #fff;
+            color: #B42318;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .btn-remove-row:hover {
+                background: var(--coord-danger-bg);
+            }
+
+        .form-message {
+            display: none;
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+            .form-message.error {
+                display: block;
+                border: 1px solid #FECACA;
+                background: #FEF2F2;
+                color: #B42318;
+            }
+
+            .form-message.success {
+                display: block;
+                border: 1px solid #ABEFC6;
+                background: #ECFDF3;
+                color: #067647;
+            }
+
+        .form-actions {
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
+            margin: 16px -18px -18px;
+            padding: 12px 18px;
+            border-top: 1px solid var(--coord-border);
+            border-radius: 0 0 12px 12px;
+            background: rgba(255,255,255,.96);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .btn-cancel,
+        .btn-draft,
+        .btn-submit {
+            min-height: 38px;
+            padding: 8px 13px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font-size: .72rem;
+            font-weight: 850;
+            text-decoration: none;
+        }
+
+        .btn-cancel {
+            border: 1px solid #DCE2E8;
+            background: #fff;
+            color: #667085;
+        }
+
+        .btn-draft {
+            border: 1px solid #BFC8D3;
+            background: #F8FAFC;
+            color: #344054;
+        }
+
+        .btn-submit {
+            border: 1px solid var(--coord-primary);
+            background: var(--coord-primary);
+            color: #fff;
+        }
+
+            .btn-submit:hover {
+                background: var(--coord-primary-dark);
+            }
+
+        .btn-cancel:hover,
+        .btn-draft:hover {
+            background: #F2F4F7;
+            color: #344054;
+        }
+
+        .btn-submit:disabled,
+        .btn-draft:disabled {
+            opacity: .65;
+            cursor: not-allowed;
+        }
+
+        @@media (max-width: 1100px) {
+            .form-grid {
+                grid-template-columns: repeat(2,minmax(0,1fr));
+            }
+
+            .field.span-3,
+            .field.span-4 {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @@media (max-width: 720px) {
+            .pedido-header {
+                flex-direction: column;
+            }
+
+            .btn-back {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .form-shell {
+                padding: 14px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .field.span-2,
+            .field.span-3,
+            .field.span-4 {
+                grid-column: auto;
+            }
+
+            .section-heading {
+                flex-direction: column;
+            }
+
+            .details-toolbar {
+                width: 100%;
+            }
+
+            .btn-add-row {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .form-actions {
+                margin: 16px -14px -14px;
+                padding: 10px 14px;
+                flex-direction: column-reverse;
+            }
+
+            .btn-cancel, .btn-draft, .btn-submit {
+                width: 100%;
+            }
+        }
+    </style>
+}
+
+<div class="pedido-page">
+    <div class="pedido-header">
+        <div>
+            <div class="pedido-eyebrow">
+                <i class="@IconoTipo()"></i>
+                Coordinación · @tipoNombre
+            </div>
+            <h1 class="pedido-title">Nuevo pedido de @tipoNombre.ToLowerInvariant()</h1>
+            <p class="pedido-subtitle">Captura los datos generales y las partidas solicitadas. El tipo de pedido ya está definido por la bandeja desde la que ingresaste.</p>
+        </div>
+        <a asp-controller="Coordinacion" asp-action="@AccionVolver()" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i>
+            Volver a @tipoNombre.ToLowerInvariant()
+        </a>
+    </div>
+
+    <div id="formMessage" class="form-message"></div>
+
+    <div class="form-shell">
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-title-wrap">
+                    <span class="section-icon"><i class="fa-solid fa-building-user"></i></span>
+                    <div>
+                        <h2 class="section-title">Datos del pedido</h2>
+                        <div class="section-help">Cliente, destino, prioridad y fecha requerida.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="ClienteID">Cliente</label>
+                    <select id="ClienteID" class="control">
+                        <option value="">Selecciona...</option>
+                        @foreach (var cliente in catalogos.Clientes.OrderBy(x => x.NombreComercial))
+                        {
+                            if (Model.ClienteID == cliente.ClienteID)
+                            {
+                                <option value="@cliente.ClienteID" selected>
+                                    @cliente.NombreComercial@(cliente.EsBioHypor ? " · BioHypor" : "")
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="@cliente.ClienteID">
+                                    @cliente.NombreComercial@(cliente.EsBioHypor ? " · BioHypor" : "")
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="ClienteUbicacionID">Ubicación del cliente</label>
+                    <select id="ClienteUbicacionID" class="control" @(Model.ClienteID.HasValue ? null : "disabled")>
+                        <option value="">Selecciona...</option>
+                        @foreach (var ubicacion in catalogos.UbicacionesCliente)
+                        {
+                            if (Model.ClienteUbicacionID == ubicacion.ClienteUbicacionID)
+                            {
+                                <option value="@ubicacion.ClienteUbicacionID" selected>@ubicacion.Nombre</option>
+                            }
+                            else
+                            {
+                                <option value="@ubicacion.ClienteUbicacionID">@ubicacion.Nombre</option>
+                            }
+                        }
+                    </select>
+                    <div class="field-note">Si eliges una ubicación de cliente, el centro interno se limpiará automáticamente.</div>
+                </div>
+
+                <div class="field">
+                    <label for="CentroDestinoID">Centro interno de destino</label>
+                    <select id="CentroDestinoID" class="control">
+                        <option value="">No aplica</option>
+                        @foreach (var centro in catalogos.CentrosOperacion.OrderBy(x => x.Nombre))
+                        {
+                            if (Model.CentroDestinoID == centro.CentroOperacionID)
+                            {
+                                <option value="@centro.CentroOperacionID" selected>@centro.Nombre · @centro.TipoCentro</option>
+                            }
+                            else
+                            {
+                                <option value="@centro.CentroOperacionID">@centro.Nombre · @centro.TipoCentro</option>
+                            }
+                        }
+                    </select>
+                    <div class="field-note">Usa este campo sólo cuando el destino sea un centro interno.</div>
+                </div>
+
+                <div class="field">
+                    <label for="FechaRequerida">Fecha requerida</label>
+                    <input id="FechaRequerida" type="date" class="control" value="@(Model.FechaRequerida?.ToString("yyyy-MM-dd"))" />
+                </div>
+
+                <div class="field">
+                    <label for="PrioridadPedidoID">Prioridad</label>
+                    <select id="PrioridadPedidoID" class="control">
+                        <option value="">Automática / normal</option>
+                        @foreach (var prioridad in catalogos.Prioridades.OrderBy(x => x.Orden))
+                        {
+                            if (Model.PrioridadPedidoID == prioridad.PrioridadPedidoID)
+                            {
+                                <option value="@prioridad.PrioridadPedidoID" selected>@prioridad.Nombre</option>
+                            }
+                            else
+                            {
+                                <option value="@prioridad.PrioridadPedidoID">@prioridad.Nombre</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="ReferenciaExterna">Referencia externa</label>
+                    <input id="ReferenciaExterna" type="text" maxlength="100" class="control" value="@Model.ReferenciaExterna" placeholder="OC, referencia del cliente, correo..." />
+                </div>
+
+                <div class="field span-2">
+                    <label>Captura fuera de tiempo</label>
+                    <div class="late-line">
+                        <input id="FueraDeTiempo" type="checkbox" @(Model.FueraDeTiempo ? "checked" : null) />
+                        <label for="FueraDeTiempo">
+                            Marcar como pedido fuera de tiempo
+                            <small>Úsalo cuando la solicitud llegue después de la ventana operativa aplicable.</small>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="motivoFueraWrap" class="field span-2" style="display:@(Model.FueraDeTiempo ? "block" : "none");">
+                    <label for="MotivoFueraDeTiempo">Motivo <span class="required">*</span></label>
+                    <input id="MotivoFueraDeTiempo" type="text" maxlength="500" class="control" value="@Model.MotivoFueraDeTiempo" placeholder="Indica por qué se registra fuera de tiempo..." />
+                </div>
+
+                <div class="field span-4">
+                    <label for="Observaciones">Observaciones generales</label>
+                    <textarea id="Observaciones" maxlength="1000" class="control" placeholder="Comentarios generales del pedido...">@Model.Observaciones</textarea>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-title-wrap">
+                    <span class="section-icon"><i class="@IconoTipo()"></i></span>
+                    <div>
+                        <h2 class="section-title">Detalle de @tipoNombre.ToLowerInvariant()</h2>
+                        <div class="section-help">Agrega una o varias partidas. Cada renglón se guardará dentro del mismo pedido.</div>
+                    </div>
+                </div>
+                <div class="details-toolbar">
+                    <button type="button" id="btnAgregarRenglon" class="btn-add-row">
+                        <i class="fa-solid fa-plus"></i>
+                        Agregar renglón
+                    </button>
+                </div>
+            </div>
+
+            <div class="details-wrap">
+                @if (tipoCodigo == "DOSIS")
+                {
+                    <table class="details-table dosis">
+                        <thead>
+                            <tr>
+                                <th style="width:48px;">#</th>
+                                <th style="min-width:220px;">Producto</th>
+                                <th style="min-width:130px;">Línea genética</th>
+                                <th style="min-width:115px;">@TextoCantidad()</th>
+                                <th style="min-width:120px;">Importación</th>
+                                <th style="min-width:140px;">País de origen</th>
+                                <th style="min-width:170px;">Ref. importación</th>  
+                                <th style="min-width:145px;">Producción solicitada</th>
+                                <th style="min-width:240px;">Especificaciones</th>
+                                <th style="min-width:210px;">Observaciones</th>
+                                <th style="width:46px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalleBody"></tbody>
+                    </table>
+                }
+                else if (tipoCodigo == "HEMBRAS")
+                {
+                    <table class="details-table hembras">
+                        <thead>
+                            <tr>
+                                <th style="width:48px;">#</th>
+                                <th style="min-width:200px;">Producto</th>
+                                <th style="min-width:145px;">Tipo hembra</th>
+                                <th style="min-width:120px;">Línea genética</th>
+                                <th style="min-width:105px;">@TextoCantidad()</th>
+                                <th style="min-width:105px;">Peso mín. kg</th>
+                                <th style="min-width:105px;">Peso máx. kg</th>
+                                <th style="min-width:150px;">Proyecto</th>
+                                <th style="min-width:240px;">Características</th>
+                                <th style="min-width:200px;">Observaciones</th>
+                                <th style="width:46px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalleBody"></tbody>
+                    </table>
+                }
+                    else if (tipoCodigo == "SEMENTALES")
+                    {
+                        <table class="details-table sementales">
+                            <thead>
+                                <tr>
+                                    <th style="width:48px;">#</th>
+                                    <th style="min-width:200px;">Producto</th>
+                                    <th style="min-width:125px;">Línea genética</th>
+                                    <th style="min-width:110px;">@TextoCantidad()</th>
+                                    <th style="min-width:250px;">Características</th>
+                                    <th style="min-width:200px;">Observaciones</th>
+                                    <th style="width:46px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalleBody"></tbody>
+                        </table>
+                    }
+                else if (tipoCodigo == "RASTRO")
+                {
+                    <table class="details-table rastro">
+                        <thead>
+                            <tr>
+                                <th style="width:48px;">#</th>
+                                <th style="min-width:220px;">Producto</th>
+                                <th style="min-width:115px;">@TextoCantidad()</th>
+                                <th style="min-width:140px;">Kg solicitados</th>
+                                <th style="min-width:150px;">Peso objetivo kg</th>
+                                <th style="min-width:270px;">Especificaciones</th>
+                                <th style="min-width:220px;">Observaciones</th>
+                                <th style="width:46px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalleBody"></tbody>
+                    </table>
+                }
+                else
+                {
+                    <div style="padding:22px;color:#B42318;font-size:.75rem;">
+                        El tipo de pedido no está soportado por esta pantalla.
+                    </div>
+                }
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <a asp-controller="Coordinacion" asp-action="@AccionVolver()" class="btn-cancel">
+                Cancelar
+            </a>
+            <button type="button" id="btnGuardarBorrador" class="btn-draft">
+                <i class="fa-regular fa-floppy-disk"></i>
+                Guardar borrador
+            </button>
+            <button type="button" id="btnCrearPedido" class="btn-submit">
+                <i class="fa-solid fa-check"></i>
+                Crear pedido
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const tipoPedidoId = @Model.TipoPedidoID;
+            const tipoCodigo = '@tipoCodigo';
+            const empresaId = @Model.EmpresaID;
+            const origenPedidoId = @Model.OrigenPedidoID;
+            const fechaSolicitud = '@(Model.FechaSolicitud?.ToString("yyyy-MM-ddTHH:mm:ss") ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"))';
+            const productos = @Html.Raw(productosJson);
+            const lineas = @Html.Raw(lineasJson);
+            const tiposHembra = @Html.Raw(tiposHembraJson);
+            const detallesIniciales = @Html.Raw(detallesInicialesJson);
+
+            const crearUrl = '@Url.Action("CrearPedido", "Coordinacion")';
+            const ubicacionesUrl = '@Url.Action("ObtenerUbicacionesCliente", "Coordinacion")';
+            const detalleBody = document.getElementById('detalleBody');
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            const cliente = document.getElementById('ClienteID');
+            const ubicacion = document.getElementById('ClienteUbicacionID');
+            const centro = document.getElementById('CentroDestinoID');
+            const fuera = document.getElementById('FueraDeTiempo');
+            const motivoWrap = document.getElementById('motivoFueraWrap');
+            const motivo = document.getElementById('MotivoFueraDeTiempo');
+            const message = document.getElementById('formMessage');
+            const btnCrear = document.getElementById('btnCrearPedido');
+            const btnBorrador = document.getElementById('btnGuardarBorrador');
+
+            let contadorRenglones = 0;
+
+            function esc(value) {
+                return String(value ?? '')
+                    .replaceAll('&','&amp;')
+                    .replaceAll('<','&lt;')
+                    .replaceAll('>','&gt;')
+                    .replaceAll('"','&quot;')
+                    .replaceAll("'",'&#039;');
+            }
+
+            function optionProducto(selected) {
+                return '<option value="">Selecciona...</option>' + productos.map(x => {
+                    const texto = x.codigo ? `${x.codigo} · ${x.nombre}` : x.nombre;
+                    return `<option value="${x.productoId}" ${Number(selected) === Number(x.productoId) ? 'selected' : ''}>${esc(texto)}</option>`;
+                }).join('');
+            }
+
+            function optionLinea(selected) {
+                return '<option value="">Selecciona...</option>' + lineas.map(x => {
+                    const texto = x.codigo && x.codigo !== x.nombre ? `${x.codigo} · ${x.nombre}` : (x.codigo || x.nombre);
+                    return `<option value="${x.lineaGeneticaId}" ${Number(selected) === Number(x.lineaGeneticaId) ? 'selected' : ''}>${esc(texto)}</option>`;
+                }).join('');
+            }
+
+            function optionTipoHembra(selected) {
+                return '<option value="">Selecciona...</option>' + tiposHembra.map(x =>
+                    `<option value="${x.tipoHembraId}" ${Number(selected) === Number(x.tipoHembraId) ? 'selected' : ''}>${esc(x.nombre)}</option>`
+                ).join('');
+            }
+
+            function val(value) {
+                return value === null || value === undefined ? '' : value;
+            }
+
+                       function filaDosis(item, numero) {
+                const importacion = item.esImportacion === false ? 'false' : 'true';
+                return `
+                <tr data-row="${numero}">
+                    <td><div class="row-number">${numero}</div></td>
+                    <td><select class="detail-control js-producto">${optionProducto(item.productoId)}</select></td>
+                    <td><select class="detail-control js-linea">${optionLinea(item.lineaGeneticaId)}</select></td>
+                    <td><input class="detail-control js-cantidad" type="number" min="0.001" step="0.001" value="${esc(val(item.cantidadSolicitada))}" /></td>
+                    <td>
+                        <select class="detail-control js-importacion">
+                            <option value="true" ${importacion === 'true' ? 'selected' : ''}>Sí</option>
+                            <option value="false" ${importacion === 'false' ? 'selected' : ''}>No</option>
+                        </select>
+                    </td>
+                    <td><input class="detail-control js-pais" maxlength="100" value="${esc(val(item.paisOrigen))}" /></td>
+                    <td><input class="detail-control js-ref-importacion" maxlength="150" value="${esc(val(item.referenciaImportacion))}" /></td>
+                    <td><input class="detail-control js-fecha-produccion" type="date" value="${esc(val(item.fechaProduccionSolicitada))}" /></td>
+                    <td><textarea class="detail-control js-especificaciones-dosis" maxlength="1000">${esc(val(item.especificacionesDosis))}</textarea></td>
+                    <td><textarea class="detail-control js-observaciones" maxlength="1000">${esc(val(item.observaciones))}</textarea></td>
+                    <td><button type="button" class="btn-remove-row js-remove" title="Eliminar renglón"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            }
+
+            function filaHembras(item, numero) {
+                return `
+                <tr data-row="${numero}">
+                    <td><div class="row-number">${numero}</div></td>
+                    <td><select class="detail-control js-producto">${optionProducto(item.productoId)}</select></td>
+                    <td><select class="detail-control js-tipo-hembra">${optionTipoHembra(item.tipoHembraId)}</select></td>
+                    <td><select class="detail-control js-linea">${optionLinea(item.lineaGeneticaId)}</select></td>
+                    <td><input class="detail-control js-cantidad" type="number" min="0.001" step="0.001" value="${esc(val(item.cantidadSolicitada))}" /></td>
+                    <td><input class="detail-control js-peso-min" type="number" min="0" step="0.001" value="${esc(val(item.pesoMinimoKg))}" /></td>
+                    <td><input class="detail-control js-peso-max" type="number" min="0" step="0.001" value="${esc(val(item.pesoMaximoKg))}" /></td>
+                    <td><input class="detail-control js-proyecto" maxlength="150" value="${esc(val(item.referenciaProyecto))}" /></td>
+                    <td><textarea class="detail-control js-caracteristicas-hembras" maxlength="1000">${esc(val(item.caracteristicasHembras))}</textarea></td>
+                    <td><textarea class="detail-control js-observaciones" maxlength="1000">${esc(val(item.observaciones))}</textarea></td>
+                    <td><button type="button" class="btn-remove-row js-remove" title="Eliminar renglón"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            }
+
+               function filaSementales(item, numero) {
+                return `
+                <tr data-row="${numero}">
+                    <td><div class="row-number">${numero}</div></td>
+                    <td><select class="detail-control js-producto">${optionProducto(item.productoId)}</select></td>
+                    <td><select class="detail-control js-linea">${optionLinea(item.lineaGeneticaId)}</select></td>
+                    <td><input class="detail-control js-cantidad" type="number" min="0.001" step="0.001" value="${esc(val(item.cantidadSolicitada))}" /></td>
+                    <td><textarea class="detail-control js-caracteristicas-semental" maxlength="1000">${esc(val(item.caracteristicasSemental))}</textarea></td>
+                    <td><textarea class="detail-control js-observaciones" maxlength="1000">${esc(val(item.observaciones))}</textarea></td>
+                    <td><button type="button" class="btn-remove-row js-remove" title="Eliminar renglón"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            }
+
+            function filaRastro(item, numero) {
+                return `
+                <tr data-row="${numero}">
+                    <td><div class="row-number">${numero}</div></td>
+                    <td><select class="detail-control js-producto">${optionProducto(item.productoId)}</select></td>
+                    <td><input class="detail-control js-cantidad" type="number" min="0.001" step="0.001" value="${esc(val(item.cantidadSolicitada))}" /></td>
+                    <td><input class="detail-control js-kilos" type="number" min="0.001" step="0.001" value="${esc(val(item.kilogramosSolicitados))}" /></td>
+                    <td><input class="detail-control js-peso-objetivo" type="number" min="0.001" step="0.001" value="${esc(val(item.pesoPromedioObjetivoKg))}" /></td>
+                    <td><textarea class="detail-control js-especificaciones-rastro" maxlength="1000">${esc(val(item.especificacionesRastro))}</textarea></td>
+                    <td><textarea class="detail-control js-observaciones" maxlength="1000">${esc(val(item.observaciones))}</textarea></td>
+                    <td><button type="button" class="btn-remove-row js-remove" title="Eliminar renglón"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            }
+
+            function crearFila(item = {}) {
+                contadorRenglones++;
+                let html = '';
+                if (tipoCodigo === 'DOSIS') html = filaDosis(item, contadorRenglones);
+                else if (tipoCodigo === 'HEMBRAS') html = filaHembras(item, contadorRenglones);
+                else if (tipoCodigo === 'SEMENTALES') html = filaSementales(item, contadorRenglones);
+                else if (tipoCodigo === 'RASTRO') html = filaRastro(item, contadorRenglones);
+                if (!html || !detalleBody) return;
+                detalleBody.insertAdjacentHTML('beforeend', html);
+                enlazarEliminar(detalleBody.lastElementChild);
+
+                renumerar();
+            }
+
+            function enlazarEliminar(row) {
+                row?.querySelector('.js-remove')?.addEventListener('click', () => {
+                    if (detalleBody.querySelectorAll('tr').length <= 1) {
+                        mostrarError('El pedido debe conservar al menos un renglón.');
+                        return;
+                    }
+                    row.remove();
+                    renumerar();
+                });
+            }
+
+            function renumerar() {
+                const rows = [...detalleBody.querySelectorAll('tr')];
+                rows.forEach((row, index) => {
+                    row.dataset.row = String(index + 1);
+                    const badge = row.querySelector('.row-number');
+                    if (badge) badge.textContent = String(index + 1);
+                });
+                contadorRenglones = rows.length;
+            }
+
+            function nullableNumber(value) {
+                if (value === '' || value === null || value === undefined) return null;
+                const n = Number(value);
+                return Number.isFinite(n) ? n : null;
+            }
+
+            function leerDetalles() {
+                return [...detalleBody.querySelectorAll('tr')].map((row, index) => {
+                    const item = {
+                        renglon: index + 1,
+                        productoID: Number(row.querySelector('.js-producto')?.value || 0),
+                        lineaGeneticaID: nullableNumber(row.querySelector('.js-linea')?.value),
+                        cantidadSolicitada: Number(row.querySelector('.js-cantidad')?.value || 0),
+                        pesoMinimoKg: nullableNumber(row.querySelector('.js-peso-min')?.value),
+                        pesoMaximoKg: nullableNumber(row.querySelector('.js-peso-max')?.value),
+                        especificaciones: null,
+                        observaciones: row.querySelector('.js-observaciones')?.value?.trim() || null,
+                        fechaProduccionSolicitada: row.querySelector('.js-fecha-produccion')?.value || null,
+                        especificacionesDosis: row.querySelector('.js-especificaciones-dosis')?.value?.trim() || null,
+                        tipoHembraID: nullableNumber(row.querySelector('.js-tipo-hembra')?.value),
+                        referenciaProyecto: row.querySelector('.js-proyecto')?.value?.trim() || null,
+                        caracteristicasHembras: row.querySelector('.js-caracteristicas-hembras')?.value?.trim() || null,
+                        esImportacion: row.querySelector('.js-importacion')
+                            ? row.querySelector('.js-importacion').value === 'true'
+                            : null,
+                        paisOrigen: row.querySelector('.js-pais')?.value?.trim() || null,
+                        referenciaImportacion: row.querySelector('.js-ref-importacion')?.value?.trim() || null,
+                        caracteristicasSemental: row.querySelector('.js-caracteristicas-semental')?.value?.trim() || null,
+                        kilogramosSolicitados: nullableNumber(row.querySelector('.js-kilos')?.value),
+                        pesoPromedioObjetivoKg: nullableNumber(row.querySelector('.js-peso-objetivo')?.value),
+                        especificacionesRastro: row.querySelector('.js-especificaciones-rastro')?.value?.trim() || null
+                    };
+                    return item;
+                });
+            }
+
+            function validar(detalles) {
+                if (!tipoPedidoId || tipoPedidoId <= 0) return 'No se pudo identificar el tipo de pedido.';
+                if (!origenPedidoId || origenPedidoId <= 0) return 'No se pudo identificar el origen del pedido.';
+                if (!detalles.length) return 'Agrega al menos un renglón.';
+                for (let i = 0; i < detalles.length; i++) {
+                    const d = detalles[i];
+                    if (!d.productoID || d.productoID <= 0) return `Selecciona el producto del renglón ${i + 1}.`;
+                    if (!d.cantidadSolicitada || d.cantidadSolicitada <= 0) return `Captura una cantidad mayor a cero en el renglón ${i + 1}.`;
+                    if (@((tipoActual?.RequiereLineaGenetica ?? false).ToString().ToLowerInvariant()) && (!d.lineaGeneticaID || d.lineaGeneticaID <= 0))
+                        return `Selecciona la línea genética del renglón ${i + 1}.`;
+                    if (d.pesoMinimoKg !== null && d.pesoMaximoKg !== null && d.pesoMaximoKg < d.pesoMinimoKg)
+                        return `El peso máximo del renglón ${i + 1} no puede ser menor al peso mínimo.`;
+                }
+                if (fuera.checked && !motivo.value.trim()) return 'Debes indicar el motivo del pedido fuera de tiempo.';
+                const fechaReq = document.getElementById('FechaRequerida').value;
+                if (fechaReq) {
+                    const hoySolicitud = fechaSolicitud.substring(0, 10);
+                    if (fechaReq < hoySolicitud) return 'La fecha requerida no puede ser anterior a la fecha de solicitud.';
+                }
+                if (ubicacion.value && centro.value) return 'Selecciona una ubicación de cliente o un centro interno, no ambos.';
+                return null;
+            }
+
+            function armarModelo(guardarComoBorrador) {
+                return {
+                    empresaID: empresaId,
+                    tipoPedidoID: tipoPedidoId,
+                    origenPedidoID: origenPedidoId,
+                    clienteID: nullableNumber(cliente.value),
+                    clienteUbicacionID: nullableNumber(ubicacion.value),
+                    centroDestinoID: nullableNumber(centro.value),
+                    usuarioSolicitanteID: null,
+                    fechaSolicitud: fechaSolicitud,
+                    fechaRequerida: document.getElementById('FechaRequerida').value || null,
+                    prioridadPedidoID: nullableNumber(document.getElementById('PrioridadPedidoID').value),
+                    referenciaExterna: document.getElementById('ReferenciaExterna').value.trim() || null,
+                    fueraDeTiempo: fuera.checked,
+                    motivoFueraDeTiempo: fuera.checked ? (motivo.value.trim() || null) : null,
+                    observaciones: document.getElementById('Observaciones').value.trim() || null,
+                    folio: null,
+                    guardarComoBorrador,
+                    detalles: leerDetalles()
+                };
+            }
+
+            function mostrarError(texto) {
+                message.className = 'form-message error';
+                message.textContent = texto;
+                message.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function mostrarExito(texto) {
+                message.className = 'form-message success';
+                message.textContent = texto;
+            }
+
+            function limpiarMensaje() {
+                message.className = 'form-message';
+                message.textContent = '';
+            }
+
+            function bloquear(bloqueado) {
+                btnCrear.disabled = bloqueado;
+                btnBorrador.disabled = bloqueado;
+                btnCrear.innerHTML = bloqueado
+                    ? '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...'
+                    : '<i class="fa-solid fa-check"></i> Crear pedido';
+                btnBorrador.innerHTML = bloqueado
+                    ? '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...'
+                    : '<i class="fa-regular fa-floppy-disk"></i> Guardar borrador';
+            }
+
+            async function guardar(guardarComoBorrador) {
+                limpiarMensaje();
+                const model = armarModelo(guardarComoBorrador);
+                const error = validar(model.detalles);
+                if (error) {
+                    mostrarError(error);
+                    return;
+                }
+
+                bloquear(true);
+                try {
+                    const response = await fetch(crearUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify(model)
+                    });
+
+                    let data = null;
+                    try { data = await response.json(); } catch { }
+
+                    if (!response.ok || !data?.ok) {
+                        throw new Error(data?.mensaje || `No fue posible guardar el pedido (${response.status}).`);
+                    }
+
+                    mostrarExito(data.mensaje || 'Pedido guardado correctamente.');
+
+                    if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
+                    }
+                } catch (error) {
+                    mostrarError(error?.message || 'Ocurrió un error al guardar el pedido.');
+                    bloquear(false);
+                }
+            }
+
+            async function cargarUbicaciones(clienteId) {
+                ubicacion.innerHTML = '<option value="">Selecciona...</option>';
+                ubicacion.disabled = true;
+
+                if (!clienteId) return;
+
+                try {
+                    const url = new URL(ubicacionesUrl, window.location.origin);
+                    url.searchParams.set('clienteId', clienteId);
+                    url.searchParams.set('tipoPedidoId', tipoPedidoId);
+
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    if (!response.ok) throw new Error('No se pudieron cargar las ubicaciones del cliente.');
+
+                    const data = await response.json();
+                    const lista = data?.ubicaciones || [];
+                    ubicacion.innerHTML = '<option value="">Selecciona...</option>' + lista.map(x => {
+                        const id = x.clienteUbicacionID ?? x.ClienteUbicacionID;
+                        const nombre = x.nombre ?? x.Nombre ?? '';
+                        const municipio = x.municipio ?? x.Municipio ?? '';
+                        const estado = x.estado ?? x.Estado ?? '';
+                        const extra = [municipio, estado].filter(Boolean).join(', ');
+                        return `<option value="${id}">${esc(nombre)}${extra ? ' · ' + esc(extra) : ''}</option>`;
+                    }).join('');
+                    ubicacion.disabled = false;
+                } catch (error) {
+                    mostrarError(error?.message || 'No se pudieron cargar las ubicaciones.');
+                }
+            }
+
+            document.getElementById('btnAgregarRenglon')?.addEventListener('click', () => crearFila({}));
+            btnCrear?.addEventListener('click', () => guardar(false));
+            btnBorrador?.addEventListener('click', () => guardar(true));
+
+            fuera?.addEventListener('change', () => {
+                motivoWrap.style.display = fuera.checked ? 'block' : 'none';
+                if (!fuera.checked) motivo.value = '';
+            });
+
+            cliente?.addEventListener('change', async () => {
+                ubicacion.value = '';
+                await cargarUbicaciones(cliente.value);
+            });
+
+            ubicacion?.addEventListener('change', () => {
+                if (ubicacion.value) centro.value = '';
+            });
+
+            centro?.addEventListener('change', () => {
+                if (centro.value) ubicacion.value = '';
+            });
+
+            const iniciales = detallesIniciales && detallesIniciales.length
+                ? detallesIniciales
+                : [{}];
+
+            iniciales.forEach(item => crearFila(item));
+        })();
+    </script>
+}
