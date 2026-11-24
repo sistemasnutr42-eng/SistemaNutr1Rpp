@@ -1,0 +1,19 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using SistemaNutri.Models;
+
+namespace SistemaNutri.Controllers
+{
+    public class EmpresasControler : Controller
+    {
+        private readonly ApplicationDbContext _context;
+        public EmpresasControler(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+        public IActionResult Index()
+        {
+            var empresas = _context.Empresas.ToList();
+            return View();
+        }
+    }
+}
