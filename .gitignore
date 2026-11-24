@@ -1,0 +1,29 @@
+# Visual Studio y carpetas de compilacion
+.vs/
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Archivos compilados y binarios
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+
+# Comprimidos y otros temporales
+*.zip
+*.gz
+*.br
+*.db
+*.ttf
+*.json
+*.vsidx
+
+# Perfil de desarrollo compartido: no contiene credenciales.
+!/Properties/launchSettings.json
